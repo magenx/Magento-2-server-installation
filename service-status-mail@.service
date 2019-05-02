@@ -1,0 +1,9 @@
+[Unit]
+Description=Service Status Monitor
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/service-status-mail.sh %I
+ExecStop=
+KillMode=none
