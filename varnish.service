@@ -1,0 +1,38 @@
+[Unit]
+Description=Varnish a high-perfomance HTTP accelerator
+After=syslog.target network.target
+OnFailure=service-status-mail@%n.service
+
+[Service]
+# Enviroment variables may be found in /etc/varnish/varnish.params
+EnvironmentFile=/etc/varnish/varnish.params
+
+# Maximum number of open files (for ulimit -n)
+LimitNOFILE=131072
+
+# Locked shared memory (for ulimit -l)
+# Default log size is 82MB + header
+LimitMEMLOCK=82000
+
+# Maximum size of the corefile. 
+LimitCORE=infinity
+
+Type=forking
+PrivateTmp=false
+ExecStart=/usr/sbin/varnishd \
+	-j unix,user=MAGE_WEB_USER,ccgroup=MAGE_WEB_USER,workuser=MAGE_WEB_USER \
+	-P /var/run/varnish.pid \
+	-f $VARNISH_VCL_CONF \
+	-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT} \
+	-T ${VARNISH_ADMIN_LISTEN_ADDRESS}:${VARNISH_ADMIN_LISTEN_PORT} \
+	-S $VARNISH_SECRET_FILE \
+	-s $VARNISH_STORAGE \
+	$DAEMON_OPTS
+	
+ExecReload=/usr/sbin/varnish_reload_vcl
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
