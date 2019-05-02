@@ -1,0 +1,42 @@
+# Varnish environment configuration description. This was derived from
+# the old style sysconfig/defaults settings
+
+# Set this to 1 to make systemd reload try to switch VCL without restart.
+RELOAD_VCL=1
+
+# Main configuration file. You probably want to change it.
+VARNISH_VCL_CONF=/etc/varnish/default.vcl
+
+# Default address and port to bind to. Blank address means all IPv4
+# and IPv6 interfaces, otherwise specify a host name, an IPv4 dotted
+# quad, or an IPv6 address in brackets.
+VARNISH_LISTEN_ADDRESS=127.0.0.1
+VARNISH_LISTEN_PORT=8081
+
+# Admin interface listen address and port
+VARNISH_ADMIN_LISTEN_ADDRESS=127.0.0.1
+VARNISH_ADMIN_LISTEN_PORT=6082
+
+# Shared secret file for admin interface
+VARNISH_SECRET_FILE=/etc/varnish/secret
+
+# Backend storage specification, see Storage Types in the varnishd(5)
+# man page for details.
+VARNISH_STORAGE="malloc,1G"
+
+# User and group for the varnishd worker processes
+VARNISH_USER=varnish
+VARNISH_GROUP=varnish
+
+# Other options, see the man page varnishd(1)
+DAEMON_OPTS="-p thread_pool_min=200 \
+	-p thread_pool_max=4000 \
+	-p thread_pool_add_delay=2 \
+	-p cli_timeout=25 \
+	-p cli_buffer=26384 \
+	-p syslog_cli_traffic=off \
+	-p feature=+esi_ignore_https \
+	-p feature=+esi_disable_xml_check
+	-p feature=+esi_ignore_other_elements \
+	-p vcc_allow_inline_c=on \
+	-p timeout_linger=100"
