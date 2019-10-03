@@ -41,18 +41,6 @@ if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(
     return ("Nginx 444",$1,"nginx_444","5","443","86400","0");
 }
 
-# /var/log/nginx/error.log
-# NginX security rules trigger (Default: 5 errors bans for 24 hours)
-if (($globlogs{CUSTOM2_LOG}{$lgfile}) and ($line =~ /.*access forbidden by rule, client: (\S+).*/)) {
-    return ("NGINX Security rule triggered from",$1,"nginx_403","5","443","86400","0");
-}
-
-# /var/log/nginx/error.log
-# NginX security rules trigger (Default: 5 errors bans for 24 hours)
-if (($globlogs{CUSTOM2_LOG}{$lgfile}) and ($line =~ /.*user ".*" was not found in.*, client: (\S+).*/)) {
-    return ("NGINX Security rule triggered from",$1,"nginx_401","5","443","86400","0");
-}
-
 # /var/log/nginx/access.log
 # Trying to open private files  (Default: 1 error bans for 24 hours)
 if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /.*(env.php|local.xml).*client: (\S+),.*GET/)) {
@@ -63,6 +51,18 @@ if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /.*(env.php|local.xml).*clie
 # Trying to download htaccess or htpasswd  (Default: 1 error bans for 24 hours)
 if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /.*\.(htpasswd|htaccess).*client: (\S+),.*GET/)) {
     return ("Trying to download private files",$1,"nginx_htaccess","1","443","86400","0");
+}
+
+# /var/log/nginx/error.log
+# NginX security rules trigger (Default: 5 errors bans for 24 hours)
+if (($globlogs{CUSTOM2_LOG}{$lgfile}) and ($line =~ /.*access forbidden by rule, client: (\S+).*/)) {
+    return ("NGINX Security rule triggered from",$1,"nginx_403","5","443","86400","0");
+}
+
+# /var/log/nginx/error.log
+# NginX security rules trigger (Default: 5 errors bans for 24 hours)
+if (($globlogs{CUSTOM2_LOG}{$lgfile}) and ($line =~ /.*user.*was not found in.*, client: (\S+).*/)) {
+    return ("NGINX Security rule triggered from",$1,"nginx_401","5","443","86400","0");
 }
 
 # /var/log/nginx/error.log
