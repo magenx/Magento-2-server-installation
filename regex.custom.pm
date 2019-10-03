@@ -42,15 +42,9 @@ if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(
 }
 
 # /var/log/nginx/access.log
-# Trying to open private files  (Default: 1 error bans for 24 hours)
-if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /.*(env.php|local.xml).*client: (\S+),.*GET/)) {
-    return ("Trying to download private files",$1,"nginx_private","1","443","86400","0");
-}
-
-# /var/log/nginx/access.log
-# Trying to download htaccess or htpasswd  (Default: 1 error bans for 24 hours)
-if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /.*\.(htpasswd|htaccess).*client: (\S+),.*GET/)) {
-    return ("Trying to download private files",$1,"nginx_htaccess","1","443","86400","0");
+# Files scan (Default: 1 error bans for 24 hours)
+if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*\.asp\sHTTP.*/)) {
+    return ("Files scan",$1,"nginx_scan","1","443","86400","0");
 }
 
 # /var/log/nginx/error.log
