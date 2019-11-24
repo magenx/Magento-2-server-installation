@@ -20,7 +20,7 @@ LimitCORE=infinity
 Type=forking
 PrivateTmp=false
 ExecStart=/usr/sbin/varnishd \
-	-j unix,user=MAGE_WEB_USER,ccgroup=MAGE_WEB_USER,workuser=MAGE_WEB_USER \
+	-j unix,user=MAGE_OWNER,ccgroup=MAGE_OWNER,workuser=MAGE_OWNER \
 	-P /var/run/varnish.pid \
 	-f $VARNISH_VCL_CONF \
 	-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT} \
