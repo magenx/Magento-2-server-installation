@@ -33,7 +33,6 @@ DAEMON_OPTS="-p thread_pool_min=200 \
 	-p thread_pool_max=4000 \
 	-p thread_pool_add_delay=2 \
 	-p cli_timeout=25 \
-	-p cli_buffer=26384 \
 	-p syslog_cli_traffic=off \
 	-p feature=+esi_ignore_https \
 	-p feature=+esi_disable_xml_check \
