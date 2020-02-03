@@ -1613,7 +1613,10 @@ if [ "${frwlltst}" == "csf" ];then
                    sed -i 's/^LF_IPSET =.*/LF_IPSET = "1"/' /etc/csf/csf.conf
                    ### this line will block every blacklisted ip address
                    sed -i "/|0|/s/^#//g" /etc/csf/csf.blocklists
-        csf -r
+		   ### get custom regex template
+		   curl -o /usr/local/csf/bin/regex.custom.pm ${REPO_MAGENX_TMP}regex.custom.pm
+		   chmod +x /usr/local/csf/bin/regex.custom.pm
+        csf -ra
     fi
     elif [ "${frwlltst}" == "f2b" ];then
     echo
