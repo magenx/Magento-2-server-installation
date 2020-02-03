@@ -15,7 +15,7 @@ MAGENX_BASE="https://magenx.sh"
 # CentOS version lock
 CENTOS_VERSION="8"
 
-# ELK + WAZUH version lock
+# ELK version lock
 ELKVER="6.8.0"
 KAPPVER="3.9.1"
 ELKREPO="6.x"
