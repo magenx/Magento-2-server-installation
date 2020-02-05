@@ -159,7 +159,7 @@ done }
 
 clear
 ###################################################################################
-###                                  START CHECKING                             ###
+###                              CHECK IF WE CAN RUN IT                         ###
 ###################################################################################
 
 echo
@@ -283,7 +283,6 @@ installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|Percona*|maria*|php-?|ngi
   fi
 fi
 
-echo
 GREENTXT "PATH: ${PATH}"
 echo
 if ! grep -q "yes" /root/magenx/.systest >/dev/null 2>&1 ; then
@@ -538,7 +537,7 @@ if [ "${repo_percona_install}" == "y" ];then
             GREENTXT "REPOSITORY INSTALLED  -  OK"
               echo
               echo
-              GREENTXT "Installation of Percona 5.7 database:"
+              GREENTXT "Percona 5.7 database installation:"
               echo
               echo -n "     PROCESSING  "
               long_progress &
@@ -567,7 +566,7 @@ if [ "${repo_percona_install}" == "y" ];then
               wget -qO /etc/my.cnf https://raw.githubusercontent.com/magenx/magento-mysql/master/my.cnf/my.cnf
               echo
                 echo
-                 WHITETXT "We need to correct your innodb_buffer_pool_size"
+                 WHITETXT "Calculating innodb_buffer_pool_size"
                  rpm -qa | grep -qw bc || dnf -q -y install bc >/dev/null 2>&1
                  IBPS=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
                  sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${IBPS}G/" /etc/my.cnf
@@ -578,7 +577,7 @@ if [ "${repo_percona_install}" == "y" ];then
                 echo
               echo
               ## get mysql tools
-	      YELLOWTXT "INSTALL MYSQLTOP, PERCONA-TOOLKIT, PROXYYSQL, MYSQLTUNER"
+	      YELLOWTXT "mytop, Percona-toolkit, ProxySQL, MySQLtuner installation"
 	      wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
               cd /usr/local/bin
               wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
@@ -628,7 +627,7 @@ END
             echo
             GREENTXT "REPOSITORY INSTALLED  -  OK"
             echo
-            GREENTXT "Installation of nginx package:"
+            GREENTXT "Nginx package installation:"
             echo
             echo -n "     PROCESSING  "
             start_progress &
@@ -667,7 +666,7 @@ echo -n "---> Start the Remi repository and PHP installation? [y/n][n]:"
 read repo_remi_install
 if [ "${repo_remi_install}" == "y" ];then
           echo
-            GREENTXT "Installation of Remi repository:"
+            GREENTXT "Remi repository installation:"
 	    echo
 	    echo -n "---> Enter required PHP version 7.3 7.4 :"
 	    read PHP_VERSION
@@ -686,7 +685,7 @@ if [ "${repo_remi_install}" == "y" ];then
             GREENTXT "REPOSITORY INSTALLED  -  OK"
             echo
 	    echo
-            GREENTXT "Installation of PHP ${PHP_VERSION}:"
+            GREENTXT "PHP ${PHP_VERSION} installation:"
             echo
             echo -n "     PROCESSING  "
             long_progress &
@@ -697,7 +696,7 @@ if [ "${repo_remi_install}" == "y" ];then
        if [ "$?" = 0 ]
          then
            echo
-             GREENTXT "PHP INSTALLED  -  OK"
+             GREENTXT "PHP ${PHP_VERSION} INSTALLED  -  OK"
              ## plug in service status alert
              cp /usr/lib/systemd/system/php-fpm.service /etc/systemd/system/php-fpm.service
              sed -i "s/PrivateTmp=true/PrivateTmp=false/" /etc/systemd/system/php-fpm.service
@@ -828,11 +827,10 @@ echo -n "---> Start ElasticSearch ${ELKVER} installation? [y/n][n]:"
 read elastic_install
 if [ "${elastic_install}" == "y" ];then
 echo
-GREENTXT "JAVA JDK INSTALLATION:"	
+GREENTXT "JAVA JDK installation:"	
 dnf -y install java >/dev/null 2>&1	
-echo	
 echo
-GREENTXT "ELASTCSEARCH INSTALLATION:"
+GREENTXT "Elasticsearch installation:"
 echo
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 cat > /etc/yum.repos.d/elastic.repo << EOF
@@ -878,7 +876,7 @@ echo
 fi
 echo
 echo
-GREENTXT "NOW WE ARE GOING TO CONFIGURE EVERYTHING"
+GREENTXT "Applying settings template"
 echo
 pause "---> Press [Enter] key to proceed"
 echo
@@ -984,7 +982,7 @@ echo "*         hard    nofile          1000000" >> /etc/security/limits.conf
 echo
 echo
 echo "-------------------------------------------------------------------------------------"
-BLUEBG "| INSTALLATION OF REPOSITORIES AND PACKAGES IS COMPLETED |"
+BLUEBG "| REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED |"
 echo "-------------------------------------------------------------------------------------"
 echo
 echo
