@@ -286,8 +286,8 @@ fi
 GREENTXT "PATH: ${PATH}"
 echo
 if ! grep -q "yes" /root/magenx/.systest >/dev/null 2>&1 ; then
-echo "-------------------------------------------------------------------------------------"
-BLUEBG "| QUICK SYSTEM TEST |"
+echo
+BLUEBG "~    QUICK SYSTEM TEST    ~"
 echo "-------------------------------------------------------------------------------------"
 echo
     dnf -y install epel-release > /dev/null 2>&1
