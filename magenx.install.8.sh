@@ -503,6 +503,7 @@ dnf -q -y install https://dl.iuscommunity.org/pub/ius/stable/CentOS/7/x86_64/yum
 dnf -q -y install ${REPO_FAN} >/dev/null 2>&1
 sed -i '0,/gpgkey/s//includepkgs=curl libmetalink libpsl libcurl libcurl-devel libssh2-devel libssh2\n&/' /etc/yum.repos.d/city-fan.org.repo
 dnf install -y dnf-utils >/dev/null 2>&1
+dnf module enable -y perl:5.26 >/dev/null 2>&1
 dnf config-manager --set-enabled city-fan.org >/dev/null 2>&1
 dnf config-manager --set-enabled PowerTools >/dev/null 2>&1
 dnf -q -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-} >/dev/null 2>&1
