@@ -478,7 +478,7 @@ printf "\033c"
         echo
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         echo
-        WHITETXT "-> To quit and exit                     :  ${RED}\t\t\t\texit"
+        WHITETXT "-> To quit and exit                     :  ${RED}\ttexit"
         echo
     echo
 }
