@@ -1408,7 +1408,8 @@ crontab rootcron
 rm rootcron
 echo
 GREENTXT "MAGENTO CRONJOBS"
-su ${MAGE_PHPFPM_USER} -s /bin/bash -c "php ${MAGE_WEB_ROOT_PATH}/bin/magento cron:install"
+chmod 770 ${MAGE_WEB_ROOT_PATH}/bin/magento
+su ${MAGE_PHPFPM_USER} -s /bin/bash -c "${MAGE_WEB_ROOT_PATH}/bin/magento cron:install"
 echo
 GREENTXT "REDIS CACHE AND SESSION STORAGE"
 echo
