@@ -1676,19 +1676,10 @@ rpm --import http://www.webmin.com/jcameron-key.asc
             sed -i 's/preroot=gray-theme/preroot=authentic-theme/' /etc/webmin/miniserv.conf
             sed -i "s/port=10000/port=${WEBMIN_PORT}/" /etc/webmin/miniserv.conf
             sed -i "s/listen=10000/listen=${WEBMIN_PORT}/" /etc/webmin/miniserv.conf
-            ## nginx module
-            cd /usr/local/src/
-            wget -q ${WEBMIN_NGINX} -O webmin_nginx
-            perl /usr/libexec/webmin/install-module.pl $_ >/dev/null 2>&1
             if [ -f "/usr/local/csf/csfwebmin.tgz" ]
 				then
 				perl /usr/libexec/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
 				GREENTXT "INSTALLED CSF FIREWALL PLUGIN"
-    		else
-				cd /usr/local/src
-				wget -q ${WEBMIN_FAIL2BAN} -O fail2ban.wbm.gz
-				perl /usr/libexec/webmin/install-module.pl $_ >/dev/null 2>&1
-				GREENTXT "INSTALLED FAIL2BAN PLUGIN"
             fi
             sed -i 's/root/webadmin/' /etc/webmin/miniserv.users
             sed -i 's/root:/webadmin:/' /etc/webmin/webmin.acl
