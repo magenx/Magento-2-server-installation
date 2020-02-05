@@ -57,7 +57,7 @@ WHITE="\e[37;40m"
 BLUE="\e[0;34m"
 ### Background
 DGREYBG="\t\t\e[100m"
-BLUEBG="\e[44m"
+BLUEBG="\e[1;44m"
 REDBG="\t\t\e[41m"
 ### Styles
 BOLD="\e[1m"
@@ -516,8 +516,7 @@ echo
 fi
 echo
 echo
-echo "-------------------------------------------------------------------------------------"
-BLUEBG "| INSTALLATION OF REPOSITORIES AND PACKAGES |"
+BLUEBG "~    REPOSITORIES AND PACKAGES INSTALLATION    ~"
 echo "-------------------------------------------------------------------------------------"
 echo
 WHITETXT "============================================================================="
@@ -982,8 +981,8 @@ echo "*         soft    nofile          700000" >> /etc/security/limits.conf
 echo "*         hard    nofile          1000000" >> /etc/security/limits.conf
 echo
 echo
-echo "-------------------------------------------------------------------------------------"
-BLUEBG "| REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED |"
+echo 
+BLUEBG "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
 echo "-------------------------------------------------------------------------------------"
 echo
 echo
@@ -997,8 +996,8 @@ printf "\033c"
 
 "magento")
 echo
-echo "-------------------------------------------------------------------------------------"
-BLUEBG "|   DOWNLOAD MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})                                            |"
+echo
+BLUEBG "~    DOWNLOAD MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})    ~"
 echo "-------------------------------------------------------------------------------------"
 echo
 echo
@@ -1118,8 +1117,8 @@ printf "\033c"
 printf "\033c"
 MAGE_VERSION=$(awk '/webshop/ { print $6 }' /root/magenx/.magenx_index)
 MAGE_VERSION_FULL=$(awk '/webshop/ { print $7 }' /root/magenx/.magenx_index)
-echo "-------------------------------------------------------------------------------------"
-BLUEBG   "|  MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) INSTALLATION  |"
+echo
+BLUEBG   "~    MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) INSTALLATION    ~"
 echo "-------------------------------------------------------------------------------------"
 echo
 MAGE_WEB_ROOT_PATH=$(awk '/webshop/ { print $3 }' /root/magenx/.magenx_index)
@@ -1225,8 +1224,8 @@ MAGE_DB_PASS=$(awk '/database/ { print $5 }' /root/magenx/.magenx_index)
 MYSQL_ROOT_PASS=$(awk '/database/ { print $6 }' /root/magenx/.magenx_index)
 NEW_SSH_PORT=$(awk '/SSH/ { print $2 }' /root/magenx/.sshport)
 SFTP_PORT=$(awk '/SFTP/ { print $2 }' /root/magenx/.sshport)
-echo "-------------------------------------------------------------------------------------"
-BLUEBG "| POST-INSTALLATION CONFIGURATION |"
+echo
+BLUEBG "~    POST-INSTALLATION CONFIGURATION    ~"
 echo "-------------------------------------------------------------------------------------"
 echo
 GREENTXT "SERVER HOSTNAME SETTINGS"
