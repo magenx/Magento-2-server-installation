@@ -223,7 +223,7 @@ if grep "CentOS.* ${CENTOS_VERSION}\." /etc/centos-release  > /dev/null 2>&1; th
   GREENTXT "PASS: CENTOS RELEASE ${CENTOS_VERSION}"
   else
   echo
-  REDTXT "ERROR: UNABLE TO DETERMINE DISTRIBUTION TYPE."
+  REDTXT "ERROR: UNABLE TO FIND CENTOS ${CENTOS_VERSION}"
   YELLOWTXT "------> THIS CONFIGURATION FOR CENTOS ${CENTOS_VERSION}"
   echo
   exit 1
@@ -248,7 +248,7 @@ if [ "${TOTALMEM}" -gt "3000000" ]; then
   else
   echo
   REDTXT "WARNING: YOU HAVE LESS THAN 3Gb OF RAM"
-  REDTXT "TO PROPERLY RUN COMPLETE STACK YOU NEED 4Gb+"
+  YELLOWTXT "------> TO PROPERLY RUN COMPLETE STACK YOU NEED 4Gb+"
   echo
 fi
 
@@ -268,7 +268,7 @@ fi
 
 # check if webstack is clean
 if ! grep -q "webstack_is_clean" /root/magenx/.webstack >/dev/null 2>&1 ; then
-installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|Percona*|maria*|php-?|nginx*|*ftp*|varnish*|certbot*|redis*|webmin')"
+installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|firewalld|Percona*|maria*|php-?|nginx*|*ftp*|varnish*|certbot*|redis*|webmin')"
   if [ ! -z "$installed_packages" ]; then
   REDTXT  "ERROR: WEBSTACK PACKAGES ALREADY INSTALLED"
   YELLOWTXT "------> YOU NEED TO REMOVE THEM OR RE-INSTALL MINIMAL OS VERSION"
