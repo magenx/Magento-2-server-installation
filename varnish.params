@@ -38,4 +38,5 @@ DAEMON_OPTS="-p thread_pool_min=200 \
 	-p feature=+esi_disable_xml_check \
 	-p feature=+esi_ignore_other_elements \
 	-p vcc_allow_inline_c=on \
+	-p http_resp_hdr_len=65536 \
 	-p timeout_linger=100"
