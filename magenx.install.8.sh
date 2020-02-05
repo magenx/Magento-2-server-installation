@@ -1407,10 +1407,6 @@ echo '45 5 * * 1 certbot-auto renew --quiet --deploy-hook "systemctl reload ngin
 crontab rootcron
 rm rootcron
 echo
-GREENTXT "MAGENTO CRONJOBS"
-chmod 770 ${MAGE_WEB_ROOT_PATH}/bin/magento
-su ${MAGE_PHPFPM_USER} -s /bin/bash -c "${MAGE_WEB_ROOT_PATH}/bin/magento cron:install"
-echo
 GREENTXT "REDIS CACHE AND SESSION STORAGE"
 echo
 systemctl start redis.target
@@ -1448,11 +1444,15 @@ systemctl restart php-fpm.service
 cd ${MAGE_WEB_ROOT_PATH}
 chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH%/*}
 echo
-GREENTXT "DISABLE MAGENTO CACHE AND ENABLE DEVELOPER MODE"
+GREENTXT "CLEAN MAGENTO CACHE AND ENABLE DEVELOPER MODE"
 rm -rf var/*
 su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento deploy:mode:set developer"
 su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento cache:flush"
-
+echo
+GREENTXT "MAGENTO CRONJOBS"
+chmod 770 ${MAGE_WEB_ROOT_PATH}/bin/magento
+su ${MAGE_PHPFPM_USER} -s /bin/bash -c "${MAGE_WEB_ROOT_PATH}/bin/magento cron:install"
+echo
 systemctl restart php-fpm.service
 echo
 GREENTXT "SAVING composer.json AND env.php"
