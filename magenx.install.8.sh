@@ -388,6 +388,7 @@ X11Forwarding no
 END
      echo
         GREENTXT "SSH PORT AND SETTINGS WERE UPDATED  -  OK"
+	echo
         systemctl restart sshd.service
         ss -tlp | grep sshd
      echo
