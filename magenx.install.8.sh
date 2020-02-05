@@ -1650,7 +1650,7 @@ echo -n "---> Start the Webmin Control Panel installation? [y/n][n]:"
 read webmin_install
 if [ "${webmin_install}" == "y" ];then
           echo
-            GREENTXT "Installation of Webmin package:"
+            GREENTXT "Webmin package installation:"
 cat > /etc/yum.repos.d/webmin.repo <<END
 [Webmin]
 name=Webmin Distribution
