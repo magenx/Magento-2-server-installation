@@ -877,7 +877,7 @@ echo
 fi
 echo
 echo
-GREENTXT "Applying settings template"
+GREENTXT "Applying system-wide settings templates"
 echo
 pause "---> Press [Enter] key to proceed"
 echo
