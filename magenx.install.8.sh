@@ -882,7 +882,9 @@ echo
 pause "---> Press [Enter] key to proceed"
 echo
 echo "Load optimized configs of php, opcache, fpm, fastcgi, sysctl, varnish"
-WHITETXT "YOU HAVE TO CHECK THEM AFTER ANYWAY"
+echo
+YELLOWTXT "! - YOU HAVE TO CHECK THEM AFTER ANYWAY - !"
+echo
 cat > /etc/sysctl.conf <<END
 fs.file-max = 1000000
 fs.inotify.max_user_watches = 1000000
@@ -923,7 +925,7 @@ END
 
 sysctl -q -p
 echo
-WHITETXT "sysctl.conf loaded ${GREEN} [ok]"
+WHITETXT "/etc/sysctl.conf loaded ${GREEN} [ok]"
 cat > /etc/php.d/10-opcache.ini <<END
 zend_extension=opcache.so
 opcache.enable = 1
@@ -956,7 +958,7 @@ opcache.protect_memory = 0
 ;opcache.mmap_base = ""
 END
 
-WHITETXT "opcache.ini loaded ${GREEN} [ok]"
+WHITETXT "/etc/php.d/10-opcache.ini loaded ${GREEN} [ok]"
 #Tweak php.ini.
 cp /etc/php.ini /etc/php.ini.BACK
 sed -i 's/^\(max_execution_time = \)[0-9]*/\17200/' /etc/php.ini
@@ -976,7 +978,7 @@ sed -i 's/pm = dynamic/pm = ondemand/' /etc/php-fpm.d/www.conf
 sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' /etc/php-fpm.d/www.conf
 sed -i 's/pm.max_children = 50/pm.max_children = 1000/' /etc/php-fpm.d/www.conf
 
-WHITETXT "php.ini loaded ${GREEN} [ok]"
+WHITETXT "/etc/php.ini loaded ${GREEN} [ok]"
 echo
 echo "*         soft    nofile          700000" >> /etc/security/limits.conf
 echo "*         hard    nofile          1000000" >> /etc/security/limits.conf
