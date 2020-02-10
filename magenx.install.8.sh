@@ -267,7 +267,7 @@ fi
 fi
 
 # check if webstack is clean
-if ! grep -q "webstack_is_clean" /root/magenx/.webstack >/dev/null 2>&1 ; then
+if ! grep -q "webstack_is_clean" /opt/magenx/cfg/.webstack >/dev/null 2>&1 ; then
 installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|firewalld|Percona*|maria*|php-?|nginx*|*ftp*|varnish*|certbot*|redis*|webmin')"
   if [ ! -z "$installed_packages" ]; then
   REDTXT  "ERROR: WEBSTACK PACKAGES ALREADY INSTALLED"
@@ -278,14 +278,14 @@ installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|firewalld|Percona*|maria*
   echo
   exit 1
     else
-  mkdir -p /root/magenx
-  echo "webstack_is_clean" > /root/magenx/.webstack
+  mkdir -p /opt/magenx/cfg
+  echo "webstack_is_clean" > /opt/magenx/cfg/.webstack
   fi
 fi
 
 GREENTXT "PATH: ${PATH}"
 echo
-if ! grep -q "yes" /root/magenx/.systest >/dev/null 2>&1 ; then
+if ! grep -q "yes" /opt/magenx/cfg/.systest >/dev/null 2>&1 ; then
 echo
 BLUEBG "~    QUICK SYSTEM TEST    ~"
 echo "-------------------------------------------------------------------------------------"
@@ -345,14 +345,14 @@ echo
   WHITETXT "CPU Time: ${CPU_COLOR}"
 
 echo
-mkdir -p /root/magenx/ && echo "yes" > /root/magenx/.systest
+mkdir -p /opt/magenx/cfg/ && echo "yes" > /opt/magenx/cfg/.systest
 echo
 pause "---> Press [Enter] key to proceed"
 echo
 fi
 echo
 # ssh test
-if ! grep -q "yes" /root/magenx/.sshport >/dev/null 2>&1 ; then
+if ! grep -q "yes" /opt/magenx/cfg/.sshport >/dev/null 2>&1 ; then
 if grep -q "Port 22" /etc/ssh/sshd_config >/dev/null 2>&1 ; then
 REDTXT "DEFAULT SSH PORT :22 DETECTED"
 echo
@@ -405,9 +405,9 @@ if [ "${new_ssh_test}" == "y" ];then
 	echo
 	YELLOWTXT "---> check sshd config for restricted SFTP settings"
 	YELLOWTXT "---> restrict SFTP users to their home directory"
-        echo "yes" > /root/magenx/.sshport
-	echo "SSH ${NEW_SSH_PORT}" >> /root/magenx/.sshport
-	echo "SFTP ${SFTP_PORT}" >> /root/magenx/.sshport
+        echo "yes" > /opt/magenx/cfg/.sshport
+	echo "SSH ${NEW_SSH_PORT}" >> /opt/magenx/cfg/.sshport
+	echo "SFTP ${SFTP_PORT}" >> /opt/magenx/cfg/.sshport
 	echo
 	echo
 	pause "---> Press [Enter] key to proceed"
@@ -431,7 +431,7 @@ echo
 ###################################################################################
 
 echo
-if ! grep -q "yes" /root/magenx/.terms >/dev/null 2>&1 ; then
+if ! grep -q "yes" /opt/magenx/cfg/.terms >/dev/null 2>&1 ; then
   YELLOWTXT "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   echo
   YELLOWTXT "BY INSTALLING THIS SOFTWARE AND BY USING ANY AND ALL SOFTWARE"
@@ -446,7 +446,7 @@ if ! grep -q "yes" /root/magenx/.terms >/dev/null 2>&1 ; then
     echo -n "---> Do you agree to these terms?  [y/n][y]:"
     read terms_agree
   if [ "${terms_agree}" == "y" ];then
-    echo "yes" > /root/magenx/.terms
+    echo "yes" > /opt/magenx/cfg/.terms
           else
         REDTXT "Going out. EXIT"
         echo
@@ -495,7 +495,7 @@ echo
 ###                                  SYSTEM UPGRADE                             ###
 ###################################################################################
 
-if ! grep -q "yes" /root/magenx/.sysupdate >/dev/null 2>&1 ; then
+if ! grep -q "yes" /opt/magenx/cfg/.sysupdate >/dev/null 2>&1 ; then
 ## install all extra packages
 GREENTXT "SYSTEM PACKAGES INSTALLATION. PLEASE WAIT"
 dnf -q -y upgrade >/dev/null 2>&1
@@ -512,7 +512,7 @@ echo
 curl -o /etc/motd -s ${REPO_MAGENX_TMP}motd
 sed -i "s/MAGE_VERSION_FULL/${MAGE_VERSION_FULL}/" /etc/motd
 sed -i "s/MAGENX_VER/${MAGENX_VER}/" /etc/motd
-echo "yes" > /root/magenx/.sysupdate
+echo "yes" > /opt/magenx/cfg/.sysupdate
 echo
 fi
 echo
@@ -1035,11 +1035,11 @@ WHITETXT "======================================================================
 GREENTXT "      == MAGENTO DOWNLOADED AND READY FOR INSTALLATION =="
 WHITETXT "============================================================================="
 su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask" 
-mkdir -p /root/magenx/
-if [ -f /root/magenx/.magenx_index ]; then
-sed -i "s,webshop.*,webshop ${MAGE_DOMAIN}    ${MAGE_WEB_ROOT_PATH}    ${MAGE_OWNER}   ${MAGE_OWNER_PASS}  ${MAGE_VERSION}  ${MAGE_VERSION_FULL} ${MAGE_PHPFPM_USER}," /root/magenx/.magenx_index
+mkdir -p /opt/magenx/cfg/
+if [ -f /opt/magenx/cfg/.magenx_index ]; then
+sed -i "s,webshop.*,webshop ${MAGE_DOMAIN}    ${MAGE_WEB_ROOT_PATH}    ${MAGE_OWNER}   ${MAGE_OWNER_PASS}  ${MAGE_VERSION}  ${MAGE_VERSION_FULL} ${MAGE_PHPFPM_USER}," /opt/magenx/cfg/.magenx_index
 else
-cat >> /root/magenx/.magenx_index <<END
+cat >> /opt/magenx/cfg/.magenx_index <<END
 webshop ${MAGE_DOMAIN}    ${MAGE_WEB_ROOT_PATH}    ${MAGE_OWNER}   ${MAGE_OWNER_PASS}  ${MAGE_VERSION}  ${MAGE_VERSION_FULL} ${MAGE_PHPFPM_USER}
 END
 fi
@@ -1084,7 +1084,7 @@ password="${MYSQL_ROOT_PASS}"
 END
 fi
 chmod 600 /root/.my.cnf /root/.mytop
-MAGE_VERSION=$(awk '/webshop/ { print $6 }' /root/magenx/.magenx_index)
+MAGE_VERSION=$(awk '/webshop/ { print $6 }' /opt/magenx/cfg/.magenx_index)
 MAGE_DB_PASS_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_{}()<>-' | fold -w 15 | head -n 1)
 MAGE_DB_PASS="${MAGE_DB_PASS_GEN}${RANDOM}"
 echo
@@ -1102,8 +1102,8 @@ GRANT ALL PRIVILEGES ON ${MAGE_DB_NAME}.* TO '${MAGE_DB_USER_NAME}'@'${MAGE_DB_H
 exit
 EOMYSQL
 echo
-mkdir -p /root/magenx/
-cat >> /root/magenx/.magenx_index <<END
+mkdir -p /opt/magenx/cfg/
+cat >> /opt/magenx/cfg/.magenx_index <<END
 database   ${MAGE_DB_HOST}   ${MAGE_DB_NAME}   ${MAGE_DB_USER_NAME}   ${MAGE_DB_PASS}  ${MYSQL_ROOT_PASS}
 END
 echo
@@ -1118,20 +1118,20 @@ printf "\033c"
 
 "install")
 printf "\033c"
-MAGE_VERSION=$(awk '/webshop/ { print $6 }' /root/magenx/.magenx_index)
-MAGE_VERSION_FULL=$(awk '/webshop/ { print $7 }' /root/magenx/.magenx_index)
+MAGE_VERSION=$(awk '/webshop/ { print $6 }' /opt/magenx/cfg/.magenx_index)
+MAGE_VERSION_FULL=$(awk '/webshop/ { print $7 }' /opt/magenx/cfg/.magenx_index)
 echo
 BLUEBG   "~    MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) INSTALLATION    ~"
 echo "-------------------------------------------------------------------------------------"
 echo
-MAGE_WEB_ROOT_PATH=$(awk '/webshop/ { print $3 }' /root/magenx/.magenx_index)
-MAGE_OWNER=$(awk '/webshop/ { print $4 }' /root/magenx/.magenx_index)
-MAGE_PHPFPM_USER=$(awk '/webshop/ { print $8 }' /root/magenx/.magenx_index)
-MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /root/magenx/.magenx_index)
-DB_HOST=$(awk '/database/ { print $2 }' /root/magenx/.magenx_index)
-DB_NAME=$(awk '/database/ { print $3 }' /root/magenx/.magenx_index)
-DB_USER_NAME=$(awk '/database/ { print $4 }' /root/magenx/.magenx_index)
-DB_PASS=$(awk '/database/ { print $5 }' /root/magenx/.magenx_index)
+MAGE_WEB_ROOT_PATH=$(awk '/webshop/ { print $3 }' /opt/magenx/cfg/.magenx_index)
+MAGE_OWNER=$(awk '/webshop/ { print $4 }' /opt/magenx/cfg/.magenx_index)
+MAGE_PHPFPM_USER=$(awk '/webshop/ { print $8 }' /opt/magenx/cfg/.magenx_index)
+MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /opt/magenx/cfg/.magenx_index)
+DB_HOST=$(awk '/database/ { print $2 }' /opt/magenx/cfg/.magenx_index)
+DB_NAME=$(awk '/database/ { print $3 }' /opt/magenx/cfg/.magenx_index)
+DB_USER_NAME=$(awk '/database/ { print $4 }' /opt/magenx/cfg/.magenx_index)
+DB_PASS=$(awk '/database/ { print $5 }' /opt/magenx/cfg/.magenx_index)
 
 cd ${MAGE_WEB_ROOT_PATH}
 chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH}
@@ -1193,7 +1193,7 @@ echo
     echo
     WHITETXT "============================================================================="
 echo
-cat >> /root/magenx/.magenx_index <<END
+cat >> /opt/magenx/cfg/.magenx_index <<END
 mageadmin  ${MAGE_ADMIN_LOGIN}  ${MAGE_ADMIN_PASS}  ${MAGE_ADMIN_EMAIL}  ${MAGE_TIMEZONE}  ${MAGE_LOCALE} ${MAGE_ADMIN_PATH_RANDOM}
 END
 
@@ -1207,26 +1207,26 @@ printf "\033c"
 
 "config")
 printf "\033c"
-MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /root/magenx/.magenx_index)
-MAGE_WEB_ROOT_PATH=$(awk '/webshop/ { print $3 }' /root/magenx/.magenx_index)
-MAGE_OWNER=$(awk '/webshop/ { print $4 }' /root/magenx/.magenx_index)
-MAGE_PHPFPM_USER=$(awk '/webshop/ { print $8 }' /root/magenx/.magenx_index)
-MAGE_OWNER_PASS=$(awk '/webshop/ { print $5 }' /root/magenx/.magenx_index)
-MAGE_ADMIN_EMAIL=$(awk '/mageadmin/ { print $4 }' /root/magenx/.magenx_index)
-MAGE_TIMEZONE=$(awk '/mageadmin/ { print $5 }' /root/magenx/.magenx_index)
-MAGE_LOCALE=$(awk '/mageadmin/ { print $6 }' /root/magenx/.magenx_index)
-MAGE_ADMIN_LOGIN=$(awk '/mageadmin/ { print $2 }' /root/magenx/.magenx_index)
-MAGE_ADMIN_PASS=$(awk '/mageadmin/ { print $3 }' /root/magenx/.magenx_index)
-MAGE_ADMIN_PATH_RANDOM=$(awk '/mageadmin/ { print $7 }' /root/magenx/.magenx_index)
-MAGE_VERSION=$(awk '/webshop/ { print $6 }' /root/magenx/.magenx_index)
-MAGE_VERSION_FULL=$(awk '/webshop/ { print $7 }' /root/magenx/.magenx_index)
-MAGE_DB_HOST=$(awk '/database/ { print $2 }' /root/magenx/.magenx_index)
-MAGE_DB_NAME=$(awk '/database/ { print $3 }' /root/magenx/.magenx_index)
-MAGE_DB_USER_NAME=$(awk '/database/ { print $4 }' /root/magenx/.magenx_index)
-MAGE_DB_PASS=$(awk '/database/ { print $5 }' /root/magenx/.magenx_index)
-MYSQL_ROOT_PASS=$(awk '/database/ { print $6 }' /root/magenx/.magenx_index)
-NEW_SSH_PORT=$(awk '/SSH/ { print $2 }' /root/magenx/.sshport)
-SFTP_PORT=$(awk '/SFTP/ { print $2 }' /root/magenx/.sshport)
+MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /opt/magenx/cfg/.magenx_index)
+MAGE_WEB_ROOT_PATH=$(awk '/webshop/ { print $3 }' /opt/magenx/cfg/.magenx_index)
+MAGE_OWNER=$(awk '/webshop/ { print $4 }' /opt/magenx/cfg/.magenx_index)
+MAGE_PHPFPM_USER=$(awk '/webshop/ { print $8 }' /opt/magenx/cfg/.magenx_index)
+MAGE_OWNER_PASS=$(awk '/webshop/ { print $5 }' /opt/magenx/cfg/.magenx_index)
+MAGE_ADMIN_EMAIL=$(awk '/mageadmin/ { print $4 }' /opt/magenx/cfg/.magenx_index)
+MAGE_TIMEZONE=$(awk '/mageadmin/ { print $5 }' /opt/magenx/cfg/.magenx_index)
+MAGE_LOCALE=$(awk '/mageadmin/ { print $6 }' /opt/magenx/cfg/.magenx_index)
+MAGE_ADMIN_LOGIN=$(awk '/mageadmin/ { print $2 }' /opt/magenx/cfg/.magenx_index)
+MAGE_ADMIN_PASS=$(awk '/mageadmin/ { print $3 }' /opt/magenx/cfg/.magenx_index)
+MAGE_ADMIN_PATH_RANDOM=$(awk '/mageadmin/ { print $7 }' /opt/magenx/cfg/.magenx_index)
+MAGE_VERSION=$(awk '/webshop/ { print $6 }' /opt/magenx/cfg/.magenx_index)
+MAGE_VERSION_FULL=$(awk '/webshop/ { print $7 }' /opt/magenx/cfg/.magenx_index)
+MAGE_DB_HOST=$(awk '/database/ { print $2 }' /opt/magenx/cfg/.magenx_index)
+MAGE_DB_NAME=$(awk '/database/ { print $3 }' /opt/magenx/cfg/.magenx_index)
+MAGE_DB_USER_NAME=$(awk '/database/ { print $4 }' /opt/magenx/cfg/.magenx_index)
+MAGE_DB_PASS=$(awk '/database/ { print $5 }' /opt/magenx/cfg/.magenx_index)
+MYSQL_ROOT_PASS=$(awk '/database/ { print $6 }' /opt/magenx/cfg/.magenx_index)
+NEW_SSH_PORT=$(awk '/SSH/ { print $2 }' /opt/magenx/cfg/.sshport)
+SFTP_PORT=$(awk '/SFTP/ { print $2 }' /opt/magenx/cfg/.sshport)
 echo
 BLUEBG "~    POST-INSTALLATION CONFIGURATION    ~"
 echo "-------------------------------------------------------------------------------------"
@@ -1302,7 +1302,7 @@ GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
      htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWD}  >/dev/null 2>&1
      echo
      systemctl restart nginx.service
-cat >> /root/magenx/.magenx_index <<END
+cat >> /opt/magenx/cfg/.magenx_index <<END
 pma   mysql_${PMA_FOLDER}   mysql   ${PMA_PASSWD}
 END
 echo
@@ -1451,10 +1451,6 @@ rm -rf var/*
 su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento deploy:mode:set developer"
 su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento cache:flush"
 echo
-GREENTXT "MAGENTO CRONJOBS"
-chmod 770 ${MAGE_WEB_ROOT_PATH}/bin/magento
-su ${MAGE_PHPFPM_USER} -s /bin/bash -c "${MAGE_WEB_ROOT_PATH}/bin/magento cron:install"
-echo
 systemctl restart php-fpm.service
 echo
 GREENTXT "SAVING composer.json AND env.php"
@@ -1465,72 +1461,77 @@ chmod -R 600 /opt/magenx
 echo
 echo
 GREENTXT "FIXING PERMISSIONS"
-chmod -R 600 /root/magenx
+chmod -R 600 /opt/magenx/cfg
 chmod +x /usr/local/bin/*
 usermod -a -G apache php-${MAGE_OWNER}
 cd ${MAGE_WEB_ROOT_PATH}
 find . -type d -exec chmod 2770 {} \;
 find . -type f -exec chmod 660 {} \;
-chmod u+x bin/magento
 setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
 setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:rwx,o::- var generated pub/static pub/media
+chmod ug+x bin/magento
 echo
 echo
-echo "===========================  INSTALLATION LOG  ======================================"
+GREENTXT "MAGENTO CRONJOBS"
+su ${MAGE_PHPFPM_USER} -s /bin/bash -c "${MAGE_WEB_ROOT_PATH}/bin/magento cron:install"
 echo
 echo
-WHITETXT "[shop domain]: ${MAGE_DOMAIN}"
-WHITETXT "[webroot path]: ${MAGE_WEB_ROOT_PATH}"
-WHITETXT "[admin path]: ${MAGE_DOMAIN}/${MAGE_ADMIN_PATH}"
-WHITETXT "[admin name]: ${MAGE_ADMIN_LOGIN}"
-WHITETXT "[admin pass]: ${MAGE_ADMIN_PASS}"
-WHITETXT "[admin http auth name]: admin"
-WHITETXT "[admin http auth pass]: ${ADMIN_HTTP_PASSWD}"
-WHITETXT "for additional access, please generate new user/password:"
-WHITETXT "htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD"
+REDTXT "PRINTING INSTALLATION LOG AND SAVING INTO /opt/magenx/.install.log"
 echo
-WHITETXT "[ssh port]: ${NEW_SSH_PORT}"
-WHITETXT "[sftp port]: ${SFTP_PORT}"
-echo
-WHITETXT "[phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}/"
-WHITETXT "[phpmyadmin http auth name]: mysql"
-WHITETXT "[phpmyadmin http auth pass]: ${PMA_PASSWD}"
-WHITETXT "for additional access, please generate new user/password:"
-WHITETXT "htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD"
-echo
-WHITETXT "[mysql host]: ${MAGE_DB_HOST}"
-WHITETXT "[mysql user]: ${MAGE_DB_USER_NAME}"
-WHITETXT "[mysql pass]: ${MAGE_DB_PASS}"
-WHITETXT "[mysql database]: ${MAGE_DB_NAME}"
-WHITETXT "[mysql root pass]: ${MYSQL_ROOT_PASS}"
-echo
-WHITETXT "[percona toolkit]: https://www.percona.com/doc/percona-toolkit/LATEST/index.html"
-WHITETXT "[database monitor]: /usr/local/bin/mytop"
-WHITETXT "[mysql tuner]: /usr/local/bin/mysqltuner"
-echo
-WHITETXT "[n98-magerun2]: /usr/local/bin/magerun2"
-echo
-WHITETXT "[service alert]: /usr/local/bin/service-status-mail.sh"
-WHITETXT "[audit log]: ausearch -k auditmgnx | aureport -f -i"
-echo
-WHITETXT "[redis on port 6379]: systemctl restart redis@6379"
-WHITETXT "[redis on port 6380]: systemctl restart redis@6380"
-echo
-WHITETXT "[goaccess realtime]: goaccess /var/log/nginx/access.log -o ${MAGE_WEB_ROOT_PATH}/pub/access_report_${RANDOM}.html --real-time-html --daemonize"
-echo
-WHITETXT "[installed db dump]: /opt/magenx/${MAGE_DB_NAME}.sql.gz"
-WHITETXT "[composer.json copy]: /opt/magenx/composer.json.saved"
-WHITETXT "[env.php copy]: /opt/magenx/env.php.saved"
-WHITETXT "[env.php default copy]: /opt/magenx/env.php.default"
-echo
-WHITETXT "when you run any command for magento cli or custom php script,"
-WHITETXT "please use ${MAGE_OWNER} user, either switch to:"
-WHITETXT "su ${MAGE_OWNER} -s /bin/bash"
-echo
-WHITETXT "or run commands from root as user:"
-WHITETXT "su ${MAGE_OWNER} -s /bin/bash -c 'bin/magento'"
-echo
-echo "===========================  INSTALLATION LOG  ======================================"
+echo -e "===========================  INSTALLATION LOG  ======================================
+
+[shop domain]: ${MAGE_DOMAIN}
+[webroot path]: ${MAGE_WEB_ROOT_PATH}
+[admin path]: ${MAGE_DOMAIN}/${MAGE_ADMIN_PATH}
+[admin name]: ${MAGE_ADMIN_LOGIN}
+[admin pass]: ${MAGE_ADMIN_PASS}
+[admin http auth name]: admin
+[admin http auth pass]: ${ADMIN_HTTP_PASSWD}
+for additional access, please generate new user/password:
+htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
+
+[ssh port]: ${NEW_SSH_PORT}
+[sftp port]: ${SFTP_PORT}
+
+[phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}/
+[phpmyadmin http auth name]: mysql
+[phpmyadmin http auth pass]: ${PMA_PASSWD}
+for additional access, please generate new user/password:
+htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
+
+[mysql host]: ${MAGE_DB_HOST}
+[mysql user]: ${MAGE_DB_USER_NAME}
+[mysql pass]: ${MAGE_DB_PASS}
+[mysql database]: ${MAGE_DB_NAME}
+[mysql root pass]: ${MYSQL_ROOT_PASS}
+
+[percona toolkit]: https://www.percona.com/doc/percona-toolkit/LATEST/index.html
+[database monitor]: /usr/local/bin/mytop
+[mysql tuner]: /usr/local/bin/mysqltuner
+
+[n98-magerun2]: /usr/local/bin/magerun2
+
+[service alert]: /usr/local/bin/service-status-mail.sh
+[audit log]: ausearch -k auditmgnx | aureport -f -i
+
+[redis on port 6379]: systemctl restart redis@6379
+[redis on port 6380]: systemctl restart redis@6380
+
+[goaccess realtime]: goaccess /var/log/nginx/access.log -o ${MAGE_WEB_ROOT_PATH}/pub/access_report_${RANDOM}.html --real-time-html --daemonize
+
+[installed db dump]: /opt/magenx/${MAGE_DB_NAME}.sql.gz
+[composer.json copy]: /opt/magenx/composer.json.saved
+[env.php copy]: /opt/magenx/env.php.saved
+[env.php default copy]: /opt/magenx/env.php.default
+
+when you run any command for magento cli or custom php script,
+please use ${MAGE_OWNER} user, either switch to:
+su ${MAGE_OWNER} -s /bin/bash
+
+or run commands from root as user:
+su ${MAGE_OWNER} -s /bin/bash -c 'bin/magento'
+
+===========================  INSTALLATION LOG  ======================================" | tee /opt/magenx/.install.log
 echo
 echo
 GREENTXT "SERVER IS READY. THANK YOU"
@@ -1548,8 +1549,8 @@ pause '---> Press [Enter] key to show menu'
 "firewall")
 WHITETXT "============================================================================="
 echo
-MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /root/magenx/.magenx_index)
-MAGE_ADMIN_EMAIL=$(awk '/mageadmin/ { print $4 }' /root/magenx/.magenx_index)
+MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /opt/magenx/cfg/.magenx_index)
+MAGE_ADMIN_EMAIL=$(awk '/mageadmin/ { print $4 }' /opt/magenx/cfg/.magenx_index)
 YELLOWTXT "If you are going to use services like CloudFlare - install Fail2Ban"
 echo
 echo -n "---> Would you like to install CSF firewall(csf) or Fail2Ban(f2b) or cancel (n):"
