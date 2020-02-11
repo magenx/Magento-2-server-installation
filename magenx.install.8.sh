@@ -669,8 +669,7 @@ if [ "${repo_remi_install}" == "y" ];then
           echo
             GREENTXT "Remi repository installation:"
 	    echo
-	    echo -n "---> Enter required PHP version 7.3 or 7.4 :"
-	    read PHP_VERSION
+	    read -e -p "---> Enter required PHP version: " -i "7.3" PHP_VERSION
             echo
             echo -n "     PROCESSING  "
             long_progress &
