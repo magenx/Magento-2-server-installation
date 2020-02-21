@@ -1404,7 +1404,7 @@ GREENTXT "ROOT CRONJOBS"
 echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -E -s \"MYSQLTUNER WEEKLY REPORT at ${MAGE_DOMAIN}\" ${MAGE_ADMIN_EMAIL}" >> rootcron
 echo "30 23 * * * /usr/local/bin/goaccess /var/log/nginx/access.log -a -o /var/log/nginx/access_log_report.html 2>&1 && echo | mailx -s \"Daily access log report at ${HOSTNAME}\" -a /var/log/nginx/access_log_report.html ${MAGE_ADMIN_EMAIL}" >> rootcron
 echo "0 1 * * 1 find ${MAGE_WEB_ROOT_PATH}/pub/ -name '*\.jpg' -type f -mtime -7 -exec jpegoptim -q -s -p --all-progressive -m 65 {} \; >/dev/null 2>&1" >> rootcron
-echo '45 5 * * 1 certbot-auto renew --deploy-hook "systemctl reload nginx" >> /var/log/letsencrypt-renew.log' >> rootcron
+echo '45 5 * * 1 /usr/local/bin/certbot-auto renew --deploy-hook "systemctl reload nginx" >> /var/log/letsencrypt-renew.log' >> rootcron
 crontab rootcron
 rm rootcron
 echo
