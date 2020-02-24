@@ -1491,6 +1491,8 @@ htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 
 [ssh port]: ${NEW_SSH_PORT}
 [sftp port]: ${SFTP_PORT}
+[files owner]: ${MAGE_OWNER}
+[files owner pass]: ${MAGE_OWNER_PASS}
 
 [phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}/
 [phpmyadmin http auth name]: mysql
