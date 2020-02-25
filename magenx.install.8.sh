@@ -1463,11 +1463,23 @@ GREENTXT "FIXING PERMISSIONS"
 chmod -R 600 /opt/magenx/cfg
 chmod +x /usr/local/bin/*
 usermod -a -G apache php-${MAGE_OWNER}
+
+echo 
+GREENTXT "CREATE SFTP DEV USER ACCOUNT"
+MAGE_SFTP_USER="dev-${MAGE_OWNER}"
+## create sftp support user and login
+useradd -d ${MAGE_WEB_ROOT_PATH%/*} ${MAGE_SFTP_USER} >/dev/null 2>&1
+usermod -g ${MAGE_PHPFPM_USER} ${MAGE_SFTP_USER}
+MAGE_SFTP_USER_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+echo "${MAGE_SFTP_USER}:${MAGE_SFTP_USER_PASS}"  | chpasswd  >/dev/null 2>&1
+echo
+
 cd ${MAGE_WEB_ROOT_PATH}
 find . -type d -exec chmod 2770 {} \;
 find . -type f -exec chmod 660 {} \;
 setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
 setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:rwx,o::- var generated pub/static pub/media
+setfacl -Rm u:${MAGE_SFTP_USER}:rwx ${MAGE_WEB_ROOT_PATH%/*}
 chmod ug+x bin/magento
 echo
 echo
@@ -1490,9 +1502,12 @@ for additional access, please generate new user/password:
 htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 
 [ssh port]: ${NEW_SSH_PORT}
-[sftp port]: ${SFTP_PORT}
 [files owner]: ${MAGE_OWNER}
 [files owner pass]: ${MAGE_OWNER_PASS}
+
+[sftp port]: ${SFTP_PORT}
+[sftp user]: ${MAGE_SFTP_USER}
+[sftp user pass]: ${MAGE_SFTP_USER_PASS}
 
 [phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}/
 [phpmyadmin http auth name]: mysql
