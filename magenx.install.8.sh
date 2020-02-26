@@ -28,7 +28,6 @@ REPO_MAGE="composer create-project --repository-url=https://repo.magento.com/ ma
 # Repositories
 REPO_PERCONA="https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
 REPO_REMI="http://rpms.famillecollet.com/enterprise/remi-release-${CENTOS_VERSION}.rpm"
-REPO_FAN="http://www.city-fan.org/ftp/contrib/yum-repo/city-fan.org-release-2-1.rhel${CENTOS_VERSION}.noarch.rpm"
 
 # WebStack Packages
 EXTRA_PACKAGES="autoconf automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel recode gflags tbb ed lz4 libyaml libdwarf bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib clamav-scanner logrotate git patch ipset strace rsyslog ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd python3-virtualenv python3-wheel-wheel python3-pip python3-devel ncftp postfix augeas-libs libffi-devel mod_ssl dnf-automatic sysstat libuuid-devel uuid-devel attr iotop expect unixODBC gcc-c++"
@@ -500,12 +499,8 @@ if ! grep -q "yes" /opt/magenx/cfg/.sysupdate >/dev/null 2>&1 ; then
 GREENTXT "SYSTEM PACKAGES INSTALLATION. PLEASE WAIT"
 dnf -q -y upgrade >/dev/null 2>&1
 dnf -q -y update >/dev/null 2>&1
-dnf -q -y install https://dl.iuscommunity.org/pub/ius/stable/CentOS/7/x86_64/yum-plugin-replace-0.2.7-1.ius.centos7.noarch.rpm >/dev/null 2>&1
-dnf -q -y install ${REPO_FAN} >/dev/null 2>&1
-sed -i '0,/gpgkey/s//includepkgs=curl libmetalink libpsl libcurl libcurl-devel libssh2-devel libssh2\n&/' /etc/yum.repos.d/city-fan.org.repo
 dnf install -y dnf-utils >/dev/null 2>&1
 dnf module enable -y perl:5.26 >/dev/null 2>&1
-dnf config-manager --set-enabled city-fan.org >/dev/null 2>&1
 dnf config-manager --set-enabled PowerTools >/dev/null 2>&1
 dnf -q -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-} >/dev/null 2>&1
 echo
