@@ -767,6 +767,16 @@ sed -i "s/^logfile.*/logfile \/var\/log\/redis\/redis-${REDISPORT}.log/"  /etc/r
 sed -i "s/^pidfile.*/pidfile \/var\/run\/redis-${REDISPORT}.pid/"  /etc/redis-${REDISPORT}.conf
 sed -i "s/^port.*/port ${REDISPORT}/" /etc/redis-${REDISPORT}.conf
 sed -i "s/dump.rdb/dump-${REDISPORT}.rdb/" /etc/redis-${REDISPORT}.conf
+sed -i '/^# rename-command CONFIG ""/a\
+rename-command SLAVEOF "" \
+rename-command CONFIG "" \
+rename-command PUBLISH "" \
+rename-command SAVE "" \
+rename-command SHUTDOWN "" \
+rename-command DEBUG "" \
+rename-command BGSAVE "" \
+rename-command BGREWRITEAOF ""
+'  /etc/redis-${REDISPORT}.conf
 done
 echo
 systemctl daemon-reload
