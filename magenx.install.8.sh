@@ -39,7 +39,7 @@ PERL_MODULES=(LWP-Protocol-https Config-IniFiles libwww-perl CPAN Template-Toolk
 REPO_MAGENX_TMP="https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/"
 NGINX_VERSION=$(curl -s http://nginx.org/en/download.html | grep -oP '(?<=gz">nginx-).*?(?=</a>)' | head -1)
 NGINX_BASE="https://raw.githubusercontent.com/magenx/Magento-nginx-config/master/"
-NGINX_EXTRA_CONF="assets.conf error_page.conf extra_protect.conf export.conf pagespeed.conf status.conf varnish_proxy.conf setup.conf php_backend.conf maps.conf phpmyadmin.conf maintenance.conf"
+GITHUB_REPO_API_URL="https://api.github.com/repos/magenx/Magento-nginx-config/contents/magento2"
 
 # Debug Tools
 MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
@@ -1272,15 +1272,12 @@ wget -qO /etc/nginx/fastcgi_params  ${NGINX_BASE}magento${MAGE_VERSION}/fastcgi_
 wget -qO /etc/nginx/nginx.conf  ${NGINX_BASE}magento${MAGE_VERSION}/nginx.conf
 mkdir -p /etc/nginx/sites-enabled
 mkdir -p /etc/nginx/sites-available && cd $_
-wget -q ${NGINX_BASE}magento${MAGE_VERSION}/sites-available/default.conf
-wget -q ${NGINX_BASE}magento${MAGE_VERSION}/sites-available/magento${MAGE_VERSION}.conf
+curl -s ${GITHUB_REPO_API_URL}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
 ln -s /etc/nginx/sites-available/magento${MAGE_VERSION}.conf /etc/nginx/sites-enabled/magento${MAGE_VERSION}.conf
 ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
 mkdir -p /etc/nginx/conf_m${MAGE_VERSION} && cd /etc/nginx/conf_m${MAGE_VERSION}/
-for CONFIG in ${NGINX_EXTRA_CONF}
-do
-wget -q ${NGINX_BASE}magento${MAGE_VERSION}/conf_m${MAGE_VERSION}/${CONFIG}
-done
+curl -s ${GITHUB_REPO_API_URL}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
+
 sed -i "s/user  nginx;/user  ${MAGE_OWNER};/" /etc/nginx/nginx.conf
 sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGE_VERSION}.conf
 sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/nginx.conf
