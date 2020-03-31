@@ -1321,8 +1321,17 @@ GREENTXT "VARNISH CACHE CONFIGURATION"
     YELLOWTXT "VARNISH CACHE PORT :8081"
 fi
 echo
-GREENTXT "DOWNLOADING n98-MAGERUN"
+GREENTXT "DOWNLOADING n98-MAGERUN2"
      curl -s -o /usr/local/bin/magerun2 https://files.magerun.net/n98-magerun2.phar
+echo
+GREENTXT "CACHE CLEANER SCRIPT"
+cat > /usr/local/bin/flushcache <<END
+#!/bin/bash
+redis-cli -p 6380 flushall
+magerun2 cache:flush
+systemctl reload php-fpm >/dev/null
+systemctl reload nginx >/dev/null
+END
 echo
 GREENTXT "SYSTEM AUTO UPDATE WITH DNF AUTOMATIC"
 sed -i 's/apply_updates = no/apply_updates = yes/' /etc/dnf/automatic.conf
@@ -1528,6 +1537,7 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [mysql tuner]: /usr/local/bin/mysqltuner
 
 [n98-magerun2]: /usr/local/bin/magerun2
+[cache cleaner]: /usr/local/bin/flushcache
 
 [service alert]: /usr/local/bin/service-status-mail.sh
 [audit log]: ausearch -k auditmgnx | aureport -f -i
