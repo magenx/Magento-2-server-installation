@@ -636,6 +636,7 @@ END
           echo
             GREENTXT "NGINX INSTALLED  -  OK"
             echo
+	    dnf -y module disable nginx:* >/dev/null 2>&1
             ## plug in service status alert
             cp /usr/lib/systemd/system/nginx.service /etc/systemd/system/nginx.service
             sed -i "/^After.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/nginx.service
