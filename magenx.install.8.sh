@@ -1516,7 +1516,7 @@ find . -type d -exec chmod 2770 {} \;
 find . -type f -exec chmod 660 {} \;
 setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
 setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:rwx,o::- var generated pub/static pub/media
-setfacl -Rm u:${MAGE_SFTP_USER}:rwx ${MAGE_WEB_ROOT_PATH%/*}
+setfacl -Rm u:${MAGE_SFTP_USER}:rw- ${MAGE_WEB_ROOT_PATH%/*}
 chmod ug+x bin/magento
 echo
 echo
