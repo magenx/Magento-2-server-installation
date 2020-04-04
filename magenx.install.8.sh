@@ -672,7 +672,6 @@ if [ "${repo_remi_install}" == "y" ];then
             long_progress &
             pid="$!"
             dnf install -y ${REPO_REMI} >/dev/null 2>&1
-	    dnf module reset php >/dev/null 2>&1
 	    dnf -y module enable php:remi-${PHP_VERSION} >/dev/null 2>&1
 	    dnf config-manager --set-enabled remi >/dev/null 2>&1
             stop_progress "$pid"
@@ -802,7 +801,7 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
-cat > /etc/yum.repos.d <<END
+cat > /etc/yum.repos.d/varnish6.repo <<END
 [varnishcache_varnish64]
 name=varnishcache_varnish64
 baseurl=https://packagecloud.io/varnishcache/varnish64/el/8/\$basearch
