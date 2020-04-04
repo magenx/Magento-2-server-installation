@@ -504,7 +504,7 @@ dnf module enable -y perl:5.26 >/dev/null 2>&1
 dnf config-manager --set-enabled PowerTools >/dev/null 2>&1
 dnf -q -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-} >/dev/null 2>&1
 ## disable some moduleeeespzdc
-dnf -y module disable nginx php glpi redis varnish >/dev/null 2>&1
+dnf -y module disable nginx php redis varnish >/dev/null 2>&1
 echo
 curl -o /etc/motd -s ${REPO_MAGENX_TMP}motd
 sed -i "s/MAGE_VERSION_FULL/${MAGE_VERSION_FULL}/" /etc/motd
