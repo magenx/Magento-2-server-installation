@@ -503,6 +503,8 @@ dnf install -y dnf-utils >/dev/null 2>&1
 dnf module enable -y perl:5.26 >/dev/null 2>&1
 dnf config-manager --set-enabled PowerTools >/dev/null 2>&1
 dnf -q -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-} >/dev/null 2>&1
+## disable some moduleeeespzdc
+dnf -y module disable nginx php glpi redis varnish >/dev/null 2>&1
 echo
 curl -o /etc/motd -s ${REPO_MAGENX_TMP}motd
 sed -i "s/MAGE_VERSION_FULL/${MAGE_VERSION_FULL}/" /etc/motd
@@ -636,7 +638,6 @@ END
           echo
             GREENTXT "NGINX INSTALLED  -  OK"
             echo
-	    dnf -y module disable nginx:* >/dev/null 2>&1
             ## plug in service status alert
             cp /usr/lib/systemd/system/nginx.service /etc/systemd/system/nginx.service
             sed -i "/^After.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/nginx.service
@@ -671,7 +672,8 @@ if [ "${repo_remi_install}" == "y" ];then
             long_progress &
             pid="$!"
             dnf install -y ${REPO_REMI} >/dev/null 2>&1
-	    dnf module enable php:remi-${PHP_VERSION} -y >/dev/null 2>&1
+	    dnf module reset php >/dev/null 2>&1
+	    dnf -y module enable php:remi-${PHP_VERSION} >/dev/null 2>&1
 	    dnf config-manager --set-enabled remi >/dev/null 2>&1
             stop_progress "$pid"
             rpm  --quiet -q remi-release
@@ -716,7 +718,7 @@ if [ "${repo_remi_install}" == "y" ];then
             echo -n "     PROCESSING  "
             start_progress &
             pid="$!"
-            dnf -y -q install redis >/dev/null 2>&1
+            dnf -y -q module install redis:remi-5.0 >/dev/null 2>&1
             stop_progress "$pid"
             rpm  --quiet -q redis
        if [ "$?" = 0 ]
@@ -799,6 +801,30 @@ systemctl enable redis@6380 >/dev/null 2>&1
 fi
 echo
 WHITETXT "============================================================================="
+echo
+cat > /etc/yum.repos.d <<END
+[varnishcache_varnish64]
+name=varnishcache_varnish64
+baseurl=https://packagecloud.io/varnishcache/varnish64/el/8/\$basearch
+repo_gpgcheck=1
+gpgcheck=0
+enabled=1
+gpgkey=https://packagecloud.io/varnishcache/varnish64/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+
+[varnishcache_varnish64-source]
+name=varnishcache_varnish64-source
+baseurl=https://packagecloud.io/varnishcache/varnish64/el/8/SRPMS
+repo_gpgcheck=1
+gpgcheck=0
+enabled=1
+gpgkey=https://packagecloud.io/varnishcache/varnish64/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+END
 echo
 echo -n "---> Start Varnish Cache installation? [y/n][n]:"
 read varnish_install
