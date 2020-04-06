@@ -502,7 +502,7 @@ dnf -q -y update >/dev/null 2>&1
 dnf install -y dnf-utils >/dev/null 2>&1
 dnf module enable -y perl:5.26 >/dev/null 2>&1
 dnf config-manager --set-enabled PowerTools >/dev/null 2>&1
-dnf -q -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-} >/dev/null 2>&1
+dnf -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-}
 ## disable some moduleeeespzdc
 dnf -y module disable nginx php redis varnish >/dev/null 2>&1
 echo
