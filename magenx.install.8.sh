@@ -801,6 +801,10 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
+echo
+echo -n "---> Start Varnish Cache installation? [y/n][n]:"
+read varnish_install
+if [ "${varnish_install}" == "y" ];then
 cat > /etc/yum.repos.d/varnish6.repo <<END
 [varnishcache_varnish64]
 name=varnishcache_varnish64
@@ -824,10 +828,6 @@ sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
 END
-echo
-echo -n "---> Start Varnish Cache installation? [y/n][n]:"
-read varnish_install
-if [ "${varnish_install}" == "y" ];then
 echo
             echo -n "     PROCESSING  "
             start_progress &
