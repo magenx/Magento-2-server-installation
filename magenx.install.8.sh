@@ -687,7 +687,7 @@ if [ "${repo_remi_install}" == "y" ];then
             echo -n "     PROCESSING  "
             long_progress &
             pid="$!"
-            dnf -y -q install php ${PHP_PACKAGES[@]/#/php-} ${PHP_PECL_PACKAGES[@]/#/php-} >/dev/null 2>&1
+            dnf -y -q install php composer ${PHP_PACKAGES[@]/#/php-} ${PHP_PECL_PACKAGES[@]/#/php-} >/dev/null 2>&1
             stop_progress "$pid"
             rpm  --quiet -q php
        if [ "$?" = 0 ]
@@ -1055,9 +1055,7 @@ echo
         chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH%/*}
         chmod 2770 ${MAGE_WEB_ROOT_PATH}
         echo
-                curl -sS https://getcomposer.org/installer | php >/dev/null 2>&1
-		mv composer.phar /usr/local/bin/composer
-		[ -f "/usr/local/bin/composer" ] || { echo "---> COMPOSER INSTALLATION ERROR" ; exit 1 ;}
+	        ln -s /usr/bin/composer /usr/local/bin/composer
 		su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} ."
         echo
      echo
