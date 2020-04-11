@@ -1010,8 +1010,6 @@ sed -i 's/pm.max_children = 50/pm.max_children = 1000/' /etc/php-fpm.d/www.conf
 
 WHITETXT "/etc/php.ini loaded ${GREEN} [ok]"
 echo
-echo "*         soft    nofile          700000" >> /etc/security/limits.conf
-echo "*         hard    nofile          1000000" >> /etc/security/limits.conf
 echo
 echo
 echo 
