@@ -37,26 +37,8 @@ sub custom_line {
 
 # /var/log/nginx/access.log
 # Nginx 444  (Default: 5 errors bans for 24 hours)
-if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\s444\s)/)) {
-    return ("Nginx 444",$1,"nginx_444","5","443","86400","0");
-}
-
-# /var/log/nginx/access.log
-# Files scan (Default: 1 error bans for 24 hours)
-if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*\.asp\sHTTP.*/)) {
-    return ("Files scan",$1,"nginx_scan","1","443","86400","0");
-}
-
-# /var/log/nginx/error.log
-# NginX security rules trigger (Default: 5 errors bans for 24 hours)
-if (($globlogs{CUSTOM2_LOG}{$lgfile}) and ($line =~ /.*access forbidden by rule, client: (\S+).*/)) {
-    return ("NGINX Security rule triggered from",$1,"nginx_403","5","443","86400","0");
-}
-
-# /var/log/nginx/error.log
-# NginX security rules trigger (Default: 5 errors bans for 24 hours)
-if (($globlogs{CUSTOM2_LOG}{$lgfile}) and ($line =~ /.*user.*was not found in.*, client: (\S+).*/)) {
-    return ("NGINX Security rule triggered from",$1,"nginx_401","5","443","86400","0");
+if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\s444|403|401\s)/)) {
+    return ("Nginx 444 403 401",$1,"nginx_444_403_401","5","443","86400","0");
 }
 
 # /var/log/nginx/error.log
