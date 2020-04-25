@@ -381,7 +381,7 @@ cat >> /etc/ssh/sshd_config <<END
 Match LocalPort ${SFTP_PORT} User *,!root
 ChrootDirectory %h
 ForceCommand internal-sftp -u 0007 -l VERBOSE
-PasswordAuthentication yes
+PasswordAuthentication no
 AllowTCPForwarding no
 X11Forwarding no
 END
@@ -1497,22 +1497,11 @@ chmod -R 600 /opt/magenx/cfg
 chmod +x /usr/local/bin/*
 usermod -a -G apache php-${MAGE_OWNER}
 
-echo 
-GREENTXT "CREATE SFTP DEV USER ACCOUNT"
-MAGE_SFTP_USER="dev-${MAGE_OWNER}"
-## create sftp support user and login
-useradd -d ${MAGE_WEB_ROOT_PATH%/*} ${MAGE_SFTP_USER} >/dev/null 2>&1
-usermod -g ${MAGE_PHPFPM_USER} ${MAGE_SFTP_USER}
-MAGE_SFTP_USER_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
-echo "${MAGE_SFTP_USER}:${MAGE_SFTP_USER_PASS}"  | chpasswd  >/dev/null 2>&1
-echo
-
 cd ${MAGE_WEB_ROOT_PATH}
 find . -type d -exec chmod 2770 {} \;
 find . -type f -exec chmod 660 {} \;
 setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
 setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:rwx,o::- var generated pub/static pub/media
-setfacl -Rm u:${MAGE_SFTP_USER}:rw- ${MAGE_WEB_ROOT_PATH%/*}
 chmod ug+x bin/magento
 echo
 echo
@@ -1539,8 +1528,6 @@ htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 [files owner pass]: ${MAGE_OWNER_PASS}
 
 [sftp port]: ${SFTP_PORT}
-[sftp user]: ${MAGE_SFTP_USER}
-[sftp user pass]: ${MAGE_SFTP_USER_PASS}
 
 [phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}/
 [phpmyadmin http auth name]: mysql
