@@ -16,9 +16,9 @@ MAGENX_BASE="https://magenx.sh"
 CENTOS_VERSION="8"
 
 # ELK version lock
-ELKVER="6.8.0"
+ELKVER="7.6.2"
+ELKREPO="7.x"
 KAPPVER="3.9.1"
-ELKREPO="6.x"
 
 # Magento
 MAGE_VERSION="2"
@@ -863,7 +863,7 @@ dnf -y install java >/dev/null 2>&1
 echo
 GREENTXT "Elasticsearch installation:"
 echo
-rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 cat > /etc/yum.repos.d/elastic.repo << EOF
 [elasticsearch-${ELKREPO}]
 name=Elasticsearch repository for ${ELKREPO} packages
