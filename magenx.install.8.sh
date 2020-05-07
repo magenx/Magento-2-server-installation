@@ -1081,7 +1081,7 @@ printf "\033c"
 "database")
 printf "\033c"
 WHITETXT "============================================================================="
-GREENTXT "CRAETE MAGENTO DATABASE AND DATABASE USER"
+GREENTXT "CREATE MAGENTO DATABASE AND DATABASE USER"
 echo
 if [ ! -f /root/.my.cnf ]; then
 systemctl start mysqld.service
