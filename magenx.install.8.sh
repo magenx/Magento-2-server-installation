@@ -1113,11 +1113,12 @@ chmod 600 /root/.my.cnf /root/.mytop
 MAGE_VERSION=$(awk '/webshop/ { print $6 }' /opt/magenx/cfg/.magenx_index)
 MAGE_DB_PASS_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_{}()<>-' | fold -w 15 | head -n 1)
 MAGE_DB_PASS="${MAGE_DB_PASS_GEN}${RANDOM}"
+MAGE_DB_GROUP="$(openssl rand -hex 4)"
 echo
 echo
 read -e -p "---> Enter Magento database host : " -i "localhost" MAGE_DB_HOST
-read -e -p "---> Enter Magento database name : " -i "m${MAGE_VERSION}d_$(openssl rand -hex 6)" MAGE_DB_NAME
-read -e -p "---> Enter Magento database user : " -i "m${MAGE_VERSION}u_$(openssl rand -hex 6)" MAGE_DB_USER_NAME
+read -e -p "---> Enter Magento database name : " -i "m${MAGE_VERSION}d_$(openssl rand -hex 2)${MAGE_DB_GROUP}" MAGE_DB_NAME
+read -e -p "---> Enter Magento database user : " -i "m${MAGE_VERSION}u_$(openssl rand -hex 2)${MAGE_DB_GROUP}" MAGE_DB_USER_NAME
 echo
 echo
 pause '------> Press [Enter] key to create MySQL database and user'
