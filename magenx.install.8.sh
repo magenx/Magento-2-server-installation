@@ -929,7 +929,6 @@ kernel.msgmnb = 65535
 kernel.msgmax = 65535
 kernel.shmmax = 68719476736
 kernel.shmall = 4294967296
-net.ipv4.tcp_tw_recycle = 0
 net.ipv4.tcp_tw_reuse = 1
 net.ipv4.tcp_mem = 8388608 8388608 8388608
 net.ipv4.tcp_rmem = 4096 87380 8388608
