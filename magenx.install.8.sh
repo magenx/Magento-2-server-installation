@@ -174,8 +174,9 @@ if [[ ${EUID} -ne 0 ]]; then
 fi
 
 # network is up?
-host1=209.85.202.91
-host2=151.101.193.69
+host1=google.com
+host2=github.com
+
 RESULT=$(((ping -w3 -c2 ${host1} || ping -w3 -c2 ${host2}) > /dev/null 2>&1) && echo "up" || (echo "down" && exit 1))
 if [[ ${RESULT} == up ]]; then
   GREENTXT "PASS: NETWORK IS UP. GREAT, LETS START!"
@@ -1233,6 +1234,23 @@ printf "\033c"
 ###################################################################################
 
 "config")
+
+# network is up?
+host1=google.com
+host2=github.com
+
+RESULT=$(((ping -w3 -c2 ${host1} || ping -w3 -c2 ${host2}) > /dev/null 2>&1) && echo "up" || (echo "down" && exit 1))
+if [[ ${RESULT} == up ]]; then
+  GREENTXT "PASS: NETWORK IS UP. GREAT, LETS START!"
+  else
+  echo
+  REDTXT "ERROR: NETWORK IS DOWN?"
+  YELLOWTXT "------> PLEASE CHECK YOUR NETWORK SETTINGS."
+  echo
+  echo
+  exit 1
+fi
+
 printf "\033c"
 MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /opt/magenx/cfg/.magenx_index)
 MAGE_WEB_ROOT_PATH=$(awk '/webshop/ { print $3 }' /opt/magenx/cfg/.magenx_index)
