@@ -98,6 +98,7 @@ Magento_Version \
 Magento_Swagger \
 Magento_WeeeGraphQl \
 Magento_WishlistGraphQl \
+Magento_Csp \
 Dotdigitalgroup_Email \
 Dotdigitalgroup_Chat \
 Klarna_Core \
