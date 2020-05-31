@@ -1512,7 +1512,6 @@ echo
 GREENTXT "FIXING PERMISSIONS"
 chmod -R 600 /opt/magenx/cfg
 chmod +x /usr/local/bin/*
-usermod -a -G apache php-${MAGE_OWNER}
 
 cd ${MAGE_WEB_ROOT_PATH}
 find . -type d -exec chmod 2770 {} \;
