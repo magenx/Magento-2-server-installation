@@ -36,15 +36,15 @@ sub custom_line {
 # "0" = whether to trigger Cloudflare block if CF_ENABLE is set. "0" = disable, "1" = enable
 
 # /var/log/nginx/access.log
-# Nginx 444  (Default: 10 errors bans for 24 hours)
-if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\s(444|403|401)\s)/)) {
+# Nginx 444 403 401  (Default: 10 errors bans for 24 hours)
+if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\"\s(444|403|401)\s)/)) {
     return ("Nginx 444 403 401",$1,"nginx_444_403_401","10","443","86400","0");
 }
 
-# /var/log/nginx/error.log
-# Nginx connection limit rule trigger (Default: 30 errors bans for 60mins)
-if (($globlogs{CUSTOM2_LOG}{$lgfile}) and ($line =~ /.*limiting connections by zone.*, client: (\S+),(.*)/)) {
-    return ("NGINX Security rule triggered from",$1,"nginx_conn_limit","30","443","3600","0");
+# /var/log/nginx/access.log
+# Nginx 429  (Default: 10 errors bans for minute)
+if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\"\s429\s)/)) {
+    return ("Nginx 429",$1,"nginx_429","10","443","60","0");
 }
 
 # If the matches in this file are not syntactically correct for perl then lfd
