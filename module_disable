@@ -1,5 +1,6 @@
 
 bin/magento module:disable \
+Magento_GoogleShoppingAds \
 Magento_AdobeIms \
 Magento_AdobeImsApi \
 Magento_AdobeStockAdminUi \
