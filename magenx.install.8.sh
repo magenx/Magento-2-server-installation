@@ -16,7 +16,6 @@ MAGENX_BASE="https://magenx.sh"
 CENTOS_VERSION="8"
 
 # ELK version lock
-ELKVER="7.7.1"
 ELKREPO="7.x"
 
 # Magento
@@ -854,7 +853,7 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
-echo -n "---> Start ElasticSearch ${ELKVER} installation? [y/n][n]:"
+echo -n "---> Start ElasticSearch ${ELKREPO} installation? [y/n][n]:"
 read elastic_install
 if [ "${elastic_install}" == "y" ];then
 echo
@@ -870,7 +869,7 @@ name=Elasticsearch repository for ${ELKREPO} packages
 baseurl=https://artifacts.elastic.co/packages/${ELKREPO}/yum
 gpgcheck=1
 gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
-enabled=0
+enabled=1
 autorefresh=1
 type=rpm-md
 EOF
@@ -878,14 +877,15 @@ echo
 echo -n "     PROCESSING  "
             start_progress &
             pid="$!"
-            dnf -y -q install --enablerepo=elasticsearch-${ELKREPO} elasticsearch-${ELKVER} >/dev/null 2>&1
+            dnf -y -q install --enablerepo=elasticsearch-${ELKREPO} elasticsearch kibana >/dev/null 2>&1
             stop_progress "$pid"
             rpm  --quiet -q elasticsearch
   if [ "$?" = 0 ]
         then
           echo
-sed -i "s/.*cluster.name.*/cluster.name: wazuh/" /etc/elasticsearch/elasticsearch.yml
-sed -i "s/.*node.name.*/node.name: wazuh-node1/" /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+sed -i "s/.*cluster.name.*/cluster.name: magento/" /etc/elasticsearch/elasticsearch.yml
+sed -i "s/.*node.name.*/node.name: magento-node1/" /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*network.host.*/network.host: 127.0.0.1/" /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*http.port.*/http.port: 9200/" /etc/elasticsearch/elasticsearch.yml
 sed -i "s/-Xms.*/-Xms512m/" /etc/elasticsearch/jvm.options
