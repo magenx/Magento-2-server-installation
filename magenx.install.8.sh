@@ -16,7 +16,7 @@ MAGENX_BASE="https://magenx.sh"
 CENTOS_VERSION="8"
 
 # ELK version lock
-ELKVER="7.7.0"
+ELKVER="7.7.1"
 ELKREPO="7.x"
 
 # Magento
