@@ -894,6 +894,7 @@ chown -R :elasticsearch /etc/elasticsearch/*
 systemctl daemon-reload
 systemctl enable elasticsearch.service
 systemctl restart elasticsearch.service
+/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto
 echo
      echo
 	    GREENTXT "ELASTCSEARCH ${ELKVER} INSTALLED  -  OK"
