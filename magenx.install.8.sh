@@ -1365,7 +1365,7 @@ GREENTXT "DOWNLOADING n98-MAGERUN2"
      curl -s -o /usr/local/bin/magerun2 https://files.magerun.net/n98-magerun2.phar
 echo
 GREENTXT "CACHE CLEANER SCRIPT"
-cat > /usr/local/bin/flushcache <<END
+cat > /usr/local/bin/cacheflush <<END
 #!/bin/bash
 redis-cli -p 6380 flushall
 magerun2 cache:flush
@@ -1563,7 +1563,7 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [mysql tuner]: /usr/local/bin/mysqltuner
 
 [n98-magerun2]: /usr/local/bin/magerun2
-[cache cleaner]: /usr/local/bin/flushcache
+[cache cleaner]: /usr/local/bin/cacheflush
 
 [service alert]: /usr/local/bin/service-status-mail.sh
 [audit log]: ausearch -k auditmgnx | aureport -f -i
