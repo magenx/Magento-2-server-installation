@@ -1462,6 +1462,7 @@ echo
 GREENTXT "REDIS CACHE AND SESSION STORAGE"
 echo
 systemctl start redis.target
+redis-cli -p6380 config set save ""
 ## cache backend
 cd ${MAGE_WEB_ROOT_PATH}
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set \
