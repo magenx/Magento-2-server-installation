@@ -5,7 +5,7 @@
 #        All rights reserved.                                                     #
 #=================================================================================#
 SELF=$(basename $0)
-MAGENX_VER="1.8.235.0"
+MAGENX_VER="1.8.240.0"
 MAGENX_BASE="https://magenx.sh"
 
 ###################################################################################
@@ -665,7 +665,7 @@ if [ "${repo_remi_install}" == "y" ];then
           echo
             GREENTXT "Remi repository installation:"
 	    echo
-	    read -e -p "---> Enter required PHP version: " -i "7.3" PHP_VERSION
+	    read -e -p "---> Enter required PHP version: " -i "7.4" PHP_VERSION
             echo
             echo -n "     PROCESSING  "
             long_progress &
