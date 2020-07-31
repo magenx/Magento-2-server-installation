@@ -1171,6 +1171,11 @@ read -e -p "---> Enter your database name: " -i "${DB_NAME}"  MAGE_DB_NAME
 read -e -p "---> Enter your database user: " -i "${DB_USER_NAME}"  MAGE_DB_USER_NAME
 read -e -p "---> Enter your database password: " -i "${DB_PASS}"  MAGE_DB_PASS
 echo
+WHITETXT "Elasticsearch information"
+read -e -p "---> Enter your ELK host: " -i "${ELK_HOST}"  MAGE_ELK_HOST
+read -e -p "---> Enter your ELK port: " -i "${ELK_PORT}"  MAGE_ELK_PORT
+read -e -p "---> Enter your ELK elastic password: " -i "${ELK_PASSWORD}"  MAGE_ELK_PASSWORD
+echo
 WHITETXT "Administrator and domain"
 read -e -p "---> Enter your First Name: " -i "Name"  MAGE_ADMIN_FNAME
 read -e -p "---> Enter your Last Name: " -i "Lastname"  MAGE_ADMIN_LNAME
@@ -1207,7 +1212,13 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SI
 --timezone=${MAGE_TIMEZONE} \
 --cleanup-database \
 --session-save=files \
---use-rewrites=1"
+--use-rewrites=1 \
+--search-engine=elasticsearch7 \
+--elasticsearch-host=${MAGE_ELK_HOST} \
+--elasticsearch-port=${MAGE_ELK_PORT} \
+--elasticsearch-enable-auth=1 \
+--elasticsearch-username=elastic \
+--elasticsearch-password=${MAGE_ELK_PASSWORD}"
 
 mkdir -p /opt/magenx
 mysqldump --single-transaction --routines --triggers --events ${MAGE_DB_NAME} | gzip > /opt/magenx/${MAGE_DB_NAME}.sql.gz
