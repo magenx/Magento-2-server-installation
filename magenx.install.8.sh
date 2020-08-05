@@ -883,6 +883,7 @@ echo -n "     PROCESSING  "
   if [ "$?" = 0 ]
         then
           echo
+echo "discovery.type: single-node" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*cluster.name.*/cluster.name: magento/" /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*node.name.*/node.name: magento-node1/" /etc/elasticsearch/elasticsearch.yml
