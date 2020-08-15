@@ -52,6 +52,6 @@ Complete linux stack including: <br/>
 **System requirements**:<br/>
 *Dedicated server / Container*<br/>
 *CentOS 8*<br/>
-*4Gb RAM*<br/>
+*8Gb RAM*<br/>
 *like [DigitalOcean cloud servers](https://m.do.co/c/ccc5d115377f)
 
