@@ -351,6 +351,7 @@ fi
 echo
 # ssh test
 if ! grep -q "yes" /opt/magenx/cfg/.sshport >/dev/null 2>&1 ; then
+      touch /opt/magenx/cfg/.sshport
 if grep -q "Port 22" /etc/ssh/sshd_config >/dev/null 2>&1 ; then
 REDTXT "DEFAULT SSH PORT :22 DETECTED"
 echo
@@ -366,7 +367,7 @@ echo
 
 echo -n "---> Lets change default ssh port now? [y/n][n]:"
 read new_ssh_set
-if [ "${new_ssh_set}" == "y" ];then
+if [ "${new_ssh_set}" == "y" ]; then
    echo
       cp /etc/ssh/sshd_config /etc/ssh/sshd_config.BACK
       SSHPORT=$(shuf -i 9537-9554 -n 1)
