@@ -1,4 +1,3 @@
-
 bin/magento module:disable \
 Magento_GoogleShoppingAds \
 Magento_AdobeIms \
