@@ -1063,8 +1063,6 @@ echo "------> Faster installation!"
 echo "------> Less development and maintenance work!"
 echo "------> Less security risks and dependency!"
 echo
-WHITETXT "You just want to sell products"
-echo
 REDTXT "Default Magento 2 installation ~245 modules"
 WHITETXT "Minimal Magento 2 installation ~110 modules"
 echo
@@ -1079,8 +1077,7 @@ if [ "${magento_minimal}" == "y" ]; then
         else
 	        MAGE_MINIMAL_OPT="FULL SET OF MODULES"
 	        GREENTXT "${MAGE_MINIMAL_OPT}"
-	        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} ."
-		
+	        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} ."	
 fi
         echo
      echo
