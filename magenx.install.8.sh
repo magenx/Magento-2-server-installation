@@ -1054,31 +1054,9 @@ echo
         chmod 711 /home/${MAGE_OWNER}
         chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH%/*}
         chmod 2770 ${MAGE_WEB_ROOT_PATH}
-	ln -s /usr/bin/composer /usr/local/bin/composer
-        echo
 	echo
-GREENTXT "Benefits of removing bloatware modules:"
-echo "------> Faster backend/frontend operations!"
-echo "------> Faster installation!"
-echo "------> Less development and maintenance work!"
-echo "------> Less security risks and dependency!"
-echo
-REDTXT "Default Magento 2 installation ~245 modules"
-WHITETXT "Minimal Magento 2 installation ~110 modules"
-echo
-echo -n "---> Would you like to download Magento 2 minimal? [y/n][n]:"
-read magento_minimal
-if [ "${magento_minimal}" == "y" ]; then
-                MAGE_MINIMAL_OPT="MINIMAL SET OF MODULES"
-		GREENTXT "${MAGE_MINIMAL_OPT}"
-		su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
-                bash <(curl -s https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace)
-		su ${MAGE_OWNER} -s /bin/bash -c "composer install"
-        else
-	        MAGE_MINIMAL_OPT="FULL SET OF MODULES"
-	        GREENTXT "${MAGE_MINIMAL_OPT}"
-	        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} ."	
-fi
+	ln -s /usr/bin/composer /usr/local/bin/composer
+        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} ."	
         echo
      echo
 GREENTXT "      == MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR INSTALLATION =="
