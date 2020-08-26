@@ -1,6 +1,4 @@
-sed -i '$ d' composer.json
-echo ',
-    "replace": {
+   "replace": {
        "amzn/amazon-pay-and-login-magento-2-module": "*",
         "amzn/amazon-pay-and-login-with-amazon-core-module": "*",
         "amzn/amazon-pay-module": "*",
@@ -177,5 +175,4 @@ echo ',
         "vertex/sdk": "*",
         "yotpo/magento2-module-yotpo-reviews": "*",
         "yotpo/magento2-module-yotpo-reviews-bundle": "*"
-    }
-}' >> composer.json
+    },
