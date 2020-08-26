@@ -1068,7 +1068,13 @@ if [ "${magento_minimal}" == "y" ]; then
                 MAGE_MINIMAL_OPT="MINIMAL SET OF PACKAGES"
 		GREENTXT "${MAGE_MINIMAL_OPT}"
 		su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
-                bash <(curl -s https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace)
+                curl -s https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace
+##replace?
+sed -i '/"conflict":/ {
+r composer_replace
+N
+}' composer.json
+##replace?
 		su ${MAGE_OWNER} -s /bin/bash -c "composer install --no-suggest"
         else
 	        MAGE_MINIMAL_OPT="FULL SET OF PACKAGES"
