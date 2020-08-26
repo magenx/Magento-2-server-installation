@@ -1055,8 +1055,26 @@ echo
         chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH%/*}
         chmod 2770 ${MAGE_WEB_ROOT_PATH}
 	echo
-	ln -s /usr/bin/composer /usr/local/bin/composer
-        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} ."	
+GREENTXT "Benefits of removing bloatware packages:"
+echo "------> Faster backend/frontend operations!"
+echo "------> Less maintenance work!"
+echo "------> Less security risks and dependency!"
+echo
+YELLOWTXT "some hidden dependencies can break it, you will need to install missing packages"
+echo
+echo -n "---> Would you like to download Magento 2 minimal? [y/n][n]:"
+read magento_minimal
+if [ "${magento_minimal}" == "y" ]; then
+                MAGE_MINIMAL_OPT="MINIMAL SET OF PACKAGES"
+		GREENTXT "${MAGE_MINIMAL_OPT}"
+		su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
+                bash <(curl -s https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace)
+		su ${MAGE_OWNER} -s /bin/bash -c "composer install --no-suggest"
+        else
+	        MAGE_MINIMAL_OPT="FULL SET OF PACKAGES"
+	        GREENTXT "${MAGE_MINIMAL_OPT}"
+	        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-suggest"	
+fi	
         echo
      echo
 GREENTXT "      == MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR INSTALLATION =="
