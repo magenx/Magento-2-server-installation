@@ -1197,9 +1197,10 @@ read -e -p "---> Enter your database user: " -i "${DB_USER_NAME}"  MAGE_DB_USER_
 read -e -p "---> Enter your database password: " -i "${DB_PASS}"  MAGE_DB_PASS
 echo
 WHITETXT "Elasticsearch information"
-read -e -p "---> Enter your ELK host: " -i "${ELK_HOST}"  MAGE_ELK_HOST
-read -e -p "---> Enter your ELK port: " -i "${ELK_PORT}"  MAGE_ELK_PORT
-read -e -p "---> Enter your ELK elastic password: " -i "${ELK_PASSWORD}"  MAGE_ELK_PASSWORD
+read -e -p "---> Enter your ELK host: " -i "localhost"  MAGE_ELK_HOST
+read -e -p "---> Enter your ELK port: " -i "9200"  MAGE_ELK_PORT
+read -e -p "---> Enter your ELK username: " -i "elastic"  MAGE_ELK_USERNAME
+read -e -p "---> Enter your ELK password: " -i "${ELK_PASSWORD}"  MAGE_ELK_PASSWORD
 echo
 WHITETXT "Administrator and domain"
 read -e -p "---> Enter your First Name: " -i "Name"  MAGE_ADMIN_FNAME
@@ -1242,7 +1243,7 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SI
 --elasticsearch-host=${MAGE_ELK_HOST} \
 --elasticsearch-port=${MAGE_ELK_PORT} \
 --elasticsearch-enable-auth=1 \
---elasticsearch-username=elastic \
+--elasticsearch-username=${MAGE_ELK_USERNAME} \
 --elasticsearch-password=${MAGE_ELK_PASSWORD}"
 
 mkdir -p /opt/magenx
