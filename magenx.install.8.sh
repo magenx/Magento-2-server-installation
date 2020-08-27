@@ -1244,7 +1244,7 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SI
 --elasticsearch-port=${MAGE_ELK_PORT} \
 --elasticsearch-enable-auth=1 \
 --elasticsearch-username=${MAGE_ELK_USERNAME} \
---elasticsearch-password=${MAGE_ELK_PASSWORD}"
+--elasticsearch-password='${MAGE_ELK_PASSWORD}'"
 
 mkdir -p /opt/magenx
 mysqldump --single-transaction --routines --triggers --events ${MAGE_DB_NAME} | gzip > /opt/magenx/${MAGE_DB_NAME}.sql.gz
