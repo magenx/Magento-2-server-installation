@@ -120,12 +120,15 @@ Magento_Securitytxt \
 Magento_GoogleOptimizer \
 Magento_GoogleAnalytics \
 Magento_Analytics \
+Magento_AdminAnalytics \
 Magento_QuoteAnalytics \
 Magento_ReviewAnalytics \
 Magento_SalesAnalytics \
 Magento_CustomerAnalytics \
 Magento_CatalogAnalytics \
 Magento_WishlistAnalytics \
+Magento_PaypalCaptcha \
+Magento_ReleaseNotification \
 Dotdigitalgroup_Email \
 Dotdigitalgroup_Chat \
 Klarna_Core \
