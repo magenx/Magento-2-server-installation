@@ -1075,11 +1075,11 @@ r composer_replace
 N
 }' composer.json
 ##replace?
-		su ${MAGE_OWNER} -s /bin/bash -c "composer install --no-suggest"
+		su ${MAGE_OWNER} -s /bin/bash -c "composer install"
         else
 	        MAGE_MINIMAL_OPT="FULL SET OF PACKAGES"
 	        GREENTXT "${MAGE_MINIMAL_OPT}"
-	        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-suggest"	
+	        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . "	
 fi	
         echo
      echo
