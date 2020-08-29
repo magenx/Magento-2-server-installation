@@ -896,7 +896,7 @@ chown -R :elasticsearch /etc/elasticsearch/*
 systemctl daemon-reload
 systemctl enable elasticsearch.service
 systemctl restart elasticsearch.service
-/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto
+/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b >> /opt/magenx/elasticsearch
 echo
      echo
 	    GREENTXT "ELASTCSEARCH ${ELKVER} INSTALLED  -  OK"
@@ -1056,9 +1056,9 @@ echo
         chmod 2770 ${MAGE_WEB_ROOT_PATH}
 	echo
 GREENTXT "Benefits of removing bloatware packages:"
-echo "------> Faster backend/frontend operations!"
-echo "------> Less maintenance work!"
-echo "------> Less security risks and dependency!"
+echo "      ---> Faster backend/frontend operations!"
+echo "      ---> Less maintenance work!"
+echo "      ---> Less security risks and dependency!"
 echo
 YELLOWTXT "some hidden dependencies can break it, you will need to install missing packages"
 echo
@@ -1066,6 +1066,7 @@ echo -n "---> Would you like to download Magento 2 minimal? [y/n][n]:"
 read magento_minimal
 if [ "${magento_minimal}" == "y" ]; then
                 MAGE_MINIMAL_OPT="MINIMAL SET OF PACKAGES"
+		echo
 		GREENTXT "${MAGE_MINIMAL_OPT}"
 		su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
                 curl -sO https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace
@@ -1078,6 +1079,7 @@ N
 		su ${MAGE_OWNER} -s /bin/bash -c "composer install"
         else
 	        MAGE_MINIMAL_OPT="FULL SET OF PACKAGES"
+		echo
 	        GREENTXT "${MAGE_MINIMAL_OPT}"
 	        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . "	
 fi	
@@ -1184,6 +1186,7 @@ DB_HOST=$(awk '/database/ { print $2 }' /opt/magenx/cfg/.magenx_index)
 DB_NAME=$(awk '/database/ { print $3 }' /opt/magenx/cfg/.magenx_index)
 DB_USER_NAME=$(awk '/database/ { print $4 }' /opt/magenx/cfg/.magenx_index)
 DB_PASS=$(awk '/database/ { print $5 }' /opt/magenx/cfg/.magenx_index)
+ELK_PASSWORD=$(awk '/PASSWORD elastic/ { print $4 }' /opt/magenx/elasticsearch)
 
 cd ${MAGE_WEB_ROOT_PATH}
 chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH}
