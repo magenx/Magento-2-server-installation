@@ -42,6 +42,7 @@
         "magento/module-swagger": "*",
         "magento/module-swagger-webapi": "*",
         "magento/module-swagger-webapi-async": "*",
+        "magento/module-webapi-async": "*",
         "magento/module-securitytxt": "*",
         "magento/module-version": "*",
         "magento/module-elasticsearch-6": "*",
