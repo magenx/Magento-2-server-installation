@@ -47,7 +47,6 @@
         "magento/module-version": "*",
         "magento/module-elasticsearch-6": "*",
         "magento/module-csp": "*",
-        "magento/module-backup": "*",
         "magento/module-analytics": "*",
         "magento/module-catalog-analytics": "*",
         "magento/module-customer-analytics": "*",
