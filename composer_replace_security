@@ -1,9 +1,4 @@
 "replace": {
-        "amzn/amazon-pay-and-login-magento-2-module": "*",
-        "amzn/amazon-pay-and-login-with-amazon-core-module": "*",
-        "amzn/amazon-pay-module": "*",
-        "amzn/amazon-pay-sdk-php": "*",
-        "amzn/login-with-amazon-module": "*",
         "astock/stock-api-libphp": "*",
         "dotmailer/dotmailer-magento2-extension": "*",
         "dotmailer/dotmailer-magento2-extension-chat": "*",
@@ -30,7 +25,6 @@
         "magento/module-authorizenet-cardinal": "*",
         "magento/module-authorizenet-graph-ql": "*",
         "magento/module-braintree-graph-ql": "*",
-        "magento/module-bundle-graph-ql": "*",
         "magento/module-cardinal-commerce": "*",
         "magento/module-cybersource": "*",
         "magento/module-google-adwords": "*",
