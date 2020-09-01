@@ -165,7 +165,6 @@
         "magento/module-worldpay": "*",
         "magento/module-elasticsearch-6": "*",
         "magento/module-csp": "*",
-        "magento/module-backup": "*",
         "magento/module-admin-analytics": "*",
         "magento/module-paypal-captcha": "*",
         "magento/module-release-notification": "*",
