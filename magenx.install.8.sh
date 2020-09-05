@@ -519,7 +519,7 @@ echo "--------------------------------------------------------------------------
 echo
 WHITETXT "============================================================================="
 echo
-echo -n "---> Start Percona repository and Percona database installation? [y/n][n]:"
+echo -n "---> Start Percona repository and Percona 8.0 database installation? [y/n][n]:"
 read repo_percona_install
 if [ "${repo_percona_install}" == "y" ];then
             echo
@@ -535,16 +535,16 @@ if [ "${repo_percona_install}" == "y" ];then
             GREENTXT "REPOSITORY INSTALLED  -  OK"
               echo
               echo
-              GREENTXT "Percona 5.7 database installation:"
+              GREENTXT "Percona 8.0 database installation:"
               echo
               echo -n "     PROCESSING  "
               long_progress &
               pid="$!"
 	      dnf module disable -y mysql >/dev/null 2>&1
-	      percona-release setup ps57 >/dev/null 2>&1
-              dnf install -y Percona-Server-server-57 Percona-Server-client-57 >/dev/null 2>&1
+	      percona-release setup ps80 -y >/dev/null 2>&1
+              dnf install -y percona-server-server percona-server-client >/dev/null 2>&1
               stop_progress "$pid"
-              rpm  --quiet -q Percona-Server-server-57 Percona-Server-client-57
+              rpm  --quiet -q percona-server-server percona-server-client
         if [ "$?" = 0 ] # if package installed then configure
           then
             echo
@@ -580,7 +580,7 @@ if [ "${repo_percona_install}" == "y" ];then
               cd /usr/local/bin
               wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
 	      chmod +x /usr/local/bin/mytop
-              dnf -y -q install percona-toolkit percona-xtrabackup-24 >/dev/null 2>&1
+              dnf -y -q install percona-toolkit percona-xtrabackup-80 >/dev/null 2>&1
               echo
 # install proxysql
 cat > /etc/yum.repos.d/proxysql.repo<<EOF
