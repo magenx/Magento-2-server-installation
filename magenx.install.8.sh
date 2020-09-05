@@ -502,7 +502,7 @@ dnf -q -y update >/dev/null 2>&1
 dnf install -y dnf-utils >/dev/null 2>&1
 dnf module enable -y perl:5.26 >/dev/null 2>&1
 dnf config-manager --set-enabled PowerTools >/dev/null 2>&1
-dnf -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-}
+dnf -y install ${EXTRA_PACKAGES}
 ## disable some moduleeeespzdc
 dnf -y module disable nginx php redis varnish >/dev/null 2>&1
 echo
@@ -1750,6 +1750,7 @@ read webmin_install
 if [ "${webmin_install}" == "y" ];then
           echo
             GREENTXT "Webmin package installation:"
+	    dnf -y install ${PERL_MODULES[@]/#/perl-}
 cat > /etc/yum.repos.d/webmin.repo <<END
 [Webmin]
 name=Webmin Distribution
