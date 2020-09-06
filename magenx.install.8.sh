@@ -1750,6 +1750,7 @@ read webmin_install
 if [ "${webmin_install}" == "y" ];then
           echo
             GREENTXT "Webmin package installation:"
+	    echo
 	    dnf -y install ${PERL_MODULES[@]/#/perl-}
 cat > /etc/yum.repos.d/webmin.repo <<END
 [Webmin]
