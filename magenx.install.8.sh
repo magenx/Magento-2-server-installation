@@ -717,7 +717,7 @@ if [ "${repo_remi_install}" == "y" ];then
             echo -n "     PROCESSING  "
             start_progress &
             pid="$!"
-            dnf -y -q module install redis:remi-5.0 >/dev/null 2>&1
+            dnf -y -q module install redis:remi-6.0 >/dev/null 2>&1
             stop_progress "$pid"
             rpm  --quiet -q redis
        if [ "$?" = 0 ]
