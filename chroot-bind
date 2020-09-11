@@ -1,6 +1,8 @@
 #!/bin/bash
 
-_CHROOTS_CMD="ls -1d /home/*/data"
+. ${MAGENX_CONFIG_PATH}/magento
+
+_CHROOTS_CMD="ls -1d /home/${MAGE_OWNER}"
 _BIND="\
 /proc \
 /dev/urandom \
