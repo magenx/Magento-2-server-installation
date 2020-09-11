@@ -1451,8 +1451,8 @@ echo
 GREENTXT "SERVICE STATUS WITH E-MAIL ALERTING"
 wget -qO /etc/systemd/system/service-status-mail@.service ${REPO_MAGENX_TMP}service-status-mail@.service
 wget -qO /usr/local/bin/service-status-mail.sh ${REPO_MAGENX_TMP}service-status-mail.sh
-sed -i "s/MAGEADMINEMAIL/${MAGE_ADMIN_EMAIL}/" /usr/local/bin/service-status-mail.sh
-sed -i "s/DOMAINNAME/${MAGE_DOMAIN}/" /usr/local/bin/service-status-mail.sh
+sed -i "s/MAGE_ADMIN_EMAIL/${MAGE_ADMIN_EMAIL}/" /usr/local/bin/service-status-mail.sh
+sed -i "s/MAGE_DOMAIN/${MAGE_DOMAIN}/" /usr/local/bin/service-status-mail.sh
 chmod u+x /usr/local/bin/service-status-mail.sh
 systemctl daemon-reload
 echo
