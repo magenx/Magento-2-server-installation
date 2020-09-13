@@ -1,5 +1,6 @@
 #!/bin/bash
 
+MAGENX_CONFIG_PATH="/opt/magenx/config"
 . ${MAGENX_CONFIG_PATH}/magento
 
 _CHROOTS_CMD="ls -1d /home/${MAGE_OWNER}"
