@@ -148,7 +148,6 @@
         "magento/module-swagger": "*",
         "magento/module-swagger-webapi": "*",
         "magento/module-swagger-webapi-async": "*",
-        "magento/module-webapi-async": "*",
         "magento/module-swatches-graph-ql": "*",
         "magento/module-tax-graph-ql": "*",
         "magento/module-theme-graph-ql": "*",
