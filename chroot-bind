@@ -14,6 +14,7 @@ _BIND="\
 /usr/share/zoneinfo \
 /usr/libexec/grepconf.sh \
 /usr/share/php \
+/usr/share/terminfo \
 /usr/bin/sh \
 /usr/bin/bash \
 /usr/bin/tty \
@@ -31,7 +32,6 @@ _BIND="\
 /etc/nsswitch.conf \
 /etc/group \
 /etc/passwd \
-/etc/bashrc \
 /etc/profile \
 /etc/profile.d \
 /etc/php.d \
