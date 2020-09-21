@@ -9,7 +9,7 @@ _BIND="\
 /dev/tty
 /dev/pts \
 /usr/share/zoneinfo \
-/usr/libexec/grepconf.sh \
+/usr/share/phpMyAdmin \
 /usr/share/php \
 /usr/share/terminfo \
 /usr/bin/sh \
@@ -23,6 +23,7 @@ _BIND="\
 /usr/bin/env \
 /usr/bin/ls \
 /usr/bin/php \
+/usr/libexec/grepconf.sh \
 /usr/lib64 \
 /etc/pki \
 /etc/resolv.conf \
