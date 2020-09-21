@@ -6,7 +6,7 @@ _BIND="\
 /dev/urandom \
 /dev/zero \
 /dev/null \
-/dev/tty
+/dev/tty \
 /dev/pts \
 /usr/share/zoneinfo \
 /usr/share/phpMyAdmin \
