@@ -5,8 +5,11 @@
 #        All rights reserved.                                                     #
 #=================================================================================#
 SELF=$(basename $0)
-MAGENX_VER="1.8.240.0"
+MAGENX_VER="2.8.240.1"
 MAGENX_BASE="https://magenx.sh"
+
+# Config path
+MAGENX_CONFIG_PATH="/opt/magenx/config"
 
 ###################################################################################
 ###                            DEFINE LINKS AND PACKAGES                        ###
@@ -53,9 +56,9 @@ YELLOW="\e[33;40m"
 WHITE="\e[37;40m"
 BLUE="\e[0;34m"
 ### Background
-DGREYBG="\t\t\e[100m"
-BLUEBG="\e[1;44m"
-REDBG="\t\t\e[41m"
+DGREYBG="  \e[100m"
+BLUEBG="  \e[1;44m"
+REDBG="  \e[41m"
 ### Styles
 BOLD="\e[1m"
 ### Reset
@@ -67,23 +70,23 @@ RESET="\e[0m"
 
 function WHITETXT() {
         MESSAGE=${@:-"${RESET}Error: No message passed"}
-        echo -e "\t\t${WHITE}${MESSAGE}${RESET}"
+        echo -e "  ${WHITE}${MESSAGE}${RESET}"
 }
 function BLUETXT() {
         MESSAGE=${@:-"${RESET}Error: No message passed"}
-        echo -e "\t\t${BLUE}${MESSAGE}${RESET}"
+        echo -e "  ${BLUE}${MESSAGE}${RESET}"
 }
 function REDTXT() {
         MESSAGE=${@:-"${RESET}Error: No message passed"}
-        echo -e "\t\t${RED}${MESSAGE}${RESET}"
+        echo -e "  ${RED}${MESSAGE}${RESET}"
 }
 function GREENTXT() {
         MESSAGE=${@:-"${RESET}Error: No message passed"}
-        echo -e "\t\t${GREEN}${MESSAGE}${RESET}"
+        echo -e "  ${GREEN}${MESSAGE}${RESET}"
 }
 function YELLOWTXT() {
         MESSAGE=${@:-"${RESET}Error: No message passed"}
-        echo -e "\t\t${YELLOW}${MESSAGE}${RESET}"
+        echo -e "  ${YELLOW}${MESSAGE}${RESET}"
 }
 function BLUEBG() {
         MESSAGE=${@:-"${RESET}Error: No message passed"}
@@ -95,7 +98,7 @@ function BLUEBG() {
 ###################################################################################
 
 function pause() {
-   read -p "$*"
+   read -p "  $*"
 }
 function start_progress {
   while true
@@ -118,10 +121,19 @@ function long_progress {
     sleep 3
   done
 }
+
 function stop_progress {
 kill $1
 wait $1 2>/dev/null
 echo -en "\n"
+}
+
+include_config () {
+    [[ -f "$1" ]] && . "$1"
+}
+
+_echo () {
+  echo -en "  $@"
 }
 
 ###################################################################################
@@ -131,7 +143,6 @@ echo -en "\n"
 updown_menu () {
 i=1;for items in $(echo $1); do item[$i]="${items}"; let i=$i+1; done
 i=1
-echo
 echo -e "\n---> Use up/down arrow keys then press Enter to select $2"
 while [ 0 ]; do
   if [ "$i" -eq 0 ]; then i=1; fi
@@ -164,8 +175,8 @@ echo
 # root?
 if [[ ${EUID} -ne 0 ]]; then
   echo
-  REDTXT "ERROR: THIS SCRIPT MUST BE RUN AS ROOT!"
-  YELLOWTXT "------> USE SUPER-USER PRIVILEGES."
+  REDTXT "[!] THIS SCRIPT MUST BE RUN AS ROOT!"
+  YELLOWTXT "[!] USE SUPER-USER PRIVILEGES."
   exit 1
   else
   GREENTXT "PASS: ROOT!"
@@ -180,8 +191,8 @@ if [[ ${RESULT} == up ]]; then
   GREENTXT "PASS: NETWORK IS UP. GREAT, LETS START!"
   else
   echo
-  REDTXT "ERROR: NETWORK IS DOWN?"
-  YELLOWTXT "------> PLEASE CHECK YOUR NETWORK SETTINGS."
+  REDTXT "[!] NETWORK IS DOWN ?"
+  YELLOWTXT "[!] PLEASE CHECK YOUR NETWORK SETTINGS."
   echo
   echo
   exit 1
@@ -189,18 +200,18 @@ fi
 
 # check if you need update
     MD5_NEW=$(curl -sL ${MAGENX_BASE} > magenx.sh.new && md5sum magenx.sh.new | awk '{print $1}')
-        MD5_OLD=$(md5sum ${SELF} | awk '{print $1}')
-            if [[ "${MD5_NEW}" == "${MD5_OLD}" ]]; then
+        MD5=$(md5sum ${SELF} | awk '{print $1}')
+            if [[ "${MD5_NEW}" == "${MD5}" ]]; then
             GREENTXT "PASS: INTEGRITY CHECK FOR '${SELF}' OK"
             rm magenx.sh.new
-            elif [[ "${MD5_NEW}" != "${MD5_OLD}" ]]; then
+            elif [[ "${MD5_NEW}" != "${MD5}" ]]; then
             echo
             YELLOWTXT "INTEGRITY CHECK FOR '${SELF}'"
             YELLOWTXT "DETECTED DIFFERENT MD5 CHECKSUM"
             YELLOWTXT "REMOTE REPOSITORY FILE HAS SOME CHANGES"
             REDTXT "IF YOU HAVE LOCAL CHANGES - SKIP UPDATES"
             echo
-                echo -n "---> Would you like to update the file now?  [y/n][y]:"
+                _echo "[?] Would you like to update the file now?  [y/n][y]:"
 		read update_agree
 		if [ "${update_agree}" == "y" ];then
 		mv magenx.sh.new ${SELF}
@@ -210,7 +221,7 @@ fi
                 exit 1
             else
         echo
-        YELLOWTXT "NEW FILE SAVED TO MAGENX_NEW"
+        YELLOWTXT "NEW FILE SAVED TO magenx.sh.new"
         echo
   fi
 fi
@@ -221,8 +232,8 @@ if grep "CentOS.* ${CENTOS_VERSION}\." /etc/centos-release  > /dev/null 2>&1; th
   GREENTXT "PASS: CENTOS RELEASE ${CENTOS_VERSION}"
   else
   echo
-  REDTXT "ERROR: UNABLE TO FIND CENTOS ${CENTOS_VERSION}"
-  YELLOWTXT "------> THIS CONFIGURATION FOR CENTOS ${CENTOS_VERSION}"
+  REDTXT "[!] UNABLE TO FIND CENTOS ${CENTOS_VERSION}"
+  YELLOWTXT "[!] THIS CONFIGURATION FOR CENTOS ${CENTOS_VERSION}"
   echo
   exit 1
 fi
@@ -233,8 +244,8 @@ if [ "${ARCH}" = "x86_64" ]; then
   GREENTXT "PASS: 64-BIT"
   else
   echo
-  REDTXT "ERROR: 32-BIT SYSTEM?"
-  YELLOWTXT "------> CONFIGURATION FOR 64-BIT ONLY."
+  REDTXT "[!] 32-BIT SYSTEM?"
+  YELLOWTXT "[!] CONFIGURATION FOR 64-BIT ONLY."
   echo
   exit 1
 fi
@@ -245,8 +256,8 @@ if [ "${TOTALMEM}" -gt "3000000" ]; then
   GREENTXT "PASS: YOU HAVE ${TOTALMEM} Kb OF RAM"
   else
   echo
-  REDTXT "WARNING: YOU HAVE LESS THAN 3Gb OF RAM"
-  YELLOWTXT "------> TO PROPERLY RUN COMPLETE STACK YOU NEED 4Gb+"
+  REDTXT "[!] YOU HAVE LESS THAN 3Gb OF RAM"
+  YELLOWTXT "[!] TO PROPERLY RUN COMPLETE STACK YOU NEED 4Gb+"
   echo
 fi
 
@@ -255,8 +266,8 @@ if [ -f "/etc/selinux/config" ]; then
 SELINUX=$(awk -F "=" '/^SELINUX=/ {print $2}' /etc/selinux/config)
 if [[ ! "${SELINUX}" =~ (disabled|permissive) ]]; then
   echo
-  REDTXT "ERROR: SELINUX IS NOT DISABLED OR PERMISSIVE"
-  YELLOWTXT "------> PLEASE CHECK YOUR SELINUX SETTINGS"
+  REDTXT "[!] SELINUX IS NOT DISABLED OR PERMISSIVE"
+  YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
   echo
   exit 1
   else
@@ -265,28 +276,28 @@ fi
 fi
 
 # check if webstack is clean
-if ! grep -q "webstack_is_clean" /opt/magenx/cfg/.webstack >/dev/null 2>&1 ; then
+if ! grep -q "webstack_is_clean" ${MAGENX_CONFIG_PATH}/webstack >/dev/null 2>&1 ; then
 installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|firewalld|Percona*|maria*|php-?|nginx*|*ftp*|varnish*|certbot*|redis*|webmin')"
   if [ ! -z "$installed_packages" ]; then
-  REDTXT  "ERROR: WEBSTACK PACKAGES ALREADY INSTALLED"
-  YELLOWTXT "------> YOU NEED TO REMOVE THEM OR RE-INSTALL MINIMAL OS VERSION"
+  REDTXT  "[!] WEBSTACK PACKAGES ALREADY INSTALLED"
+  YELLOWTXT "[!] YOU NEED TO REMOVE THEM OR RE-INSTALL MINIMAL OS VERSION"
   echo
   echo -e "\t\t dnf remove ${installed_packages} --noautoremove"
   echo
   echo
   exit 1
     else
-  mkdir -p /opt/magenx/cfg
-  echo "webstack_is_clean" > /opt/magenx/cfg/.webstack
+  mkdir -p ${MAGENX_CONFIG_PATH}
+  echo "webstack_is_clean" > ${MAGENX_CONFIG_PATH}/webstack
   fi
 fi
 
 GREENTXT "PATH: ${PATH}"
 echo
-if ! grep -q "yes" /opt/magenx/cfg/.systest >/dev/null 2>&1 ; then
+if ! grep -q "yes" ${MAGENX_CONFIG_PATH}/systest >/dev/null 2>&1 ; then
 echo
 BLUEBG "~    QUICK SYSTEM TEST    ~"
-echo "-------------------------------------------------------------------------------------"
+WHITETXT "-------------------------------------------------------------------------------------"
 echo
     dnf -y install epel-release > /dev/null 2>&1
     dnf -y install time bzip2 tar > /dev/null 2>&1
@@ -300,13 +311,13 @@ echo
     freq=$( awk -F: ' /cpu MHz/ {freq=$2} END {print freq}' /proc/cpuinfo )
     tram=$( free -m | awk 'NR==2 {print $2}' )   
     echo  
-    echo -n "     PROCESSING I/O PERFORMANCE "
+    echo -n "  PROCESSING I/O PERFORMANCE "
     start_progress &
     pid="$!"
     io=$( ( dd if=/dev/zero of=$test_file bs=64k count=16k conv=fdatasync && rm -f $test_file ) 2>&1 | awk -F, '{io=$NF} END { print io}' )
     stop_progress "$pid"
 
-    echo -n "     PROCESSING CPU PERFORMANCE "
+    echo -n "  PROCESSING CPU PERFORMANCE "
     dd if=/dev/urandom of=$tar_file bs=1024 count=25000 >>/dev/null 2>&1
     start_progress &
     pid="$!"
@@ -339,22 +350,20 @@ echo
   WHITETXT "Total amount of RAM: $tram MB"
   echo
   WHITETXT "${BOLD}BENCHMARKS RESULTS"
-  WHITETXT "I/O speed: ${IO_COLOR}"
-  WHITETXT "CPU Time: ${CPU_COLOR}"
+  WHITETXT "[I/O speed]: ${IO_COLOR}"
+  WHITETXT "[CPU Time]: ${CPU_COLOR}"
 
 echo
-mkdir -p /opt/magenx/cfg/ && echo "yes" > /opt/magenx/cfg/.systest
+mkdir -p ${MAGENX_CONFIG_PATH} && echo "yes" > ${MAGENX_CONFIG_PATH}/systest
 echo
-pause "---> Press [Enter] key to proceed"
+pause "[] Press [Enter] key to proceed"
 echo
 fi
 echo
 # ssh test
-if ! grep -q "yes" /opt/magenx/cfg/.sshport >/dev/null 2>&1 ; then
-      touch /opt/magenx/cfg/.sshport
-if grep -q "Port 22" /etc/ssh/sshd_config >/dev/null 2>&1 ; then
-REDTXT "DEFAULT SSH PORT :22 DETECTED"
-echo
+if ! grep -q "yes" ${MAGENX_CONFIG_PATH}/sshport >/dev/null 2>&1 ; then
+      touch ${MAGENX_CONFIG_PATH}/sshport
+      echo
       sed -i "s/.*LoginGraceTime.*/LoginGraceTime 30/" /etc/ssh/sshd_config
       sed -i "s/.*MaxAuthTries.*/MaxAuthTries 6/" /etc/ssh/sshd_config     
       sed -i "s/.*X11Forwarding.*/X11Forwarding no/" /etc/ssh/sshd_config
@@ -365,18 +374,19 @@ echo
       sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
       sed -i "s/.*PrintMotd.*/PrintMotd yes/" /etc/ssh/sshd_config
 
-echo -n "---> Lets change default ssh port now? [y/n][n]:"
-read new_ssh_set
-if [ "${new_ssh_set}" == "y" ]; then
-   echo
-      cp /etc/ssh/sshd_config /etc/ssh/sshd_config.BACK
-      SSHPORT=$(shuf -i 9537-9554 -n 1)
+      echo
+      SSH_PORT="$(awk '/#?Port [0-9]/ {print $2}' /etc/ssh/sshd_config)"
+      if [ "${SSH_PORT}" == "22" ]; then
+        REDTXT "[!] DEFAULT SSH PORT :22 DETECTED"
+	 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.BACK
+          SSH_PORT_NEW=$(shuf -i 9537-9554 -n 1)
+         sed -i "s/.*Port 22/Port ${SSH_PORT_NEW}/g" /etc/ssh/sshd_config
+	SSH_PORT=${SSH_PORT_NEW}
+      fi
       SFTP_PORT=$(shuf -i 5121-5132 -n 1)
-      read -e -p "---> Enter the new ssh port : " -i "${SSHPORT}" NEW_SSH_PORT
-      sed -i "s/.*Port 22/Port ${NEW_SSH_PORT}/g" /etc/ssh/sshd_config
-      sed -i "/^Port ${NEW_SSH_PORT}/a Port ${SFTP_PORT}" /etc/ssh/sshd_config
+      sed -i "/^Port ${SSH_PORT}/a Port ${SFTP_PORT}" /etc/ssh/sshd_config
+      
 cat >> /etc/ssh/sshd_config <<END
-#
 # SFTP port configuration
 Match LocalPort ${SFTP_PORT} User *,!root
 ChrootDirectory %h
@@ -388,28 +398,28 @@ END
      echo
         GREENTXT "SSH PORT AND SETTINGS WERE UPDATED  -  OK"
 	echo
+        GREENTXT "[!] SSH MAIN PORT: ${SSH_PORT}"
+	echo
         systemctl restart sshd.service
         ss -tlp | grep sshd
      echo
 echo
-REDTXT "!IMPORTANT: NOW OPEN A NEW SSH SESSION WITH A NEW PORT!"
-REDTXT "!IMPORTANT: DO NOT CLOSE THE CURRENT SESSION!"
+REDTXT "[!] IMPORTANT: NOW OPEN NEW SSH SESSION WITH THE NEW PORT!"
+REDTXT "[!] IMPORTANT: DO NOT CLOSE YOUR CURRENT SESSION!"
 echo
-echo -n "------> Have you logged in another session? [y/n][n]:"
-read new_ssh_test
-if [ "${new_ssh_test}" == "y" ];then
+_echo "[?] Have you logged in another session? [y/n][n]:"
+read ssh_test
+if [ "${ssh_test}" == "y" ];then
       echo
-        GREENTXT "---> NEW [SSH] MASTER PORT: ${NEW_SSH_PORT}"
-	GREENTXT "---> NEW [SFTP] PORT: ${SFTP_PORT}"
+        GREENTXT "[!] SSH MAIN PORT: ${SSH_PORT}"
+	GREENTXT "[!] SFTP+CHROOT PORT: ${SFTP_PORT}"
 	echo
-	YELLOWTXT "---> check sshd config for restricted SFTP settings"
-	YELLOWTXT "---> restrict SFTP users to their home directory"
-        echo "yes" > /opt/magenx/cfg/.sshport
-	echo "SSH ${NEW_SSH_PORT}" >> /opt/magenx/cfg/.sshport
-	echo "SFTP ${SFTP_PORT}" >> /opt/magenx/cfg/.sshport
+        echo "# yes" > ${MAGENX_CONFIG_PATH}/sshport
+	echo "SSH_PORT=${SSH_PORT}" >> ${MAGENX_CONFIG_PATH}/sshport
+	echo "SFTP_PORT=${SFTP_PORT}" >> ${MAGENX_CONFIG_PATH}/sshport
 	echo
 	echo
-	pause "---> Press [Enter] key to proceed"
+	pause "[] Press [Enter] key to proceed"
         else
 	echo
         mv /etc/ssh/sshd_config.BACK /etc/ssh/sshd_config
@@ -420,18 +430,16 @@ if [ "${new_ssh_test}" == "y" ];then
         ss -tlp | grep sshd
 fi
 fi
-fi
-fi
 echo
 echo
-
 ###################################################################################
 ###                                  AGREEMENT                                  ###
 ###################################################################################
-
 echo
-if ! grep -q "yes" /opt/magenx/cfg/.terms >/dev/null 2>&1 ; then
-  YELLOWTXT "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+if ! grep -q "yes" ${MAGENX_CONFIG_PATH}/terms >/dev/null 2>&1 ; then
+printf "\033c"
+echo
+  YELLOWTXT "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   echo
   YELLOWTXT "BY INSTALLING THIS SOFTWARE AND BY USING ANY AND ALL SOFTWARE"
   YELLOWTXT "YOU ACKNOWLEDGE AND AGREE:"
@@ -439,13 +447,13 @@ if ! grep -q "yes" /opt/magenx/cfg/.terms >/dev/null 2>&1 ; then
   YELLOWTXT "THIS SOFTWARE AND ALL SOFTWARE PROVIDED IS PROVIDED AS IS"
   YELLOWTXT "UNSUPPORTED AND WE ARE NOT RESPONSIBLE FOR ANY DAMAGE"
   echo
-  YELLOWTXT "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  YELLOWTXT "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   echo
    echo
-    echo -n "---> Do you agree to these terms?  [y/n][y]:"
+    _echo "[?] Do you agree to these terms ?  [y/n][y]:"
     read terms_agree
   if [ "${terms_agree}" == "y" ];then
-    echo "yes" > /opt/magenx/cfg/.terms
+    echo "yes" > ${MAGENX_CONFIG_PATH}/terms
           else
         REDTXT "Going out. EXIT"
         echo
@@ -464,20 +472,20 @@ printf "\033c"
         echo -e "${DGREYBG}${BOLD}  MAGENTO SERVER CONFIGURATION v.${MAGENX_VER}  ${RESET}"
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         echo
-        WHITETXT "-> Install repository and LEMP packages :  ${YELLOW}\tlemp"
-        WHITETXT "-> Download Magento latest packages     :  ${YELLOW}\tmagento"
-        WHITETXT "-> Setup Magento database               :  ${YELLOW}\tdatabase"
-        WHITETXT "-> Install Magento no sample data       :  ${YELLOW}\tinstall"
-        WHITETXT "-> Post-Install configuration           :  ${YELLOW}\tconfig"
+        WHITETXT "[-] Install repository and LEMP packages :  ${YELLOW}\tlemp"
+        WHITETXT "[-] Download Magento latest packages     :  ${YELLOW}\tmagento"
+        WHITETXT "[-] Setup Magento database               :  ${YELLOW}\tdatabase"
+        WHITETXT "[-] Install Magento no sample data       :  ${YELLOW}\tinstall"
+        WHITETXT "[-] Post-Install configuration           :  ${YELLOW}\tconfig"
         echo
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         echo
-        WHITETXT "-> Install CSF Firewall or Fail2Ban     :  ${YELLOW}\tfirewall"
-        WHITETXT "-> Install Webmin control panel         :  ${YELLOW}\twebmin"
+        WHITETXT "[-] Install CSF Firewall or Fail2Ban     :  ${YELLOW}\tfirewall"
+        WHITETXT "[-] Install Webmin control panel         :  ${YELLOW}\twebmin"
         echo
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         echo
-        WHITETXT "-> To quit and exit                     :  ${RED}\texit"
+        WHITETXT "[-] To quit and exit                     :  ${RED}\texit"
         echo
     echo
 }
@@ -494,37 +502,38 @@ echo
 ###                                  SYSTEM UPGRADE                             ###
 ###################################################################################
 
-if ! grep -q "yes" /opt/magenx/cfg/.sysupdate >/dev/null 2>&1 ; then
+if ! grep -q "yes" ${MAGENX_CONFIG_PATH}/sysupdate >/dev/null 2>&1 ; then
 ## install all extra packages
-GREENTXT "SYSTEM PACKAGES INSTALLATION. PLEASE WAIT"
-dnf -q -y upgrade >/dev/null 2>&1
-dnf -q -y update >/dev/null 2>&1
+echo
+BLUEBG "[~]    SYSTEM UPDATE AND PACKAGES INSTALLATION   [~]"
+WHITETXT "-------------------------------------------------------------------------------------"
+echo
 dnf install -y dnf-utils >/dev/null 2>&1
 dnf module enable -y perl:5.26 >/dev/null 2>&1
 dnf config-manager --set-enabled PowerTools >/dev/null 2>&1
-dnf -y install ${EXTRA_PACKAGES}
-## disable some moduleeeespzdc
+dnf -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-}
+dnf -q -y upgrade-minimal >/dev/null 2>&1
+## disable some module
 dnf -y module disable nginx php redis varnish >/dev/null 2>&1
 echo
 curl -o /etc/motd -s ${REPO_MAGENX_TMP}motd
 sed -i "s/MAGE_VERSION_FULL/${MAGE_VERSION_FULL}/" /etc/motd
 sed -i "s/MAGENX_VER/${MAGENX_VER}/" /etc/motd
-echo "yes" > /opt/magenx/cfg/.sysupdate
+echo "yes" > ${MAGENX_CONFIG_PATH}/sysupdate
 echo
 fi
 echo
 echo
-BLUEBG "~    REPOSITORIES AND PACKAGES INSTALLATION    ~"
-echo "-------------------------------------------------------------------------------------"
+BLUEBG "[~]    REPOSITORIES AND PACKAGES INSTALLATION    [~]"
+WHITETXT "-------------------------------------------------------------------------------------"
 echo
-WHITETXT "============================================================================="
 echo
-echo -n "---> Start Percona repository and Percona 8.0 database installation? [y/n][n]:"
+_echo "[?] Install Percona 8.0 database ? [y/n][n]:"
 read repo_percona_install
 if [ "${repo_percona_install}" == "y" ];then
             echo
-            echo -n "     PROCESSING  "
-            quick_progress &
+            _echo "PROCESSING  "
+            long_progress &
             pid="$!"
             dnf install -y -q ${REPO_PERCONA} >/dev/null 2>&1
             stop_progress "$pid"
@@ -537,7 +546,7 @@ if [ "${repo_percona_install}" == "y" ];then
               echo
               GREENTXT "Percona 8.0 database installation:"
               echo
-              echo -n "     PROCESSING  "
+              _echo "PROCESSING  "
               long_progress &
               pid="$!"
 	      dnf module disable -y mysql >/dev/null 2>&1
@@ -559,6 +568,7 @@ if [ "${repo_percona_install}" == "y" ];then
               sed -i "/Restart=on-failure/a RestartSec=5" /etc/systemd/system/mysqld.service
               systemctl daemon-reload
               systemctl enable mysqld >/dev/null 2>&1
+	      rpm -qa 'percona*' | awk '{print "  Installed: ",$1}'
               echo
               WHITETXT "Downloading my.cnf file from MagenX Github repository"
               wget -qO /etc/my.cnf https://raw.githubusercontent.com/magenx/magento-mysql/master/my.cnf/my.cnf
@@ -609,7 +619,7 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
-echo -n "---> Start nginx ${NGINX_VERSION} installation? [y/n][n]:"
+_echo "[?] Install Nginx ${NGINX_VERSION} ? [y/n][n]:"
 read repo_nginx_install
 if [ "${repo_nginx_install}" == "y" ];then
 echo
@@ -627,7 +637,7 @@ END
             echo
             GREENTXT "Nginx package installation:"
             echo
-            echo -n "     PROCESSING  "
+            _echo "PROCESSING  "
             start_progress &
             pid="$!"
             dnf -y -q install nginx nginx-module-perl >/dev/null 2>&1
@@ -648,6 +658,7 @@ END
             sed -i "s/PrivateTmp=true/PrivateTmp=false/" /etc/systemd/system/nginx.service
             systemctl daemon-reload
             systemctl enable nginx >/dev/null 2>&1
+	    rpm -qa 'nginx*' | awk '{print "  Installed: ",$1}'
               else
              echo
             REDTXT "NGINX INSTALLATION ERROR"
@@ -660,15 +671,15 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
-echo -n "---> Start the Remi repository and PHP installation? [y/n][n]:"
+_echo "[?] Install PHP 7.4 ? [y/n][n]:"
 read repo_remi_install
 if [ "${repo_remi_install}" == "y" ];then
           echo
             GREENTXT "Remi repository installation:"
 	    echo
-	    read -e -p "---> Enter required PHP version: " -i "7.4" PHP_VERSION
+	    read -e -p "  [?] Enter required PHP version: " -i "7.4" PHP_VERSION
             echo
-            echo -n "     PROCESSING  "
+            _echo "PROCESSING  "
             long_progress &
             pid="$!"
             dnf install -y ${REPO_REMI} >/dev/null 2>&1
@@ -684,7 +695,7 @@ if [ "${repo_remi_install}" == "y" ];then
 	    echo
             GREENTXT "PHP ${PHP_VERSION} installation:"
             echo
-            echo -n "     PROCESSING  "
+            _echo "PROCESSING  "
             long_progress &
             pid="$!"
             dnf -y -q install php composer ${PHP_PACKAGES[@]/#/php-} ${PHP_PECL_PACKAGES[@]/#/php-} >/dev/null 2>&1
@@ -704,6 +715,7 @@ if [ "${repo_remi_install}" == "y" ];then
              systemctl daemon-reload
              systemctl enable php-fpm >/dev/null 2>&1
              systemctl disable httpd >/dev/null 2>&1
+	     echo
              rpm -qa 'php*' | awk '{print "  Installed: ",$1}'
                 else
                echo
@@ -714,7 +726,7 @@ if [ "${repo_remi_install}" == "y" ];then
            echo
             GREENTXT "Redis installation:"
             echo
-            echo -n "     PROCESSING  "
+            _echo "PROCESSING  "
             start_progress &
             pid="$!"
             dnf -y -q module install redis:remi-6.0 >/dev/null 2>&1
@@ -723,8 +735,10 @@ if [ "${repo_remi_install}" == "y" ];then
        if [ "$?" = 0 ]
          then
            echo
-             GREENTXT "REDIS INSTALLED"
+             GREENTXT "REDIS INSTALLED OK"
              systemctl disable redis >/dev/null 2>&1
+	     echo
+	     rpm -qa 'redis*' | awk '{print "  Installed: ",$1}'
              echo
 cat > /etc/systemd/system/redis@.service <<END
 [Unit]
@@ -802,9 +816,10 @@ echo
 WHITETXT "============================================================================="
 echo
 echo
-echo -n "---> Start Varnish Cache installation? [y/n][n]:"
+_echo "[?] Install Varnish Cache ? [y/n][n]:"
 read varnish_install
 if [ "${varnish_install}" == "y" ];then
+
 cat > /etc/yum.repos.d/varnish6.repo <<END
 [varnishcache_varnish64]
 name=varnishcache_varnish64
@@ -828,8 +843,9 @@ sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
 END
+
 echo
-            echo -n "     PROCESSING  "
+            _echo "PROCESSING  "
             start_progress &
             pid="$!"
             dnf -y -q install varnish >/dev/null 2>&1
@@ -843,6 +859,8 @@ echo
 	    uuidgen > /etc/varnish/secret
             systemctl daemon-reload >/dev/null 2>&1
             GREENTXT "VARNISH INSTALLED  -  OK"
+	    echo
+	    rpm -qa 'varnish*' | awk '{print "  Installed: ",$1}'
                else
               echo
             REDTXT "VARNISH INSTALLATION ERROR"
@@ -854,7 +872,7 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
-echo -n "---> Start ElasticSearch ${ELKREPO} installation? [y/n][n]:"
+_echo "[?] Install ElasticSearch ${ELKREPO} ? [y/n][n]:"
 read elastic_install
 if [ "${elastic_install}" == "y" ];then
 echo
@@ -875,12 +893,12 @@ autorefresh=1
 type=rpm-md
 EOF
 echo
-echo -n "     PROCESSING  "
-            start_progress &
-            pid="$!"
-            dnf -y -q install --enablerepo=elasticsearch-${ELKREPO} elasticsearch kibana >/dev/null 2>&1
-            stop_progress "$pid"
-            rpm  --quiet -q elasticsearch
+_echo "PROCESSING  "
+      start_progress &
+      pid="$!"
+      dnf -y -q install --enablerepo=elasticsearch-${ELKREPO} elasticsearch kibana >/dev/null 2>&1
+      stop_progress "$pid"
+      rpm  --quiet -q elasticsearch
   if [ "$?" = 0 ]
         then
           echo
@@ -896,10 +914,23 @@ chown -R :elasticsearch /etc/elasticsearch/*
 systemctl daemon-reload
 systemctl enable elasticsearch.service
 systemctl restart elasticsearch.service
-/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b >> /opt/magenx/elasticsearch
+/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b > /tmp/elasticsearch
+
+cat > ${MAGENX_CONFIG_PATH}/elasticsearch <<END
+APM_SYSTEM_PASSWORD="$(awk '/PASSWORD apm_system/ { print $4 }' /tmp/elasticsearch)"
+KIBANA_SYSTEM_PASSWORD="$(awk '/PASSWORD kibana_system/ { print $4 }' /tmp/elasticsearch)"
+KIBANA_PASSWORD="$(awk '/PASSWORD kibana =/ { print $4 }' /tmp/elasticsearch)"
+LOGSTASH_SYSTEM_PASSWORD="$(awk '/PASSWORD logstash_system/ { print $4 }' /tmp/elasticsearch)"
+BEATS_SYSTEM_PASSWORD="$(awk '/PASSWORD beats_system/ { print $4 }' /tmp/elasticsearch)"
+REMOTE_MONITORING_USER_PASSWORD="$(awk '/PASSWORD remote_monitoring_user/ { print $4 }' /tmp/elasticsearch)"
+ELASTIC_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
+END
+
 echo
      echo
 	    GREENTXT "ELASTCSEARCH ${ELKVER} INSTALLED  -  OK"
+	    echo
+	    rpm -qa 'elasticsearch*' | awk '{print "  Installed: ",$1}'
                else
               echo
             REDTXT "ELASTCSEARCH INSTALLATION ERROR"
@@ -912,11 +943,11 @@ echo
 echo
 GREENTXT "Applying system-wide settings templates"
 echo
-pause "---> Press [Enter] key to proceed"
+pause "[] Press [Enter] key to proceed"
 echo
 echo "Load optimized configs of php, opcache, fpm, fastcgi, sysctl, varnish"
 echo
-YELLOWTXT "! - YOU HAVE TO CHECK THEM AFTER ANYWAY - !"
+YELLOWTXT "[!] - YOU HAVE TO CHECK THEM AFTER ANYWAY - [!]"
 echo
 cat > /etc/sysctl.conf <<END
 fs.file-max = 1000000
@@ -962,15 +993,15 @@ cat > /etc/php.d/10-opcache.ini <<END
 zend_extension=opcache.so
 opcache.enable = 1
 opcache.enable_cli = 1
-opcache.memory_consumption = 256
+opcache.memory_consumption = 512
 opcache.interned_strings_buffer = 4
-opcache.max_accelerated_files = 50000
+opcache.max_accelerated_files = 60000
 opcache.max_wasted_percentage = 5
 opcache.use_cwd = 1
 opcache.validate_timestamps = 0
 ;opcache.revalidate_freq = 2
 ;opcache.validate_permission= 1
-;opcache.validate_root= 1
+opcache.validate_root= 1
 opcache.file_update_protection = 2
 opcache.revalidate_path = 0
 opcache.save_comments = 1
@@ -1015,11 +1046,11 @@ echo
 echo
 echo
 echo 
-BLUEBG "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
-echo "-------------------------------------------------------------------------------------"
+GREENTXT "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
+WHITETXT "-------------------------------------------------------------------------------------"
 echo
 echo
-pause '------> Press [Enter] key to show the menu'
+pause '[] Press [Enter] key to show the menu'
 printf "\033c"
 ;;
 
@@ -1030,74 +1061,72 @@ printf "\033c"
 "magento")
 echo
 echo
-BLUEBG "~    DOWNLOAD MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})    ~"
-echo "-------------------------------------------------------------------------------------"
+BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})    [~]"
+WHITETXT "-------------------------------------------------------------------------------------"
 echo
 echo
-     read -e -p "---> ENTER YOUR DOMAIN OR IP ADDRESS: " -i "myshop.com" MAGE_DOMAIN
-     read -e -p "---> ENTER MAGENTO FILES USER NAME: " -i "myshop" MAGE_OWNER
+     read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "myshop.com" MAGE_DOMAIN
+     read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "myshop" MAGE_OWNER
+	 
      MAGE_WEB_ROOT_PATH="/home/${MAGE_OWNER}/public_html"
+	 
      echo
-	 echo "---> MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})"
-	 echo "---> WILL BE DOWNLOADED TO ${MAGE_WEB_ROOT_PATH}"
+       _echo "[!] MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WILL BE DOWNLOADED TO ${MAGE_WEB_ROOT_PATH}"
      echo
-        mkdir -p ${MAGE_WEB_ROOT_PATH} && cd $_
-	userdel -r centos >/dev/null 2>&1
-	## create master user
-        useradd -d ${MAGE_WEB_ROOT_PATH%/*} -s /sbin/nologin ${MAGE_OWNER} >/dev/null 2>&1
-	## create slave php user
-	MAGE_PHPFPM_USER="php-${MAGE_OWNER}"
-  	useradd -M -s /sbin/nologin -d ${MAGE_WEB_ROOT_PATH%/*} ${MAGE_PHPFPM_USER} >/dev/null 2>&1
-	usermod -g ${MAGE_PHPFPM_USER} ${MAGE_OWNER}
-        MAGE_OWNER_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
-        echo "${MAGE_OWNER}:${MAGE_OWNER_PASS}"  | chpasswd  >/dev/null 2>&1
-        chmod 711 /home/${MAGE_OWNER}
-        chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH%/*}
-        chmod 2770 ${MAGE_WEB_ROOT_PATH}
+
+          userdel -r centos >/dev/null 2>&1
+          mkdir -p ${MAGE_WEB_ROOT_PATH} && cd $_
+          ## create root user
+          useradd -d ${MAGE_WEB_ROOT_PATH%/*} -s /bin/bash ${MAGE_OWNER} >/dev/null 2>&1
+          ## create root php user
+          MAGE_PHP_USER="php-${MAGE_OWNER}"
+          useradd -M -s /sbin/nologin -d ${MAGE_WEB_ROOT_PATH%/*} ${MAGE_PHP_USER} >/dev/null 2>&1
+          usermod -g ${MAGE_PHP_USER} ${MAGE_OWNER}
+          chmod 711 ${MAGE_WEB_ROOT_PATH%/*}
+	  mkdir -p ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local}
+          chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH} ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local}
+          chmod 2770 ${MAGE_WEB_ROOT_PATH}
+	  
 	echo
+MAGE_MINIMAL_OPT="MINIMAL SET OF PACKAGES"
+GREENTXT "${MAGE_MINIMAL_OPT} INSTALLATION"
+echo
 GREENTXT "Benefits of removing bloatware packages:"
-echo "      ---> Faster backend/frontend operations!"
-echo "      ---> Less maintenance work!"
-echo "      ---> Less security risks and dependency!"
+WHITETXT "[!] Faster backend/frontend operations!"
+WHITETXT "[!] Less maintenance work!"
+WHITETXT "[!] Less security risks and dependencies!"
 echo
-YELLOWTXT "some hidden dependencies can break it, you will need to install missing packages"
-echo
-echo -n "---> Would you like to download Magento 2 minimal? [y/n][n]:"
-read magento_minimal
-if [ "${magento_minimal}" == "y" ]; then
-                MAGE_MINIMAL_OPT="MINIMAL SET OF PACKAGES"
-		echo
-		GREENTXT "${MAGE_MINIMAL_OPT}"
-		su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
-                curl -sO https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace
+pause '[] Press [Enter] key to start'
+      echo
+	su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
+      curl -sO https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace
 ##replace?
 sed -i '/"conflict":/ {
 r composer_replace
 N
 }' composer.json
 ##replace?
-		su ${MAGE_OWNER} -s /bin/bash -c "composer install"
-        else
-	        MAGE_MINIMAL_OPT="FULL SET OF PACKAGES"
-		echo
-	        GREENTXT "${MAGE_MINIMAL_OPT}"
-	        su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . "	
-fi	
-        echo
+        su ${MAGE_OWNER} -s /bin/bash -c "composer install"
+       echo
      echo
-GREENTXT "      == MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR INSTALLATION =="
+GREENTXT "[~]    MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR SETUP    [~]"
+WHITETXT "--------------------------------------------------------------------"
 echo
-su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask" 
-mkdir -p /opt/magenx/cfg/
-if [ -f /opt/magenx/cfg/.magenx_index ]; then
-sed -i "s,webshop.*,webshop ${MAGE_DOMAIN}    ${MAGE_WEB_ROOT_PATH}    ${MAGE_OWNER}   ${MAGE_OWNER_PASS}  ${MAGE_VERSION}  ${MAGE_VERSION_FULL} ${MAGE_PHPFPM_USER}," /opt/magenx/cfg/.magenx_index
-else
-cat >> /opt/magenx/cfg/.magenx_index <<END
-webshop ${MAGE_DOMAIN}    ${MAGE_WEB_ROOT_PATH}    ${MAGE_OWNER}   ${MAGE_OWNER_PASS}  ${MAGE_VERSION}  ${MAGE_VERSION_FULL} ${MAGE_PHPFPM_USER}
+su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
+
+mkdir -p ${MAGENX_CONFIG_PATH}
+cat > ${MAGENX_CONFIG_PATH}/magento <<END
+# ${MAGE_MINIMAL_OPT}
+MAGE_VERSION="2"
+MAGE_VERSION_FULL="${MAGE_VERSION_FULL}"
+MAGE_DOMAIN="${MAGE_DOMAIN}"
+MAGE_OWNER="${MAGE_OWNER}"
+MAGE_PHP_USER="${MAGE_PHP_USER}"
+MAGE_WEB_ROOT_PATH="${MAGE_WEB_ROOT_PATH}"
 END
-fi
+
 echo
-pause '------> Press [Enter] key to show menu'
+pause '[] Press [Enter] key to show menu'
 printf "\033c"
 ;;
 
@@ -1107,17 +1136,23 @@ printf "\033c"
 
 "database")
 printf "\033c"
-WHITETXT "============================================================================="
-GREENTXT "CREATE MAGENTO DATABASE AND DATABASE USER"
 echo
+BLUEBG "[~]    CREATE MYSQL USER AND DATABASE    [~]"
+WHITETXT "-------------------------------------------------------------------------------------"
 if [ ! -f /root/.my.cnf ]; then
 systemctl start mysqld.service
-MYSQL_ROOT_PASS_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
-MYSQL_ROOT_PASS="${MYSQL_ROOT_PASS_GEN}${RANDOM}"
-MYSQL_ROOT_TMP_PASS=$(grep 'temporary password is generated for' /var/log/mysqld.log | awk '{print $NF}')
+MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
+MYSQL_ROOT_TMP_PASSWORD=$(grep 'temporary password is generated for' /var/log/mysqld.log | awk '{print $NF}')
 ## reset temporary password
-mysql --connect-expired-password -u root -p${MYSQL_ROOT_TMP_PASS}  <<EOMYSQL
-ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASS}";
+cat > /root/.my.cnf <<END
+[client]
+user=root
+password="${MYSQL_ROOT_TMP_PASSWORD}"
+END
+mysql --connect-expired-password  <<EOMYSQL
+SET GLOBAL validate_password.policy = 0;
+ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASSWORD}";
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
@@ -1127,96 +1162,81 @@ exit
 EOMYSQL
 cat > /root/.mytop <<END
 user=root
-pass=${MYSQL_ROOT_PASS}
+pass=${MYSQL_ROOT_PASSWORD}
 db=mysql
 END
 cat > /root/.my.cnf <<END
 [client]
 user=root
-password="${MYSQL_ROOT_PASS}"
+password="${MYSQL_ROOT_PASSWORD}"
 END
 fi
 chmod 600 /root/.my.cnf /root/.mytop
-MAGE_VERSION=$(awk '/webshop/ { print $6 }' /opt/magenx/cfg/.magenx_index)
-MAGE_DB_PASS_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_{}()<>-' | fold -w 15 | head -n 1)
-MAGE_DB_PASS="${MAGE_DB_PASS_GEN}${RANDOM}"
+echo
+GREENTXT "GENERATE MYSQL USER AND DATABASE NAMES WITH NEW PASSWORD"
+MAGE_DB_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
+MAGE_DB_PASSWORD="${MAGE_DB_PASSWORD_GEN}${RANDOM}"
 MAGE_DB_GROUP="$(openssl rand -hex 4)"
 echo
+MAGE_DB_HOST="localhost" 
+MAGE_DB_NAME="m${MAGE_VERSION}d_live_${MAGE_DB_GROUP}" 
+MAGE_DB_USER="m${MAGE_VERSION}u_live_${MAGE_DB_GROUP}"
+GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
 echo
-read -e -p "---> Enter Magento database host : " -i "localhost" MAGE_DB_HOST
-read -e -p "---> Enter Magento database name : " -i "m${MAGE_VERSION}d_$(openssl rand -hex 2)${MAGE_DB_GROUP}" MAGE_DB_NAME
-read -e -p "---> Enter Magento database user : " -i "m${MAGE_VERSION}u_$(openssl rand -hex 2)${MAGE_DB_GROUP}" MAGE_DB_USER_NAME
-echo
-echo
-pause '------> Press [Enter] key to create MySQL database and user'
 mysql <<EOMYSQL
-CREATE USER '${MAGE_DB_USER_NAME}'@'${MAGE_DB_HOST}' IDENTIFIED BY '${MAGE_DB_PASS}';
+CREATE USER '${MAGE_DB_USER}'@'${MAGE_DB_HOST}' IDENTIFIED BY '${MAGE_DB_PASSWORD}';
 CREATE DATABASE ${MAGE_DB_NAME};
-GRANT ALL PRIVILEGES ON ${MAGE_DB_NAME}.* TO '${MAGE_DB_USER_NAME}'@'${MAGE_DB_HOST}' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON ${MAGE_DB_NAME}.* TO '${MAGE_DB_USER}'@'${MAGE_DB_HOST}' WITH GRANT OPTION;
 exit
 EOMYSQL
-echo
-mkdir -p /opt/magenx/cfg/
-cat >> /opt/magenx/cfg/.magenx_index <<END
-database   ${MAGE_DB_HOST}   ${MAGE_DB_NAME}   ${MAGE_DB_USER_NAME}   ${MAGE_DB_PASS}  ${MYSQL_ROOT_PASS}
+
+GREENTXT "SAVE VARIABLES TO CONFIG FILE"
+mkdir -p ${MAGENX_CONFIG_PATH}
+cat > ${MAGENX_CONFIG_PATH}/database <<END
+MAGE_DB_HOST="${MAGE_DB_HOST}"
+MAGE_DB_NAME="${MAGE_DB_NAME}"
+MAGE_DB_USER="${MAGE_DB_USER}"
+MAGE_DB_PASSWORD="${MAGE_DB_PASSWORD}"
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
 END
 echo
 echo
-pause '------> Press [Enter] key to show menu'
+echo
+pause '[] Press [Enter] key to show menu'
 printf "\033c"
 ;;
 
 ###################################################################################
-###                               MAGENTO INSTALLATION                         ###
+###                                  MAGENTO SETUP                              ###
 ###################################################################################
 
 "install")
 printf "\033c"
-MAGE_VERSION=$(awk '/webshop/ { print $6 }' /opt/magenx/cfg/.magenx_index)
-MAGE_VERSION_FULL=$(awk '/webshop/ { print $7 }' /opt/magenx/cfg/.magenx_index)
 echo
-BLUEBG   "~    MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) INSTALLATION    ~"
-echo "-------------------------------------------------------------------------------------"
+BLUEBG   "[~]    MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) SETUP    [~]"
+WHITETXT "-------------------------------------------------------------------------------------"
 echo
-MAGE_WEB_ROOT_PATH=$(awk '/webshop/ { print $3 }' /opt/magenx/cfg/.magenx_index)
-MAGE_OWNER=$(awk '/webshop/ { print $4 }' /opt/magenx/cfg/.magenx_index)
-MAGE_PHPFPM_USER=$(awk '/webshop/ { print $8 }' /opt/magenx/cfg/.magenx_index)
-MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /opt/magenx/cfg/.magenx_index)
-DB_HOST=$(awk '/database/ { print $2 }' /opt/magenx/cfg/.magenx_index)
-DB_NAME=$(awk '/database/ { print $3 }' /opt/magenx/cfg/.magenx_index)
-DB_USER_NAME=$(awk '/database/ { print $4 }' /opt/magenx/cfg/.magenx_index)
-DB_PASS=$(awk '/database/ { print $5 }' /opt/magenx/cfg/.magenx_index)
-ELK_PASSWORD=$(awk '/PASSWORD elastic/ { print $4 }' /opt/magenx/elasticsearch)
+
+include_config ${MAGENX_CONFIG_PATH}/magento
+include_config ${MAGENX_CONFIG_PATH}/database
+include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
 cd ${MAGE_WEB_ROOT_PATH}
-chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH}
+chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} *
+chmod u+x bin/magento
 echo
-echo "---> ENTER SETUP INFORMATION"
+echo "   [] ENTER SETUP INFORMATION"
 echo
-WHITETXT "Database information"
-read -e -p "---> Enter your database host: " -i "${DB_HOST}"  MAGE_DB_HOST
-read -e -p "---> Enter your database name: " -i "${DB_NAME}"  MAGE_DB_NAME
-read -e -p "---> Enter your database user: " -i "${DB_USER_NAME}"  MAGE_DB_USER_NAME
-read -e -p "---> Enter your database password: " -i "${DB_PASS}"  MAGE_DB_PASS
-echo
-WHITETXT "Elasticsearch information"
-read -e -p "---> Enter your ELK host: " -i "localhost"  MAGE_ELK_HOST
-read -e -p "---> Enter your ELK port: " -i "9200"  MAGE_ELK_PORT
-read -e -p "---> Enter your ELK username: " -i "elastic"  MAGE_ELK_USERNAME
-read -e -p "---> Enter your ELK password: " -i "${ELK_PASSWORD}"  MAGE_ELK_PASSWORD
-echo
-WHITETXT "Administrator and domain"
-read -e -p "---> Enter your First Name: " -i "Name"  MAGE_ADMIN_FNAME
-read -e -p "---> Enter your Last Name: " -i "Lastname"  MAGE_ADMIN_LNAME
-read -e -p "---> Enter your email: " -i "admin@${MAGE_DOMAIN}"  MAGE_ADMIN_EMAIL
-read -e -p "---> Enter your admins login name: " -i "admin"  MAGE_ADMIN_LOGIN
-MAGE_ADMIN_PASSGEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 10 | head -n 1)
-read -e -p "---> Use generated admin password: " -i "${MAGE_ADMIN_PASSGEN}${RANDOM}"  MAGE_ADMIN_PASS
-read -e -p "---> Enter your shop url: " -i "http://${MAGE_DOMAIN}/"  MAGE_SITE_URL
+WHITETXT "Admin name, email and base url"
+read -e -p "   [?] Admin first name: " -i "Magento"  MAGE_ADMIN_FIRSTNAME
+read -e -p "   [?] Admin last name: " -i "Administrator"  MAGE_ADMIN_LASTNAME
+read -e -p "   [?] Admin email: " -i "admin@${MAGE_DOMAIN}"  MAGE_ADMIN_EMAIL
+read -e -p "   [?] Admin login name: " -i "admin"  MAGE_ADMIN_LOGIN
+MAGE_ADMIN_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 10 | head -n 1)
+read -e -p "   [?] Admin password: " -i "${MAGE_ADMIN_PASSWORD_GEN}${RANDOM}"  MAGE_ADMIN_PASSWORD
+read -e -p "   [?] Shop base url: " -i "http://${MAGE_DOMAIN}/"  MAGE_SITE_URL
 echo
 WHITETXT "Language, Currency and Timezone settings"
-echo
-chmod u+x bin/magento
 updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_LOCALE
 updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_CURRENCY
 updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_TIMEZONE
@@ -1224,18 +1244,18 @@ echo
 echo
 GREENTXT "SETUP MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WITHOUT SAMPLE DATA"
 echo
-pause '---> Press [Enter] key to run setup'
+pause '[] Press [Enter] key to run setup'
 echo
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SITE_URL} \
 --db-host=${MAGE_DB_HOST} \
 --db-name=${MAGE_DB_NAME} \
---db-user=${MAGE_DB_USER_NAME} \
---db-password='${MAGE_DB_PASS}' \
---admin-firstname=${MAGE_ADMIN_FNAME} \
---admin-lastname=${MAGE_ADMIN_LNAME} \
+--db-user=${MAGE_DB_USER} \
+--db-password='${MAGE_DB_PASSWORD}' \
+--admin-firstname=${MAGE_ADMIN_FIRSTNAME} \
+--admin-lastname=${MAGE_ADMIN_LASTNAME} \
 --admin-email=${MAGE_ADMIN_EMAIL} \
 --admin-user=${MAGE_ADMIN_LOGIN} \
---admin-password='${MAGE_ADMIN_PASS}' \
+--admin-password='${MAGE_ADMIN_PASSWORD}' \
 --language=${MAGE_LOCALE} \
 --currency=${MAGE_CURRENCY} \
 --timezone=${MAGE_TIMEZONE} \
@@ -1243,16 +1263,17 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SI
 --session-save=files \
 --use-rewrites=1 \
 --search-engine=elasticsearch7 \
---elasticsearch-host=${MAGE_ELK_HOST} \
---elasticsearch-port=${MAGE_ELK_PORT} \
+--elasticsearch-host=127.0.0.1 \
+--elasticsearch-port=9200 \
 --elasticsearch-enable-auth=1 \
---elasticsearch-username=${MAGE_ELK_USERNAME} \
---elasticsearch-password='${MAGE_ELK_PASSWORD}'"
+--elasticsearch-username=elastic \
+--elasticsearch-password='${ELASTIC_PASSWORD}'"
 
-mkdir -p /opt/magenx
-mysqldump --single-transaction --routines --triggers --events ${MAGE_DB_NAME} | gzip > /opt/magenx/${MAGE_DB_NAME}.sql.gz
-cp app/etc/env.php  /opt/magenx/env.php.default
-
+mkdir -p ${MAGENX_CONFIG_PATH}
+mysqldump --single-transaction --routines --triggers --events ${MAGE_DB_NAME} | gzip > ${MAGENX_CONFIG_PATH}/${MAGE_DB_NAME}.sql.gz
+cp app/etc/env.php  ${MAGENX_CONFIG_PATH}/env.php.default
+echo
+echo
 echo
     WHITETXT "============================================================================="
     echo
@@ -1260,11 +1281,16 @@ echo
     echo
     WHITETXT "============================================================================="
 echo
-cat >> /opt/magenx/cfg/.magenx_index <<END
-mageadmin  ${MAGE_ADMIN_LOGIN}  ${MAGE_ADMIN_PASS}  ${MAGE_ADMIN_EMAIL}  ${MAGE_TIMEZONE}  ${MAGE_LOCALE} ${MAGE_ADMIN_PATH_RANDOM}
+cat > ${MAGENX_CONFIG_PATH}/install <<END
+MAGE_ADMIN_LOGIN="${MAGE_ADMIN_LOGIN}"
+MAGE_ADMIN_PASSWORD="${MAGE_ADMIN_PASSWORD}"
+MAGE_ADMIN_EMAIL="${MAGE_ADMIN_EMAIL}"
+MAGE_TIMEZONE="${MAGE_TIMEZONE}"
+MAGE_LOCALE="${MAGE_LOCALE}"
+MAGE_ADMIN_PATH="$(grep -Po "(?<='frontName' => ')\w*(?=')" ${MAGE_WEB_ROOT_PATH}/app/etc/env.php)"
 END
 
-pause '------> Press [Enter] key to show menu'
+pause '[] Press [Enter] key to show menu'
 printf "\033c"
 ;;
 
@@ -1283,37 +1309,23 @@ if [[ ${RESULT} == up ]]; then
   GREENTXT "PASS: NETWORK IS UP. GREAT, LETS START!"
   else
   echo
-  REDTXT "ERROR: NETWORK IS DOWN?"
-  YELLOWTXT "------> PLEASE CHECK YOUR NETWORK SETTINGS."
+  REDTXT "[!] NETWORK IS DOWN ?"
+  YELLOWTXT "[!] PLEASE CHECK YOUR NETWORK SETTINGS"
   echo
   echo
   exit 1
 fi
 
 printf "\033c"
-MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /opt/magenx/cfg/.magenx_index)
-MAGE_WEB_ROOT_PATH=$(awk '/webshop/ { print $3 }' /opt/magenx/cfg/.magenx_index)
-MAGE_OWNER=$(awk '/webshop/ { print $4 }' /opt/magenx/cfg/.magenx_index)
-MAGE_PHPFPM_USER=$(awk '/webshop/ { print $8 }' /opt/magenx/cfg/.magenx_index)
-MAGE_OWNER_PASS=$(awk '/webshop/ { print $5 }' /opt/magenx/cfg/.magenx_index)
-MAGE_ADMIN_EMAIL=$(awk '/mageadmin/ { print $4 }' /opt/magenx/cfg/.magenx_index)
-MAGE_TIMEZONE=$(awk '/mageadmin/ { print $5 }' /opt/magenx/cfg/.magenx_index)
-MAGE_LOCALE=$(awk '/mageadmin/ { print $6 }' /opt/magenx/cfg/.magenx_index)
-MAGE_ADMIN_LOGIN=$(awk '/mageadmin/ { print $2 }' /opt/magenx/cfg/.magenx_index)
-MAGE_ADMIN_PASS=$(awk '/mageadmin/ { print $3 }' /opt/magenx/cfg/.magenx_index)
-MAGE_ADMIN_PATH_RANDOM=$(awk '/mageadmin/ { print $7 }' /opt/magenx/cfg/.magenx_index)
-MAGE_VERSION=$(awk '/webshop/ { print $6 }' /opt/magenx/cfg/.magenx_index)
-MAGE_VERSION_FULL=$(awk '/webshop/ { print $7 }' /opt/magenx/cfg/.magenx_index)
-MAGE_DB_HOST=$(awk '/database/ { print $2 }' /opt/magenx/cfg/.magenx_index)
-MAGE_DB_NAME=$(awk '/database/ { print $3 }' /opt/magenx/cfg/.magenx_index)
-MAGE_DB_USER_NAME=$(awk '/database/ { print $4 }' /opt/magenx/cfg/.magenx_index)
-MAGE_DB_PASS=$(awk '/database/ { print $5 }' /opt/magenx/cfg/.magenx_index)
-MYSQL_ROOT_PASS=$(awk '/database/ { print $6 }' /opt/magenx/cfg/.magenx_index)
-NEW_SSH_PORT=$(awk '/SSH/ { print $2 }' /opt/magenx/cfg/.sshport)
-SFTP_PORT=$(awk '/SFTP/ { print $2 }' /opt/magenx/cfg/.sshport)
+
+include_config ${MAGENX_CONFIG_PATH}/magento
+include_config ${MAGENX_CONFIG_PATH}/database
+include_config ${MAGENX_CONFIG_PATH}/install
+include_config ${MAGENX_CONFIG_PATH}/sshport
+
 echo
-BLUEBG "~    POST-INSTALLATION CONFIGURATION    ~"
-echo "-------------------------------------------------------------------------------------"
+BLUEBG "[~]    POST-INSTALLATION CONFIGURATION    [~]"
+WHITETXT "-------------------------------------------------------------------------------------"
 echo
 GREENTXT "SERVER HOSTNAME SETTINGS"
 hostnamectl set-hostname server.${MAGE_DOMAIN} --static
@@ -1323,11 +1335,11 @@ timedatectl set-timezone ${MAGE_TIMEZONE}
 echo
 GREENTXT "PHP-FPM SETTINGS"
 sed -i "s/\[www\]/\[${MAGE_OWNER}\]/" /etc/php-fpm.d/www.conf
-sed -i "s/user = apache/user = ${MAGE_PHPFPM_USER}/" /etc/php-fpm.d/www.conf
-sed -i "s/group = apache/group = ${MAGE_PHPFPM_USER}/" /etc/php-fpm.d/www.conf
+sed -i "s/user = apache/user = ${MAGE_PHP_USER}/" /etc/php-fpm.d/www.conf
+sed -i "s/group = apache/group = ${MAGE_PHP_USER}/" /etc/php-fpm.d/www.conf
 sed -i "s/^listen =.*/listen = 127.0.0.1:9000/" /etc/php-fpm.d/www.conf
 sed -i "s/;listen.owner = nobody/listen.owner = ${MAGE_OWNER}/" /etc/php-fpm.d/www.conf
-sed -i "s/;listen.group = nobody/listen.group = ${MAGE_PHPFPM_USER}/" /etc/php-fpm.d/www.conf
+sed -i "s/;listen.group = nobody/listen.group = ${MAGE_PHP_USER}/" /etc/php-fpm.d/www.conf
 sed -i "s/;listen.mode = 0660/listen.mode = 0660/" /etc/php-fpm.d/www.conf
 sed -i '/PHPSESSID/d' /etc/php.ini
 sed -i "s,.*date.timezone.*,date.timezone = ${MAGE_TIMEZONE}," /etc/php.ini
@@ -1338,8 +1350,10 @@ cat >> /etc/php-fpm.d/www.conf <<END
 ;; Custom pool settings
 php_flag[display_errors] = off
 php_admin_flag[log_errors] = on
-php_admin_value[error_log] = ${MAGE_WEB_ROOT_PATH}/var/log/php-fpm-error.log
-php_admin_value[memory_limit] = 2048M
+php_admin_value[error_log] = "${MAGE_WEB_ROOT_PATH}/var/log/php-fpm-error.log"
+php_admin_value[default_charset] = UTF-8
+php_flag[display_errors] = off
+php_admin_value[memory_limit] = 1024M
 php_admin_value[date.timezone] = ${MAGE_TIMEZONE}
 END
 
@@ -1363,28 +1377,28 @@ sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGE
 sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/nginx.conf
 sed -i "s,/var/www/html,${MAGE_WEB_ROOT_PATH},g" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
 
-MAGE_ADMIN_PATH=$(grep -Po "(?<='frontName' => ')\w*(?=')" ${MAGE_WEB_ROOT_PATH}/app/etc/env.php)
 sed -i "s/ADMIN_PLACEHOLDER/${MAGE_ADMIN_PATH}/" /etc/nginx/conf_m${MAGE_VERSION}/extra_protect.conf
-ADMIN_HTTP_PASSWD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
-htpasswd -b -c /etc/nginx/.admin admin ${ADMIN_HTTP_PASSWD}  >/dev/null 2>&1
+ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
+htpasswd -b -c /etc/nginx/.admin admin ${ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
 echo
 GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
-     PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
-     PMA_PASSWD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
-     BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold -w 64 | head -n 1)
+PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
+PMA_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
+BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold -w 64 | head -n 1)
      dnf -y -q install phpMyAdmin
-     USER_IP=${SSH_CLIENT%% *} 
-     sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" /etc/phpMyAdmin/config.inc.php
-     sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
+       USER_IP=${SSH_CLIENT%% *} 
+        sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" /etc/phpMyAdmin/config.inc.php
+       sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
      sed -i "5i \\
            auth_basic  \"please login\"; \\
            auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
 	 	   
-     htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWD}  >/dev/null 2>&1
-     echo
-     systemctl restart nginx.service
-cat >> /opt/magenx/cfg/.magenx_index <<END
-pma   mysql_${PMA_FOLDER}   mysql   ${PMA_PASSWD}
+htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWORD}  >/dev/null 2>&1
+echo
+systemctl restart nginx.service
+cat > ${MAGENX_CONFIG_PATH}/phpmyadmin <<END
+PMA_FOLDER="mysql_${PMA_FOLDER}"
+PMA_PASSWORD="${PMA_PASSWORD}"
 END
 echo
 echo
@@ -1395,6 +1409,7 @@ GREENTXT "VARNISH CACHE CONFIGURATION"
     chmod u+x ${MAGE_WEB_ROOT_PATH}/bin/magento
     su ${MAGE_OWNER} -s /bin/bash -c "${MAGE_WEB_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
     php ${MAGE_WEB_ROOT_PATH}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
+    sed -i "s,pub/health_,health_,g" /etc/varnish/default.vcl
     systemctl restart varnish.service
     wget -O /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl >/dev/null 2>&1
     wget -O /etc/varnish/devicedetect-include.vcl ${REPO_MAGENX_TMP}devicedetect-include.vcl >/dev/null 2>&1
@@ -1402,7 +1417,7 @@ GREENTXT "VARNISH CACHE CONFIGURATION"
 fi
 echo
 GREENTXT "DOWNLOADING n98-MAGERUN2"
-     curl -s -o /usr/local/bin/magerun2 https://files.magerun.net/n98-magerun2.phar
+  curl -s -o /usr/local/bin/magerun2 https://files.magerun.net/n98-magerun2.phar
 echo
 GREENTXT "CACHE CLEANER SCRIPT"
 cat > /usr/local/bin/cacheflush <<END
@@ -1424,8 +1439,9 @@ GREENTXT "LETSENCRYPT SSL CERTIFICATE REQUEST"
 wget -q https://dl.eff.org/certbot-auto -O /usr/local/bin/certbot-auto
 chmod +x /usr/local/bin/certbot-auto
 certbot-auto --install-only
-certbot-auto certonly --agree-tos --no-eff-email --email ${MAGE_ADMIN_EMAIL} --webroot -w ${MAGE_WEB_ROOT_PATH}/pub/
-systemctl reload nginx.service
+systemctl stop nginx.service
+certbot-auto certonly --agree-tos --no-eff-email --email ${MAGE_ADMIN_EMAIL} --standalone
+systemctl start nginx.service
 echo
 GREENTXT "GENERATE DHPARAM FOR NGINX SSL"
 openssl dhparam -dsaparam -out /etc/ssl/certs/dhparams.pem 4096
@@ -1438,8 +1454,8 @@ GREENTXT "SIMPLE LOGROTATE SCRIPT FOR MAGENTO LOGS"
 cat > /etc/logrotate.d/magento <<END
 ${MAGE_WEB_ROOT_PATH}/var/log/*.log
 {
-su ${MAGE_OWNER} ${MAGE_PHPFPM_USER}
-create 660 ${MAGE_OWNER} ${MAGE_PHPFPM_USER}
+su ${MAGE_OWNER} ${MAGE_PHP_USER}
+create 660 ${MAGE_OWNER} ${MAGE_PHP_USER}
 weekly
 rotate 2
 notifempty
@@ -1451,8 +1467,6 @@ echo
 GREENTXT "SERVICE STATUS WITH E-MAIL ALERTING"
 wget -qO /etc/systemd/system/service-status-mail@.service ${REPO_MAGENX_TMP}service-status-mail@.service
 wget -qO /usr/local/bin/service-status-mail.sh ${REPO_MAGENX_TMP}service-status-mail.sh
-sed -i "s/MAGE_ADMIN_EMAIL/${MAGE_ADMIN_EMAIL}/" /usr/local/bin/service-status-mail.sh
-sed -i "s/MAGE_DOMAIN/${MAGE_DOMAIN}/" /usr/local/bin/service-status-mail.sh
 chmod u+x /usr/local/bin/service-status-mail.sh
 systemctl daemon-reload
 echo
@@ -1495,7 +1509,7 @@ GREENTXT "ROOT CRONJOBS"
 echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -E -s \"MYSQLTUNER WEEKLY REPORT at ${MAGE_DOMAIN}\" ${MAGE_ADMIN_EMAIL}" >> rootcron
 echo "30 23 * * * /usr/local/bin/goaccess /var/log/nginx/access.log -a -o /var/log/nginx/access_log_report.html 2>&1 && echo | mailx -s \"Daily access log report at ${HOSTNAME}\" -a /var/log/nginx/access_log_report.html ${MAGE_ADMIN_EMAIL}" >> rootcron
 echo "0 1 * * 1 find ${MAGE_WEB_ROOT_PATH}/pub/ -name '*\.jpg' -type f -mtime -7 -exec jpegoptim -q -s -p --all-progressive -m 65 {} \; >/dev/null 2>&1" >> rootcron
-echo '45 5 * * 1 /usr/local/bin/certbot-auto renew --deploy-hook "systemctl reload nginx" >> /var/log/letsencrypt-renew.log' >> rootcron
+echo '#45 5 * * 1 /usr/local/bin/certbot-auto renew --deploy-hook "systemctl reload nginx" >> /var/log/letsencrypt-renew.log' >> rootcron
 crontab rootcron
 rm rootcron
 echo
@@ -1533,40 +1547,84 @@ systemctl daemon-reload
 systemctl restart nginx.service
 systemctl restart php-fpm.service
 
-cd ${MAGE_WEB_ROOT_PATH}
-chown -R ${MAGE_OWNER}:${MAGE_PHPFPM_USER} ${MAGE_WEB_ROOT_PATH%/*}
+chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH}
 echo
 GREENTXT "CLEAN MAGENTO CACHE AND ENABLE DEVELOPER MODE"
 rm -rf var/*
-su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento deploy:mode:set developer"
-su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento cache:flush"
+su ${MAGE_OWNER} -s /bin/bash -c "bin/magento cache:flush"
+su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set developer"
 echo
 systemctl restart php-fpm.service
 echo
 GREENTXT "SAVING composer.json AND env.php"
-cp composer.json /opt/magenx/composer.json.saved
-cp composer.lock /opt/magenx/composer.lock.saved
-cp app/etc/env.php /opt/magenx/env.php.saved
-chmod -R 600 /opt/magenx
+cp composer.json ${MAGENX_CONFIG_PATH}/composer.json.saved
+cp composer.lock ${MAGENX_CONFIG_PATH}/composer.lock.saved
+cp app/etc/env.php ${MAGENX_CONFIG_PATH}/env.php.saved
 echo
 echo
 GREENTXT "FIXING PERMISSIONS"
-chmod -R 600 /opt/magenx/cfg
 chmod +x /usr/local/bin/*
+chmod -R 600 ${MAGENX_CONFIG_PATH}
 
+# magento ACL mess
 cd ${MAGE_WEB_ROOT_PATH}
 find . -type d -exec chmod 2770 {} \;
 find . -type f -exec chmod 660 {} \;
-setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
-setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_PHPFPM_USER}:rwx,o::- var generated pub/static pub/media
+setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::- ${MAGE_WEB_ROOT_PATH}
+setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::- var generated pub/static pub/media
 chmod ug+x bin/magento
+
 echo
 echo
 GREENTXT "MAGENTO CRONJOBS"
-su ${MAGE_PHPFPM_USER} -s /bin/bash -c "${MAGE_WEB_ROOT_PATH}/bin/magento cron:install"
+su ${MAGE_PHP_USER} -s /bin/bash -c "bin/magento cron:install"
+echo
+
+cd ${MAGE_WEB_ROOT_PATH%/*}
+
+GREENTXT "GENERATE SSH KEY"
+mkdir .ssh
+MAGE_OWNER_SSHKEY="${MAGE_OWNER}_sshkey"
+ssh-keygen -b 2048 -t rsa -f ${MAGENX_CONFIG_PATH}/${MAGE_OWNER_SSHKEY} -C "${MAGE_DOMAIN}" -q -N ""
+cat ${MAGENX_CONFIG_PATH}/${MAGE_OWNER_SSHKEY}.pub > .ssh/authorized_keys
+echo "MAGE_OWNER_SSHKEY=\"${MAGE_OWNER_SSHKEY}\"" >> ${MAGENX_CONFIG_PATH}/magento
+
+cat > .bash_profile <<END
+# .bash_profile
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+# User specific environment and startup programs
+PATH=\$PATH:\$HOME/bin
+export PATH
+END
+
+cat > .bashrc <<END
+# .bashrc
+cd ${MAGE_WEB_ROOT_PATH}
+PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
+END
+
+GREENTXT "CONFIGURE GOOGLE AUTH CODE FOR ADMIN ACCESS"
+echo
+cd ${MAGE_WEB_ROOT_PATH}
+GOOGLE_TFA_CODE="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&' | fold -w 15 | head -n 1 | base32)"
+su ${MAGE_OWNER} -s /bin/bash -c "bin/magento security:tfa:google:set-secret admin ${GOOGLE_TFA_CODE}"
+echo "Google Authenticator mobile app configuration:"
+echo "-> select: Enter a setup key"
+echo "-> type in: Account name"
+echo "-> Paste passkey ${GOOGLE_TFA_CODE}"
+echo "-> Choose Time based"
+
 echo
 echo
-REDTXT "PRINTING INSTALLATION LOG AND SAVING INTO /opt/magenx/.install.log"
+pause '[] Press [Enter] key to finish and print installation log'
+echo
+echo
+echo
+
+REDTXT "PRINTING INSTALLATION LOG AND SAVING INTO ${MAGENX_CONFIG_PATH}/install.log"
 echo
 echo -e "===========================  INSTALLATION LOG  ======================================
 
@@ -1574,29 +1632,31 @@ echo -e "===========================  INSTALLATION LOG  ========================
 [webroot path]: ${MAGE_WEB_ROOT_PATH}
 [admin path]: ${MAGE_DOMAIN}/${MAGE_ADMIN_PATH}
 [admin name]: ${MAGE_ADMIN_LOGIN}
-[admin pass]: ${MAGE_ADMIN_PASS}
+[admin pass]: ${MAGE_ADMIN_PASSWORD}
 [admin http auth name]: admin
-[admin http auth pass]: ${ADMIN_HTTP_PASSWD}
+[admin http auth pass]: ${ADMIN_HTTP_PASSWORD}
 for additional access, please generate new user/password:
 htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 
-[ssh port]: ${NEW_SSH_PORT}
-[files owner]: ${MAGE_OWNER}
-[files owner pass]: ${MAGE_OWNER_PASS}
+[google tfa code]: ${GOOGLE_TFA_CODE}
 
-[sftp port]: ${SFTP_PORT}
+[ssh root port]: ${SSH_PORT}
+
+[files owner]: ${MAGE_OWNER}
+[${MAGE_OWNER} ssh key]: ${MAGENX_CONFIG_PATH}/${MAGE_OWNER_SSHKEY}
+[ssh sftp port]: ${SFTP_PORT}
 
 [phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}/
 [phpmyadmin http auth name]: mysql
-[phpmyadmin http auth pass]: ${PMA_PASSWD}
+[phpmyadmin http auth pass]: ${PMA_PASSWORD}
 for additional access, please generate new user/password:
 htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 
 [mysql host]: ${MAGE_DB_HOST}
-[mysql user]: ${MAGE_DB_USER_NAME}
-[mysql pass]: ${MAGE_DB_PASS}
+[mysql user]: ${MAGE_DB_USER}
+[mysql pass]: ${MAGE_DB_PASSWORD}
 [mysql database]: ${MAGE_DB_NAME}
-[mysql root pass]: ${MYSQL_ROOT_PASS}
+[mysql root pass]: ${MYSQL_ROOT_PASSWORD}
 
 [percona toolkit]: https://www.percona.com/doc/percona-toolkit/LATEST/index.html
 [database monitor]: /usr/local/bin/mytop
@@ -1613,10 +1673,10 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 
 [goaccess realtime]: goaccess /var/log/nginx/access.log -o ${MAGE_WEB_ROOT_PATH}/pub/access_report_${RANDOM}.html --real-time-html --daemonize
 
-[installed db dump]: /opt/magenx/${MAGE_DB_NAME}.sql.gz
-[composer.json copy]: /opt/magenx/composer.json.saved
-[env.php copy]: /opt/magenx/env.php.saved
-[env.php default copy]: /opt/magenx/env.php.default
+[installed db dump]: ${MAGENX_CONFIG_PATH}/${MAGE_DB_NAME}.sql.gz
+[composer.json copy]: ${MAGENX_CONFIG_PATH}/composer.json.saved
+[env.php copy]: ${MAGENX_CONFIG_PATH}/env.php.saved
+[env.php default copy]: ${MAGENX_CONFIG_PATH}/env.php.default
 
 when you run any command for magento cli or custom php script,
 please use ${MAGE_OWNER} user, either switch to:
@@ -1625,7 +1685,7 @@ su ${MAGE_OWNER} -s /bin/bash
 or run commands from root as user:
 su ${MAGE_OWNER} -s /bin/bash -c 'bin/magento'
 
-===========================  INSTALLATION LOG  ======================================" | tee /opt/magenx/.install.log
+===========================  INSTALLATION LOG  ======================================" | tee ${MAGENX_CONFIG_PATH}/install.log
 echo
 echo
 GREENTXT "SERVER IS READY. THANK YOU"
@@ -1635,7 +1695,7 @@ echo
 ## simple installation statis
 curl --silent -X POST https://www.magenx.com/ping_back_domain_${MAGE_DOMAIN}_geo_${MAGE_TIMEZONE}_keep_30d >/dev/null 2>&1
 echo
-pause '---> Press [Enter] key to show menu'
+pause '[] Press [Enter] key to show menu'
 ;;
 
 ###################################################################################
@@ -1645,18 +1705,19 @@ pause '---> Press [Enter] key to show menu'
 "firewall")
 WHITETXT "============================================================================="
 echo
-MAGE_DOMAIN=$(awk '/webshop/ { print $2 }' /opt/magenx/cfg/.magenx_index)
-MAGE_ADMIN_EMAIL=$(awk '/mageadmin/ { print $4 }' /opt/magenx/cfg/.magenx_index)
-YELLOWTXT "If you are going to use services like CloudFlare - install Fail2Ban"
+
+include_config ${MAGENX_CONFIG_PATH}/magento
+include_config ${MAGENX_CONFIG_PATH}/install
+
 echo
-echo -n "---> Would you like to install CSF firewall(csf) or Fail2Ban(f2b) or cancel (n):"
-read frwlltst
-if [ "${frwlltst}" == "csf" ];then
+_echo "[?] Install CSF firewall [y/n][n]:"
+read csffirewall
+if [ "${csffirewall}" == "y" ];then
            echo
                GREENTXT "DOWNLOADING CSF FIREWALL"
                echo
                cd /usr/local/src/
-               echo -n "     PROCESSING  "
+               _echo "PROCESSING  "
                quick_progress &
                pid="$!"
                wget -qO - https://download.configserver.com/csf.tgz | tar -xz
@@ -1668,21 +1729,14 @@ if [ "${frwlltst}" == "csf" ];then
            if perl csftest.pl | grep "FATAL" ; then
                perl csftest.pl
                echo
-               REDTXT "CSF FILERWALL HAS FATAL ERRORS INSTALL FAIL2BAN INSTEAD"
-               echo -n "     PROCESSING  "
-               quick_progress &
-               pid="$!"
-               dnf -q -y install fail2ban >/dev/null 2>&1
-               stop_progress "$pid"
+               REDTXT "CSF FILERWALL TEST FATAL ERRORS"
                echo
-               GREENTXT "FAIL2BAN HAS BEEN INSTALLED OK"
-               echo
-               pause '---> Press [Enter] key to show menu'
+               pause '[] Press [Enter] key to show menu'
            else
                echo
                GREENTXT "CSF FIREWALL INSTALLATION"
                echo
-               echo -n "     PROCESSING  "
+               _echo "PROCESSING  "
                quick_progress &
                pid="$!"
                sh install.sh
@@ -1692,7 +1746,7 @@ if [ "${frwlltst}" == "csf" ];then
                    echo
                    YELLOWTXT "Add ip addresses to whitelist/ignore (paypal,api,erp,backup,github,etc)"
                    echo
-                   read -e -p "---> Enter ip address/cidr each after space: " -i "173.0.80.0/20 64.4.244.0/21 " IP_ADDR_IGNORE
+                   read -e -p "   [?] Enter ip address/cidr each after space: " -i "173.0.80.0/20 64.4.244.0/21 " IP_ADDR_IGNORE
                    for ip_addr_ignore in ${IP_ADDR_IGNORE}; do csf -a ${ip_addr_ignore}; done
                    ### csf firewall optimization
                    sed -i 's/^TESTING = "1"/TESTING = "0"/' /etc/csf/csf.conf
@@ -1717,18 +1771,6 @@ if [ "${frwlltst}" == "csf" ];then
 		   chmod +x /usr/local/csf/bin/regex.custom.pm
         csf -ra
     fi
-    elif [ "${frwlltst}" == "f2b" ];then
-    echo
-    GREENTXT "FAIL2BAN INSTALLATION"
-    echo
-    echo -n "     PROCESSING  "
-    quick_progress &
-    pid="$!"
-    dnf -q -y install fail2ban >/dev/null 2>&1
-    stop_progress "$pid"
-    echo
-    GREENTXT "FAIL2BAN HAS BEEN INSTALLED OK"
-    echo
             else
           echo
             YELLOWTXT "Firewall installation was skipped by the user. Next step"
@@ -1736,7 +1778,7 @@ if [ "${frwlltst}" == "csf" ];then
 fi
 echo
 echo
-pause '---> Press [Enter] key to show menu'
+pause '[] Press [Enter] key to show menu'
 ;;
 
 ###################################################################################
@@ -1744,14 +1786,14 @@ pause '---> Press [Enter] key to show menu'
 ###################################################################################
 
 "webmin")
+include_config ${MAGENX_CONFIG_PATH}/magento
 echo
-echo -n "---> Start the Webmin Control Panel installation? [y/n][n]:"
+_echo "[?] Start the Webmin Control Panel installation? [y/n][n]:"
 read webmin_install
 if [ "${webmin_install}" == "y" ];then
           echo
             GREENTXT "Webmin package installation:"
-	    echo
-	    dnf -y install ${PERL_MODULES[@]/#/perl-}
+	  echo
 cat > /etc/yum.repos.d/webmin.repo <<END
 [Webmin]
 name=Webmin Distribution
@@ -1761,7 +1803,7 @@ enabled=1
 END
 rpm --import http://www.webmin.com/jcameron-key.asc
             echo
-            echo -n "     PROCESSING  "
+            _echo "PROCESSING  "
             start_progress &
             pid="$!"
             dnf -y -q install webmin >/dev/null 2>&1
@@ -1777,10 +1819,13 @@ rpm --import http://www.webmin.com/jcameron-key.asc
             sed -i 's/preroot=gray-theme/preroot=authentic-theme/' /etc/webmin/miniserv.conf
             sed -i "s/port=10000/port=${WEBMIN_PORT}/" /etc/webmin/miniserv.conf
             sed -i "s/listen=10000/listen=${WEBMIN_PORT}/" /etc/webmin/miniserv.conf
+	    sed -r '/keyfile=|certfile=/d' file
+            echo "keyfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/privkey.pem" >> /etc/webmin/miniserv.conf
+            echo "certfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
             if [ -f "/usr/local/csf/csfwebmin.tgz" ]
-				then
-				perl /usr/libexec/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
-				GREENTXT "INSTALLED CSF FIREWALL PLUGIN"
+                then
+                perl /usr/libexec/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
+                GREENTXT "INSTALLED CSF FIREWALL PLUGIN"
             fi
             sed -i 's/root/webadmin/' /etc/webmin/miniserv.users
             sed -i 's/root:/webadmin:/' /etc/webmin/webmin.acl
@@ -1788,9 +1833,17 @@ rpm --import http://www.webmin.com/jcameron-key.asc
             /usr/libexec/webmin/changepass.pl /etc/webmin/ webadmin "${WEBADMIN_PASS}" >/dev/null 2>&1
             chkconfig webmin on >/dev/null 2>&1
             service webmin restart  >/dev/null 2>&1
-            YELLOWTXT "Access Webmin on port: ${WEBMIN_PORT}"
-            YELLOWTXT "User: webadmin , Password: ${WEBADMIN_PASS}"
-            REDTXT "PLEASE ENABLE TWO-FACTOR AUTHENTICATION!"
+	    
+            YELLOWTXT "[!] WEBMIN PORT: ${WEBMIN_PORT}"
+            YELLOWTXT "[!] USER: webadmin"
+	    YELLOWTXT "[!] PASSWORD: ${WEBADMIN_PASS}"
+            REDTXT "[!] PLEASE ENABLE TWO-FACTOR AUTHENTICATION!"
+	    
+cat > ${MAGENX_CONFIG_PATH}/webmin <<END
+WEBMIN_PORT="${WEBMIN_PORT}"
+WEBMIN_USER="webadmin"
+WEBADMIN_PASS="${WEBADMIN_PASS}"
+END
                else
               echo
             REDTXT "WEBMIN INSTALLATION ERROR"
@@ -1801,11 +1854,11 @@ rpm --import http://www.webmin.com/jcameron-key.asc
 fi
 echo
 echo
-pause '---> Press [Enter] key to show menu'
+pause '[] Press [Enter] key to show menu'
 echo
 ;;
 "exit")
-REDTXT "------> EXIT"
+REDTXT "[!] EXIT"
 exit
 ;;
 
