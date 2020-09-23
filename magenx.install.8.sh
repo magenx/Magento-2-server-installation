@@ -1550,8 +1550,8 @@ chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH}
 echo
 GREENTXT "CLEAN MAGENTO CACHE AND ENABLE DEVELOPER MODE"
 rm -rf var/*
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set developer"
+su ${MAGE_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 echo
 systemctl restart php-fpm.service
 echo
