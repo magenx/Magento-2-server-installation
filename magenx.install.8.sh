@@ -1225,16 +1225,15 @@ cd ${MAGE_WEB_ROOT_PATH}
 chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} *
 chmod u+x bin/magento
 echo
-echo "   [] ENTER SETUP INFORMATION"
-echo
 WHITETXT "Admin name, email and base url"
-read -e -p "   [?] Admin first name: " -i "Magento"  MAGE_ADMIN_FIRSTNAME
-read -e -p "   [?] Admin last name: " -i "Administrator"  MAGE_ADMIN_LASTNAME
-read -e -p "   [?] Admin email: " -i "admin@${MAGE_DOMAIN}"  MAGE_ADMIN_EMAIL
-read -e -p "   [?] Admin login name: " -i "admin"  MAGE_ADMIN_LOGIN
+echo
+read -e -p "  [?] Admin first name: " -i "Magento"  MAGE_ADMIN_FIRSTNAME
+read -e -p "  [?] Admin last name: " -i "Administrator"  MAGE_ADMIN_LASTNAME
+read -e -p "  [?] Admin email: " -i "admin@${MAGE_DOMAIN}"  MAGE_ADMIN_EMAIL
+read -e -p "  [?] Admin login name: " -i "admin"  MAGE_ADMIN_LOGIN
 MAGE_ADMIN_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 10 | head -n 1)
-read -e -p "   [?] Admin password: " -i "${MAGE_ADMIN_PASSWORD_GEN}${RANDOM}"  MAGE_ADMIN_PASSWORD
-read -e -p "   [?] Shop base url: " -i "http://${MAGE_DOMAIN}/"  MAGE_SITE_URL
+read -e -p "  [?] Admin password: " -i "${MAGE_ADMIN_PASSWORD_GEN}${RANDOM}"  MAGE_ADMIN_PASSWORD
+read -e -p "  [?] Shop base url: " -i "http://${MAGE_DOMAIN}/"  MAGE_SITE_URL
 echo
 WHITETXT "Language, Currency and Timezone settings"
 updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_LOCALE
