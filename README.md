@@ -22,7 +22,7 @@ Magento installation including: <br/>
 - MALWARE REALTIME MONITOR
 - CLAMAV ENGINE
 - MWSCAN
-- PERCONA (5.7)
+- PERCONA 8
 - PERCONA TOOL-KIT
 - MYSQLTUNER
 - PROXYMYSQL
@@ -30,7 +30,7 @@ Magento installation including: <br/>
 - PHPMYADMIN
 - MAGERUN 2
 - CSF FIREWALL
-- ELK STACK 7
+- ELK 7 STACK
 
 Complete linux stack including: <br/>
 - linux and webstack settings optimization
@@ -52,6 +52,6 @@ Complete linux stack including: <br/>
 **System requirements**:<br/>
 *Dedicated server / Container*<br/>
 *CentOS 8*<br/>
-*8Gb RAM*<br/>
+*4Gb RAM*<br/>
 *like [DigitalOcean cloud servers](https://m.do.co/c/ccc5d115377f)
 
