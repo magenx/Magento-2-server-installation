@@ -1605,6 +1605,8 @@ cd ${MAGE_WEB_ROOT_PATH}
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
 
+echo
+
 GREENTXT "CONFIGURE GOOGLE AUTH CODE FOR ADMIN ACCESS"
 echo
 cd ${MAGE_WEB_ROOT_PATH}
