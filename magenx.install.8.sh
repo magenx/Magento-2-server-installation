@@ -1820,7 +1820,7 @@ rpm --import http://www.webmin.com/jcameron-key.asc
             sed -i 's/preroot=gray-theme/preroot=authentic-theme/' /etc/webmin/miniserv.conf
             sed -i "s/port=10000/port=${WEBMIN_PORT}/" /etc/webmin/miniserv.conf
             sed -i "s/listen=10000/listen=${WEBMIN_PORT}/" /etc/webmin/miniserv.conf
-	    sed -r '/keyfile=|certfile=/d' /etc/webmin/miniserv.conf
+	    sed -i '/keyfile=\|certfile=/d' /etc/webmin/miniserv.conf
             echo "keyfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/privkey.pem" >> /etc/webmin/miniserv.conf
             echo "certfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
             if [ -f "/usr/local/csf/csfwebmin.tgz" ]
