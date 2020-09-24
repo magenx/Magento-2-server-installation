@@ -43,7 +43,6 @@ Magento installation including: <br/>
 - MAGERUN 2
 - CSF FIREWALL
 - ELK 7 STACK
-
 - GOOGLE AUTH CODE GENERATED
 
 Complete linux stack including: <br/>
