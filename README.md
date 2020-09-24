@@ -26,8 +26,8 @@ Get a fully pre-configured server with Magento and LEMP stack in just 20 minutes
 
 Magento installation including: <br/>
 - WEBMIN CONTROL PANEL
-- VARNISH
-- NGINX
+- VARNISH 6.4
+- NGINX 1.9x
 - PHP 7
 - REDIS (2 instances 6379|6380)
 - SFTP (custom port + chroot)
@@ -46,7 +46,7 @@ Magento installation including: <br/>
 
 Complete linux stack including: <br/>
 - linux and webstack settings optimization
-- [letsencrypt (certbot)](https://certbot.eff.org/)
+- [letsencrypt (certbot-auto)](https://certbot.eff.org/)
 - [goaccess](http://rt.goaccess.io)
 - iotop
 - sysstat
