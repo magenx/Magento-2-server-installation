@@ -8,6 +8,18 @@ to install simply call `curl -o magenx.sh https://magenx.sh && bash magenx.sh`
 
 or `curl -o magenx.sh -L magenx.sh && bash magenx.sh`
 
+or `curl -LO magenx.sh/magenx.sh`
+
+disable selinux
+
+you can run in screen to have indestructible session:
+
+```
+dnf install -y epel-release; dnf install -y screen
+screen
+bash magenx.sh
+```
+
 
 #### MagenX - Server Configuration for Magento 2 Open Source
 Get a fully pre-configured server with Magento and LEMP stack in just 20 minutes.
