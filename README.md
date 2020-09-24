@@ -44,6 +44,8 @@ Magento installation including: <br/>
 - CSF FIREWALL
 - ELK 7 STACK
 
+- GOOGLE AUTH CODE GENERATED
+
 Complete linux stack including: <br/>
 - linux and webstack settings optimization
 - [letsencrypt (certbot-auto)](https://certbot.eff.org/)
