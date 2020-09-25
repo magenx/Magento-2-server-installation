@@ -514,7 +514,7 @@ dnf config-manager --set-enabled PowerTools >/dev/null 2>&1
 dnf -y install ${EXTRA_PACKAGES} ${PERL_MODULES[@]/#/perl-}
 ## disable some module
 dnf -y module disable nginx php redis varnish >/dev/null 2>&1
-dnf -q -y upgrade --nobest >/dev/null 2>&1
+dnf -y upgrade --nobest
 echo
 curl -o /etc/motd -s ${REPO_MAGENX_TMP}motd
 sed -i "s/MAGE_VERSION_FULL/${MAGE_VERSION_FULL}/" /etc/motd
@@ -559,14 +559,6 @@ if [ "${repo_percona_install}" == "y" ];then
             echo
               GREENTXT "DATABASE INSTALLED  -  OK"
               echo
-              ## plug in service status alert
-              cp /usr/lib/systemd/system/mysqld.service /etc/systemd/system/mysqld.service
-              sed -i "s/^Restart=always/Restart=on-failure/" /etc/systemd/system/mysqld.service
-              sed -i "/^After=syslog.target.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/mysqld.service
-              sed -i "/^OnFailure.*/a StartLimitBurst=5" /etc/systemd/system/mysqld.service
-              sed -i "/^StartLimitBurst.*/a StartLimitIntervalSec=33" /etc/systemd/system/mysqld.service
-              sed -i "/Restart=on-failure/a RestartSec=5" /etc/systemd/system/mysqld.service
-              systemctl daemon-reload
               systemctl enable mysqld >/dev/null 2>&1
 	      rpm -qa 'percona*' | awk '{print "  Installed: ",$1}'
               echo
@@ -583,25 +575,6 @@ if [ "${repo_percona_install}" == "y" ];then
                  YELLOWTXT "innodb_buffer_pool_size = ${IBPS}G"
                  YELLOWTXT "innodb_buffer_pool_instances = ${IBPS}"
                 echo
-              echo
-              ## get mysql tools
-	      YELLOWTXT "mytop, Percona-toolkit, ProxySQL, MySQLtuner installation"
-	      wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
-              cd /usr/local/bin
-              wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
-	      chmod +x /usr/local/bin/mytop
-              dnf -y -q install percona-toolkit percona-xtrabackup-80 >/dev/null 2>&1
-              echo
-# install proxysql
-cat > /etc/yum.repos.d/proxysql.repo<<EOF
-[proxysql_repo]
-name= ProxySQL YUM repository
-baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.0.x/centos/\$releasever
-gpgcheck=1
-gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
-EOF
-              dnf -y -q install proxysql >/dev/null 2>&1
-	      systemctl disable proxysql >/dev/null 2>&1
               else
               echo
               REDTXT "DATABASE INSTALLATION ERROR"
@@ -648,15 +621,6 @@ END
           echo
             GREENTXT "NGINX INSTALLED  -  OK"
             echo
-            ## plug in service status alert
-            cp /usr/lib/systemd/system/nginx.service /etc/systemd/system/nginx.service
-            sed -i "/^After.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/nginx.service
-            sed -i "/\[Install\]/i Restart=on-failure\nRestartSec=5\n" /etc/systemd/system/nginx.service
-	    sed -i "/^OnFailure.*/a StartLimitBurst=5" /etc/systemd/system/nginx.service
-            sed -i "/^StartLimitBurst.*/a StartLimitIntervalSec=33" /etc/systemd/system/nginx.service
-            sed -i "s,PIDFile=/run/nginx.pid,PIDFile=/var/run/nginx.pid," /etc/systemd/system/nginx.service
-            sed -i "s/PrivateTmp=true/PrivateTmp=false/" /etc/systemd/system/nginx.service
-            systemctl daemon-reload
             systemctl enable nginx >/dev/null 2>&1
 	    rpm -qa 'nginx*' | awk '{print "  Installed: ",$1}'
               else
@@ -705,24 +669,31 @@ if [ "${repo_remi_install}" == "y" ];then
          then
            echo
              GREENTXT "PHP ${PHP_VERSION} INSTALLED  -  OK"
-             ## plug in service status alert
-             cp /usr/lib/systemd/system/php-fpm.service /etc/systemd/system/php-fpm.service
-             sed -i "s/PrivateTmp=true/PrivateTmp=false/" /etc/systemd/system/php-fpm.service
-             sed -i "/^After.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/php-fpm.service
-             sed -i "/\[Install\]/i Restart=on-failure\nRestartSec=5\n" /etc/systemd/system/php-fpm.service
-	     sed -i "/^OnFailure.*/a StartLimitBurst=5" /etc/systemd/system/php-fpm.service
-             sed -i "/^StartLimitBurst.*/a StartLimitIntervalSec=33" /etc/systemd/system/php-fpm.service
-             systemctl daemon-reload
              systemctl enable php-fpm >/dev/null 2>&1
              systemctl disable httpd >/dev/null 2>&1
 	     echo
              rpm -qa 'php*' | awk '{print "  Installed: ",$1}'
-                else
-               echo
-             REDTXT "PHP INSTALLATION ERROR"
-         exit
-       fi
-         echo
+              else
+              echo
+              REDTXT "PHP INSTALLATION ERROR"
+          exit # if package is not installed then exit
+        fi
+          else
+            echo
+              REDTXT "REPOSITORY INSTALLATION ERROR"
+        exit # if repository is not installed then exit
+      fi
+        else
+              echo
+            YELLOWTXT "Remi repository installation was skipped by the user. Next step"
+fi
+echo
+echo
+WHITETXT "============================================================================="
+echo
+_echo "[?] Install Redis 6 ? [y/n][n]:"
+read redis_install
+if [ "${redis_install}" == "y" ];then
            echo
             GREENTXT "Redis installation:"
             echo
@@ -744,12 +715,7 @@ cat > /etc/systemd/system/redis@.service <<END
 [Unit]
 Description=Redis %i
 After=network.target
-OnFailure=service-status-mail@%n.service
 PartOf=redis.target
-
-StartLimitBurst=5
-StartLimitIntervalSec=33
-
 [Service]
 Type=simple
 User=redis
@@ -757,10 +723,7 @@ Group=redis
 PrivateTmp=true
 PIDFile=/var/run/redis-%i.pid
 ExecStart=/usr/bin/redis-server /etc/redis-%i.conf
-
 Restart=on-failure
-RestartSec=5
-
 [Install]
 WantedBy=multi-user.target redis.target
 END
@@ -800,17 +763,13 @@ systemctl enable redis@6379 >/dev/null 2>&1
 systemctl enable redis@6380 >/dev/null 2>&1
                 else
                echo
-             REDTXT "PACKAGES INSTALLATION ERROR"
+             REDTXT "REDIS INSTALLATION ERROR"
          exit
        fi
          else
            echo
              REDTXT "REPOSITORY INSTALLATION ERROR"
         exit
-      fi
-        else
-          echo
-            YELLOWTXT "The Remi repository installation was skipped by the user. Next step"
 fi
 echo
 WHITETXT "============================================================================="
@@ -939,111 +898,6 @@ echo
           echo
             YELLOWTXT "ElasticSearch installation was skipped by the user. Next step"
 fi
-echo
-echo
-GREENTXT "Applying system-wide settings templates"
-echo
-pause "[] Press [Enter] key to proceed"
-echo
-echo "Load optimized configs of php, opcache, fpm, fastcgi, sysctl, varnish"
-echo
-YELLOWTXT "[!] - YOU HAVE TO CHECK THEM AFTER ANYWAY - [!]"
-echo
-cat > /etc/sysctl.conf <<END
-fs.file-max = 1000000
-fs.inotify.max_user_watches = 1000000
-vm.swappiness = 10
-net.ipv4.ip_forward = 0
-net.ipv4.conf.default.rp_filter = 1
-net.ipv4.conf.default.accept_source_route = 0
-kernel.sysrq = 0
-kernel.core_uses_pid = 1
-kernel.msgmnb = 65535
-kernel.msgmax = 65535
-kernel.shmmax = 68719476736
-kernel.shmall = 4294967296
-net.ipv4.tcp_tw_reuse = 1
-net.ipv4.tcp_mem = 8388608 8388608 8388608
-net.ipv4.tcp_rmem = 4096 87380 8388608
-net.ipv4.tcp_wmem = 4096 65535 8388608
-net.ipv4.ip_local_port_range = 1024 65535
-net.ipv4.tcp_challenge_ack_limit = 1073741823
-net.ipv4.tcp_fin_timeout = 15
-net.ipv4.tcp_keepalive_time = 15
-net.ipv4.tcp_max_orphans = 262144
-net.ipv4.tcp_max_syn_backlog = 262144
-net.ipv4.tcp_max_tw_buckets = 400000
-net.ipv4.tcp_syncookies = 1
-net.ipv4.tcp_synack_retries = 2
-net.ipv4.tcp_syn_retries = 2
-net.ipv4.tcp_sack = 1
-net.ipv4.route.flush = 1
-net.core.rmem_max = 16777216
-net.core.wmem_max = 16777216
-net.core.rmem_default = 8388608
-net.core.wmem_default = 8388608
-net.core.netdev_max_backlog = 262144
-net.core.somaxconn = 65535
-END
-
-sysctl -q -p
-echo
-WHITETXT "/etc/sysctl.conf loaded ${GREEN} [ok]"
-cat > /etc/php.d/10-opcache.ini <<END
-zend_extension=opcache.so
-opcache.enable = 1
-opcache.enable_cli = 1
-opcache.memory_consumption = 512
-opcache.interned_strings_buffer = 4
-opcache.max_accelerated_files = 60000
-opcache.max_wasted_percentage = 5
-opcache.use_cwd = 1
-opcache.validate_timestamps = 0
-;opcache.revalidate_freq = 2
-;opcache.validate_permission= 1
-opcache.validate_root= 1
-opcache.file_update_protection = 2
-opcache.revalidate_path = 0
-opcache.save_comments = 1
-opcache.load_comments = 1
-opcache.fast_shutdown = 1
-opcache.enable_file_override = 0
-opcache.optimization_level = 0xffffffff
-opcache.inherited_hack = 1
-opcache.blacklist_filename=/etc/php.d/opcache-default.blacklist
-opcache.max_file_size = 0
-opcache.consistency_checks = 0
-opcache.force_restart_timeout = 60
-opcache.error_log = "/var/log/php-fpm/opcache.log"
-opcache.log_verbosity_level = 1
-opcache.preferred_memory_model = ""
-opcache.protect_memory = 0
-;opcache.mmap_base = ""
-END
-
-WHITETXT "/etc/php.d/10-opcache.ini loaded ${GREEN} [ok]"
-#Tweak php.ini.
-cp /etc/php.ini /etc/php.ini.BACK
-sed -i 's/^\(max_execution_time = \)[0-9]*/\17200/' /etc/php.ini
-sed -i 's/^\(max_input_time = \)[0-9]*/\17200/' /etc/php.ini
-sed -i 's/^\(memory_limit = \)[0-9]*M/\12048M/' /etc/php.ini
-sed -i 's/^\(post_max_size = \)[0-9]*M/\164M/' /etc/php.ini
-sed -i 's/^\(upload_max_filesize = \)[0-9]*M/\164M/' /etc/php.ini
-sed -i 's/expose_php = On/expose_php = Off/' /etc/php.ini
-sed -i 's/;realpath_cache_size = 16k/realpath_cache_size = 512k/' /etc/php.ini
-sed -i 's/;realpath_cache_ttl = 120/realpath_cache_ttl = 86400/' /etc/php.ini
-sed -i 's/short_open_tag = Off/short_open_tag = On/' /etc/php.ini
-sed -i 's/; max_input_vars = 1000/max_input_vars = 50000/' /etc/php.ini
-sed -i 's/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 28800/' /etc/php.ini
-sed -i 's/mysql.allow_persistent = On/mysql.allow_persistent = Off/' /etc/php.ini
-sed -i 's/mysqli.allow_persistent = On/mysqli.allow_persistent = Off/' /etc/php.ini
-sed -i 's/pm = dynamic/pm = ondemand/' /etc/php-fpm.d/www.conf
-sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' /etc/php-fpm.d/www.conf
-sed -i 's/pm.max_children = 50/pm.max_children = 1000/' /etc/php-fpm.d/www.conf
-
-WHITETXT "/etc/php.ini loaded ${GREEN} [ok]"
-echo
-echo
 echo
 echo 
 GREENTXT "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
@@ -1326,11 +1180,119 @@ echo
 BLUEBG "[~]    POST-INSTALLATION CONFIGURATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
+cat > /etc/sysctl.conf <<END
+fs.file-max = 1000000
+fs.inotify.max_user_watches = 1000000
+vm.swappiness = 10
+net.ipv4.ip_forward = 0
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.default.accept_source_route = 0
+kernel.sysrq = 0
+kernel.core_uses_pid = 1
+kernel.msgmnb = 65535
+kernel.msgmax = 65535
+kernel.shmmax = 68719476736
+kernel.shmall = 4294967296
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_mem = 8388608 8388608 8388608
+net.ipv4.tcp_rmem = 4096 87380 8388608
+net.ipv4.tcp_wmem = 4096 65535 8388608
+net.ipv4.ip_local_port_range = 1024 65535
+net.ipv4.tcp_challenge_ack_limit = 1073741823
+net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_keepalive_time = 15
+net.ipv4.tcp_max_orphans = 262144
+net.ipv4.tcp_max_syn_backlog = 262144
+net.ipv4.tcp_max_tw_buckets = 400000
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 2
+net.ipv4.tcp_sack = 1
+net.ipv4.route.flush = 1
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.core.rmem_default = 8388608
+net.core.wmem_default = 8388608
+net.core.netdev_max_backlog = 262144
+net.core.somaxconn = 65535
+END
+
+sysctl -q -p >/dev/null 2>&1
+
+cat > /etc/php.d/10-opcache.ini <<END
+zend_extension=opcache.so
+opcache.enable = 1
+opcache.enable_cli = 1
+opcache.memory_consumption = 512
+opcache.interned_strings_buffer = 4
+opcache.max_accelerated_files = 60000
+opcache.max_wasted_percentage = 5
+opcache.use_cwd = 1
+opcache.validate_timestamps = 0
+;opcache.revalidate_freq = 2
+;opcache.validate_permission= 1
+opcache.validate_root= 1
+opcache.file_update_protection = 2
+opcache.revalidate_path = 0
+opcache.save_comments = 1
+opcache.load_comments = 1
+opcache.fast_shutdown = 1
+opcache.enable_file_override = 0
+opcache.optimization_level = 0xffffffff
+opcache.inherited_hack = 1
+opcache.blacklist_filename=/etc/php.d/opcache-default.blacklist
+opcache.max_file_size = 0
+opcache.consistency_checks = 0
+opcache.force_restart_timeout = 60
+opcache.error_log = "/var/log/php-fpm/opcache.log"
+opcache.log_verbosity_level = 1
+opcache.preferred_memory_model = ""
+opcache.protect_memory = 0
+;opcache.mmap_base = ""
+END
+
+cp /etc/php.ini /etc/php.ini.BACK
+sed -i 's/^\(max_execution_time = \)[0-9]*/\17200/' /etc/php.ini
+sed -i 's/^\(max_input_time = \)[0-9]*/\17200/' /etc/php.ini
+sed -i 's/^\(memory_limit = \)[0-9]*M/\12048M/' /etc/php.ini
+sed -i 's/^\(post_max_size = \)[0-9]*M/\164M/' /etc/php.ini
+sed -i 's/^\(upload_max_filesize = \)[0-9]*M/\164M/' /etc/php.ini
+sed -i 's/expose_php = On/expose_php = Off/' /etc/php.ini
+sed -i 's/;realpath_cache_size = 16k/realpath_cache_size = 512k/' /etc/php.ini
+sed -i 's/;realpath_cache_ttl = 120/realpath_cache_ttl = 86400/' /etc/php.ini
+sed -i 's/short_open_tag = Off/short_open_tag = On/' /etc/php.ini
+sed -i 's/; max_input_vars = 1000/max_input_vars = 50000/' /etc/php.ini
+sed -i 's/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 28800/' /etc/php.ini
+sed -i 's/mysql.allow_persistent = On/mysql.allow_persistent = Off/' /etc/php.ini
+sed -i 's/mysqli.allow_persistent = On/mysqli.allow_persistent = Off/' /etc/php.ini
+sed -i 's/pm = dynamic/pm = ondemand/' /etc/php-fpm.d/www.conf
+sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' /etc/php-fpm.d/www.conf
+sed -i 's/pm.max_children = 50/pm.max_children = 1000/' /etc/php-fpm.d/www.conf
+
 GREENTXT "SERVER HOSTNAME SETTINGS"
 hostnamectl set-hostname server.${MAGE_DOMAIN} --static
 echo
 GREENTXT "SERVER TIMEZONE SETTINGS"
 timedatectl set-timezone ${MAGE_TIMEZONE}
+echo
+GREENTXT "MYSQL TOOLS AND PROXYMYSQL"
+wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
+wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
+chmod +x /usr/local/bin/mytop
+
+dnf -y -q install percona-toolkit percona-xtrabackup-80 >/dev/null 2>&1
+
+cat > /etc/yum.repos.d/proxysql.repo<<END
+[proxysql_repo]
+name= ProxySQL YUM repository
+baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.0.x/centos/\$releasever
+gpgcheck=1
+gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
+END
+
+dnf -y -q install proxysql >/dev/null 2>&1
+systemctl disable proxysql >/dev/null 2>&1
+
 echo
 GREENTXT "PHP-FPM SETTINGS"
 sed -i "s/\[www\]/\[${MAGE_OWNER}\]/" /etc/php-fpm.d/www.conf
