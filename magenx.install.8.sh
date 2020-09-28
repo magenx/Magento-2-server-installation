@@ -1751,7 +1751,7 @@ pause '[] Press [Enter] key to show menu'
 "webmin")
 include_config ${MAGENX_CONFIG_PATH}/magento
 echo
-_echo "[?] Start the Webmin Control Panel installation? [y/n][n]:"
+_echo "[?] Install Webmin Control Panel ? [y/n][n]:"
 read webmin_install
 if [ "${webmin_install}" == "y" ];then
           echo
