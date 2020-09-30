@@ -182,6 +182,18 @@ if [[ ${EUID} -ne 0 ]]; then
   GREENTXT "PASS: ROOT!"
 fi
 
+## selinux
+getenforce > ${MAGENX_CONFIG_PATH}/selinux
+      
+if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+   ## selinux config
+   setsebool -P httpd_can_network_connect true
+   setsebool -P httpd_setrlimit true
+   setsebool -P httpd_enable_homedirs true
+   setsebool -P httpd_can_sendmail true
+   setsebool -P httpd_execmem true
+fi
+
 # network is up?
 host1=google.com
 host2=github.com
@@ -360,8 +372,6 @@ if ! grep -q "yes" ${MAGENX_CONFIG_PATH}/sshport >/dev/null 2>&1 ; then
       sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
       sed -i "s/.*PrintMotd.*/PrintMotd yes/" /etc/ssh/sshd_config
       
-      getenforce > ${MAGENX_CONFIG_PATH}/selinux
-
       echo
       SSH_PORT="$(awk '/#?Port [0-9]/ {print $2}' /etc/ssh/sshd_config)"
       if [ "${SSH_PORT}" == "22" ]; then
@@ -621,13 +631,6 @@ END
             echo
             systemctl enable nginx >/dev/null 2>&1
 	    rpm -qa 'nginx*' | awk '{print "  Installed: ",$1}'
-	    if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
-	    ## selinux config
-	    setsebool -P httpd_can_network_connect true
-	    setsebool -P httpd_setrlimit true
-	    setsebool -P httpd_enable_homedirs true
-	    setsebool -P httpd_can_sendmail true
-	    fi
               else
              echo
             REDTXT "NGINX INSTALLATION ERROR"
@@ -676,10 +679,6 @@ if [ "${repo_remi_install}" == "y" ];then
              GREENTXT "PHP ${PHP_VERSION} INSTALLED  -  OK"
              systemctl enable php-fpm >/dev/null 2>&1
              systemctl disable httpd >/dev/null 2>&1
-	     if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
-	     ## selinux config
-	     setsebool -P httpd_execmem 1
-	     fi
 	     echo
              rpm -qa 'php*' | awk '{print "  Installed: ",$1}'
               else
