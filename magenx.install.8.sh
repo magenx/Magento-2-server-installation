@@ -261,20 +261,6 @@ if [ "${TOTALMEM}" -gt "3000000" ]; then
   echo
 fi
 
-# some selinux, sir?
-if [ -f "/etc/selinux/config" ]; then
-SELINUX=$(awk -F "=" '/^SELINUX=/ {print $2}' /etc/selinux/config)
-if [[ ! "${SELINUX}" =~ (disabled|permissive) ]]; then
-  echo
-  REDTXT "[!] SELINUX IS NOT DISABLED OR PERMISSIVE"
-  YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
-  echo
-  exit 1
-  else
-  GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
-fi
-fi
-
 # check if webstack is clean
 if ! grep -q "webstack_is_clean" ${MAGENX_CONFIG_PATH}/webstack >/dev/null 2>&1 ; then
 installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|firewalld|Percona*|maria*|php-?|nginx*|*ftp*|varnish*|certbot*|redis*|webmin')"
@@ -373,6 +359,8 @@ if ! grep -q "yes" ${MAGENX_CONFIG_PATH}/sshport >/dev/null 2>&1 ; then
       sed -i "s/.*ClientAliveCountMax.*/ClientAliveCountMax 3/" /etc/ssh/sshd_config
       sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
       sed -i "s/.*PrintMotd.*/PrintMotd yes/" /etc/ssh/sshd_config
+      
+      getenforce > ${MAGENX_CONFIG_PATH}/selinux
 
       echo
       SSH_PORT="$(awk '/#?Port [0-9]/ {print $2}' /etc/ssh/sshd_config)"
@@ -400,6 +388,11 @@ END
 	echo
         GREENTXT "[!] SSH MAIN PORT: ${SSH_PORT}"
 	echo
+	if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+	## selinux config
+	semanage port -a -t ssh_port_t -p tcp ${SSH_PORT}
+	semanage port -a -t ssh_port_t -p tcp ${SFTP_PORT}
+	fi
         systemctl restart sshd.service
         ss -tlp | grep sshd
      echo
@@ -427,6 +420,11 @@ if [ "${ssh_test}" == "y" ];then
         systemctl restart sshd.service
         echo
         GREENTXT "SSH PORT HAS BEEN RESTORED  -  OK"
+	if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+	## selinux config
+	semanage port -d -p tcp ${SSH_PORT}
+	semanage port -d -p tcp ${SFTP_PORT}
+	fi
         ss -tlp | grep sshd
 fi
 fi
@@ -623,6 +621,13 @@ END
             echo
             systemctl enable nginx >/dev/null 2>&1
 	    rpm -qa 'nginx*' | awk '{print "  Installed: ",$1}'
+	    if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+	    ## selinux config
+	    setsebool -P httpd_can_network_connect true
+	    setsebool -P httpd_setrlimit true
+	    setsebool -P httpd_enable_homedirs true
+	    setsebool -P httpd_can_sendmail true
+	    fi
               else
              echo
             REDTXT "NGINX INSTALLATION ERROR"
@@ -671,6 +676,10 @@ if [ "${repo_remi_install}" == "y" ];then
              GREENTXT "PHP ${PHP_VERSION} INSTALLED  -  OK"
              systemctl enable php-fpm >/dev/null 2>&1
              systemctl disable httpd >/dev/null 2>&1
+	     if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+	     ## selinux config
+	     setsebool -P httpd_execmem 1
+	     fi
 	     echo
              rpm -qa 'php*' | awk '{print "  Installed: ",$1}'
               else
@@ -746,6 +755,8 @@ sed -i "s/^logfile.*/logfile \/var\/log\/redis\/redis-${REDISPORT}.log/"  /etc/r
 sed -i "s/^pidfile.*/pidfile \/var\/run\/redis-${REDISPORT}.pid/"  /etc/redis-${REDISPORT}.conf
 sed -i "s/^port.*/port ${REDISPORT}/" /etc/redis-${REDISPORT}.conf
 sed -i "s/dump.rdb/dump-${REDISPORT}.rdb/" /etc/redis-${REDISPORT}.conf
+sed -i "/save [0-9]0/d" /etc/redis-${REDISPORT}.conf
+sed -i 's/^#.*save ""/save ""/' /etc/redis-${REDISPORT}.conf
 sed -i '/^# rename-command CONFIG ""/a\
 rename-command SLAVEOF "" \
 rename-command CONFIG "" \
@@ -1534,7 +1545,10 @@ find . -type f -exec chmod 660 {} \;
 setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::- ${MAGE_WEB_ROOT_PATH}
 setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::- var generated pub/static pub/media
 chmod ug+x bin/magento
-
+if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+## selinux settings
+chcon -R -t httpd_sys_rw_content_t var/ generated/ pub/media/ pub/static/
+fi
 echo
 echo
 GREENTXT "MAGENTO CRONJOBS"
