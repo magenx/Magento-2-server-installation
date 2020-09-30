@@ -10,8 +10,6 @@ or `curl -o magenx.sh -L magenx.sh && bash magenx.sh`
 
 or `curl -LO magenx.sh/magenx.sh`
 
-disable selinux
-
 you can run in screen to have indestructible session:
 
 ```
