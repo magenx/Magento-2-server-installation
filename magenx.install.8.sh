@@ -992,7 +992,7 @@ r composer_replace
 N
 }' composer.json
 ##replace?
-        su ${MAGE_OWNER} -s /bin/bash -c "composer install"
+        su ${MAGE_OWNER} -s /bin/bash -c "php -d memory_limit=-1 /usr/bin/composer install"
        echo
      echo
 GREENTXT "[~]    MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR SETUP    [~]"
