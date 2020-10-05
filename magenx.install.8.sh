@@ -184,20 +184,21 @@ fi
 
 # some selinux, sir?
 if [ -f "/etc/selinux/config" ]; then
-SELINUX=$(awk -F "=" '/^SELINUX=/ {print $2}' /etc/selinux/config)
-if [[ ! "${SELINUX}" =~ (disabled|permissive) ]]; then
-  echo
-  REDTXT "[!] SELINUX IS NOT DISABLED OR PERMISSIVE"
-  YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
-  echo
-   echo -n "---> Would you like to disable SELinux and reboot?  [y/n][y]:"
-      read selinux_enable
+  SELINUX=$(awk -F "=" '/^SELINUX=/ {print $2}' /etc/selinux/config)
+    if [[ ! "${SELINUX}" =~ (disabled|permissive) ]]; then
+    echo
+    REDTXT "[!] SELINUX IS NOT DISABLED OR PERMISSIVE"
+    YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
+    echo
+    echo -n "---> Would you like to disable SELinux and reboot?  [y/n][y]:"
+    read selinux_enable
       if [ "${selinux_enable}" == "y" ];then
-         exit 1
-  else
-  GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
+       exit 1
+      else
+   GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
   echo
-fi
+  fi
+ fi
 fi
 
 ## selinux
