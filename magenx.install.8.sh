@@ -190,7 +190,8 @@ if [ -f "/etc/selinux/config" ]; then
     REDTXT "[!] SELINUX IS NOT DISABLED OR PERMISSIVE"
     YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
     echo
-    echo -n "---> Would you like to disable SELinux and reboot?  [y/n][y]:"
+    echo "  [!] System will be configured with selinux if you answer 'n'"
+    _echo "Would you like to disable SELinux and reboot?  [y/n][y]:"
     read selinux_enable
       if [ "${selinux_enable}" == "y" ];then
        exit 1
