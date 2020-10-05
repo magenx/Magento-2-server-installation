@@ -196,20 +196,19 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
     read selinux_disable
     if [ "${selinux_disable}" == "y" ];then
       sed -i "s/SELINUX=${SELINUX}/SELINUX=disabled/"
-      echo Disabled > ${MAGENX_CONFIG_PATH}/selinux
+      echo disabled > ${MAGENX_CONFIG_PATH}/selinux
       reboot
     else
    echo
   GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
   mkdir -p ${MAGENX_CONFIG_PATH}
-  SELINUXSTATUS=$(getenforce)
-  echo ${SELINUXSTATUS} > ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1
+  echo ${SELINUX} > ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1
   fi
  fi
 fi
 
 ## selinux
-if grep -q "Enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
    ## selinux config
    setsebool -P httpd_can_network_connect true
    setsebool -P httpd_setrlimit true
@@ -422,7 +421,7 @@ END
 	echo
         GREENTXT "[!] SSH MAIN PORT: ${SSH_PORT}"
 	echo
-	if grep -q "Enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+	if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
 	## selinux config
 	semanage port -a -t ssh_port_t -p tcp ${SSH_PORT}
 	semanage port -a -t ssh_port_t -p tcp ${SFTP_PORT}
@@ -454,7 +453,7 @@ if [ "${ssh_test}" == "y" ];then
         systemctl restart sshd.service
         echo
         GREENTXT "SSH PORT HAS BEEN RESTORED  -  OK"
-	if grep -q "Enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+	if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
 	## selinux config
 	semanage port -d -p tcp ${SSH_PORT}
 	semanage port -d -p tcp ${SFTP_PORT}
@@ -1568,7 +1567,7 @@ find . -type f -exec chmod 660 {} \;
 setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::- ${MAGE_WEB_ROOT_PATH}
 setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::- var generated pub/static pub/media
 chmod ug+x bin/magento
-if grep -q "Enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
 ## selinux settings
 chcon -R -t httpd_sys_rw_content_t var/ generated/ pub/media/ pub/static/
 fi
