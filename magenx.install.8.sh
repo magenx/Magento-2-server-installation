@@ -184,6 +184,7 @@ fi
 
 # some selinux, sir?
 if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
+  mkdir -p ${MAGENX_CONFIG_PATH}
   SELINUX=$(awk -F "=" '/^SELINUX=/ {print $2}' /etc/selinux/config)
     if [[ ! "${SELINUX}" =~ (disabled|permissive) ]]; then
     echo
@@ -201,7 +202,6 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
     else
    echo
   GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
-  mkdir -p ${MAGENX_CONFIG_PATH}
   echo ${SELINUX} > ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1
   fi
  fi
