@@ -201,6 +201,7 @@ fi
 fi
 
 ## selinux
+mkdir -p ${MAGENX_CONFIG_PATH}
 getenforce > ${MAGENX_CONFIG_PATH}/selinux
       
 if grep -q "Enforcing|Permissive" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
