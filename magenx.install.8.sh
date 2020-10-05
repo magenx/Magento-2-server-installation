@@ -197,8 +197,8 @@ if [ -f "/etc/selinux/config" ]; then
       if [ "${selinux_disable}" == "y" ];then
        exit 1
       else
+      echo
    GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
-  echo
   fi
  fi
 fi
