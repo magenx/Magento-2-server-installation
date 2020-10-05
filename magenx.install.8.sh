@@ -183,7 +183,7 @@ if [[ ${EUID} -ne 0 ]]; then
 fi
 
 # some selinux, sir?
-if [ -f "/etc/selinux/config" ]; then
+if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
   SELINUX=$(awk -F "=" '/^SELINUX=/ {print $2}' /etc/selinux/config)
     if [[ ! "${SELINUX}" =~ (disabled|permissive) ]]; then
     echo
@@ -194,14 +194,16 @@ if [ -f "/etc/selinux/config" ]; then
     echo
     _echo "[?] Would you like to disable SELinux and reboot ?  [y/n][y]:"
     read selinux_disable
-      if [ "${selinux_disable}" == "y" ];then
+    if [ "${selinux_disable}" == "y" ];then
       sed -i "s/SELINUX=${SELINUX}/SELINUX=disabled/"
+      echo Disabled > ${MAGENX_CONFIG_PATH}/selinux
       reboot
-      else
-      echo
-   GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
-   mkdir -p ${MAGENX_CONFIG_PATH}
-   getenforce > ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1
+    else
+   echo
+  GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
+  mkdir -p ${MAGENX_CONFIG_PATH}
+  SELINUXSTATUS=$(getenforce)
+  echo ${SELINUXSTATUS} > ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1
   fi
  fi
 fi
@@ -262,7 +264,7 @@ fi
 
 
 # do we have CentOS?
-if grep "CentOS.* ${CENTOS_VERSION}\." /etc/centos-release  > /dev/null 2>&1; then
+if grep "CentOS.* ${CENTOS_VERSION}\." /etc/centos-release > /dev/null 2>&1; then
   GREENTXT "PASS: CENTOS RELEASE ${CENTOS_VERSION}"
   else
   echo
