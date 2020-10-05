@@ -196,13 +196,13 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
     _echo "[?] Would you like to disable SELinux and reboot ?  [y/n][y]:"
     read selinux_disable
     if [ "${selinux_disable}" == "y" ];then
-      sed -i "s/SELINUX=${SELINUX}/SELINUX=disabled/"
-      echo disabled > ${MAGENX_CONFIG_PATH}/selinux
+      sed -i "s/SELINUX=${SELINUX}/SELINUX=disabled/" /etc/selinux/config
+      echo "disabled" > ${MAGENX_CONFIG_PATH}/selinux
       reboot
     else
    echo
   GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
-  echo ${SELINUX} > ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1
+  echo "${SELINUX}" > ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1
   fi
  fi
 fi
