@@ -203,18 +203,17 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
    echo
   GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
   echo "${SELINUX}" > ${MAGENX_CONFIG_PATH}/selinux
-  fi
- fi
-fi
-
-## selinux
-if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
+  ## selinux
+  if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
    ## selinux config
    setsebool -P httpd_can_network_connect true
    setsebool -P httpd_setrlimit true
    setsebool -P httpd_enable_homedirs true
    setsebool -P httpd_can_sendmail true
    setsebool -P httpd_execmem true
+  fi
+  fi
+ fi
 fi
 
 # network is up?
