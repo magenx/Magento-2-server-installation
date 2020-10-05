@@ -202,7 +202,7 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
     else
    echo
   GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
-  echo "${SELINUX}" > ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1
+  echo "${SELINUX}" > ${MAGENX_CONFIG_PATH}/selinux
   fi
  fi
 fi
