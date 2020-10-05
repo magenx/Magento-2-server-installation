@@ -193,8 +193,8 @@ if [ -f "/etc/selinux/config" ]; then
     echo "  [!] System will be configured with selinux if you answer 'n'"
     echo
     _echo "[?] Would you like to disable SELinux and reboot?  [y/n][y]:"
-    read selinux_enable
-      if [ "${selinux_enable}" == "y" ];then
+    read selinux_disable
+      if [ "${selinux_disable}" == "y" ];then
        exit 1
       else
    GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
