@@ -191,7 +191,8 @@ if [ -f "/etc/selinux/config" ]; then
     YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
     echo
     echo "  [!] System will be configured with selinux if you answer 'n'"
-    _echo "Would you like to disable SELinux and reboot?  [y/n][y]:"
+    echo
+    _echo "[?] Would you like to disable SELinux and reboot?  [y/n][y]:"
     read selinux_enable
       if [ "${selinux_enable}" == "y" ];then
        exit 1
