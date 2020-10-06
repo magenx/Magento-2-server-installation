@@ -191,7 +191,7 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
     REDTXT "[!] SELINUX IS NOT DISABLED OR PERMISSIVE"
     YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
     echo
-    echo "  [!] System will be configured with selinux if you answer 'n'"
+    echo "  [!] System will be configured with SELinux if you answer 'n'"
     echo
     _echo "[?] Would you like to disable SELinux and reboot ?  [y/n][y]:"
     read selinux_disable
