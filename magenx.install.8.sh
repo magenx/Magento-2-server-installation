@@ -951,8 +951,8 @@ BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
 echo
-     read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "myshop.com" MAGE_DOMAIN
-     read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "myshop" MAGE_OWNER
+     read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGE_DOMAIN
+     read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGE_OWNER
 	 
      MAGE_WEB_ROOT_PATH="/home/${MAGE_OWNER}/public_html"
 	 
