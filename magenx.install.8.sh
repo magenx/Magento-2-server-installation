@@ -800,8 +800,7 @@ systemctl enable redis@6380 >/dev/null 2>&1
        fi
          else
            echo
-             REDTXT "REPOSITORY INSTALLATION ERROR"
-        exit
+           YELLOWTXT "Redis installation was skipped by the user. Next step"
 fi
 echo
 WHITETXT "============================================================================="
