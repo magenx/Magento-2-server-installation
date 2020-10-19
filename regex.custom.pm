@@ -47,6 +47,12 @@ if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(
     return ("Nginx 429",$1,"nginx_429","10","443","60","0");
 }
 
+# /var/log/nginx/access.log
+# Nginx 400  (Default: 10 errors bans for 24 hours)
+#if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\"\s400\s)/)) {
+#    return ("Nginx 400",$1,"nginx_400","10","443","86400","0");
+#}
+
 # If the matches in this file are not syntactically correct for perl then lfd
 # will fail with an error. You are responsible for the security of any regex
 # expressions you use. Remember that log file spoofing can exploit poorly
