@@ -25,6 +25,7 @@ ELKREPO="7.x"
 MAGE_VERSION="2"
 MAGE_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGE_VERSION}/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
 REPO_MAGE="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
+COMPOSER_VERSION="1.10.16"
 
 # Repositories
 REPO_PERCONA="https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
@@ -692,7 +693,7 @@ if [ "${repo_remi_install}" == "y" ];then
             _echo "PROCESSING  "
             long_progress &
             pid="$!"
-            dnf -y -q install php composer ${PHP_PACKAGES[@]/#/php-} ${PHP_PECL_PACKAGES[@]/#/php-} >/dev/null 2>&1
+            dnf -y -q install php ${PHP_PACKAGES[@]/#/php-} ${PHP_PECL_PACKAGES[@]/#/php-} >/dev/null 2>&1
             stop_progress "$pid"
             rpm  --quiet -q php
        if [ "$?" = 0 ]
@@ -950,6 +951,13 @@ BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
 echo
+## get composer
+      php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+      php composer-setup.php --install-dir=/usr/bin --filename=composer --version=${COMPOSER_VERSION}
+      ln -s /usr/bin/composer /usr/local/bin/composer
+      [ -f "/usr/bin/composer" ] || { echo "  [!] COMPOSER INSTALLATION ERROR" ; exit 1 ;}
+echo
+echo
      read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGE_DOMAIN
      read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGE_OWNER
 	 
@@ -983,7 +991,7 @@ WHITETXT "[!] Less security risks and dependencies!"
 echo
 pause '[] Press [Enter] key to start'
       echo
-	su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
+      su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
       curl -sO https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace
 ##replace?
 sed -i '/"conflict":/ {
