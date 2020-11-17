@@ -1754,7 +1754,7 @@ if [ "${csffirewall}" == "y" ];then
                    echo
                    YELLOWTXT "Add ip addresses to whitelist/ignore (paypal,api,erp,backup,github,etc)"
                    echo
-                   read -e -p "   [?] Enter ip address/cidr each after space: " -i "173.0.80.0/20 64.4.244.0/21 " IP_ADDR_IGNORE
+                   read -e -p "   [?] Enter ip address/cidr each after space: " -i " " IP_ADDR_IGNORE
                    for ip_addr_ignore in ${IP_ADDR_IGNORE}; do csf -a ${ip_addr_ignore}; done
                    ### csf firewall optimization
                    sed -i 's/^TESTING = "1"/TESTING = "0"/' /etc/csf/csf.conf
