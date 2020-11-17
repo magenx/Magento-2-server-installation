@@ -1441,9 +1441,9 @@ echo
 GREENTXT "LETSENCRYPT SSL CERTIFICATE REQUEST"
 wget -q https://dl.eff.org/certbot-auto -O /usr/local/bin/certbot-auto
 chmod +x /usr/local/bin/certbot-auto
-certbot-auto --install-only
+/usr/local/bin/certbot-auto --install-only
 systemctl stop nginx.service
-certbot-auto certonly --agree-tos --no-eff-email --email ${MAGE_ADMIN_EMAIL} --standalone
+/usr/local/bin/certbot-auto certonly --agree-tos --no-eff-email --email ${MAGE_ADMIN_EMAIL} --standalone
 systemctl start nginx.service
 echo
 GREENTXT "GENERATE DHPARAM FOR NGINX SSL"
