@@ -977,7 +977,7 @@ echo
           usermod -g ${MAGE_PHP_USER} ${MAGE_OWNER}
           chmod 711 ${MAGE_WEB_ROOT_PATH%/*}
 	  mkdir -p ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local}
-          chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH} ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local}
+          chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH} ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
           chmod 2770 ${MAGE_WEB_ROOT_PATH}
 	  
 	echo
