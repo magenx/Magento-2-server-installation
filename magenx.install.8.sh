@@ -976,7 +976,7 @@ echo
           useradd -M -s /sbin/nologin -d ${MAGE_WEB_ROOT_PATH%/*} ${MAGE_PHP_USER} >/dev/null 2>&1
           usermod -g ${MAGE_PHP_USER} ${MAGE_OWNER}
           chmod 711 ${MAGE_WEB_ROOT_PATH%/*}
-	  mkdir -p ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local}
+	  mkdir -p ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
           chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH} ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
           chmod 2770 ${MAGE_WEB_ROOT_PATH}
 	  
