@@ -1337,6 +1337,7 @@ php_admin_value[date.timezone] = ${MAGE_TIMEZONE}
 END
 
 echo "${MAGE_WEB_ROOT_PATH}/app/etc/env.php" >> /etc/php.d/opcache-default.blacklist
+echo "${MAGE_WEB_ROOT_PATH}/app/etc/config.php" >> /etc/php.d/opcache-default.blacklist
 
 systemctl daemon-reload
 echo
