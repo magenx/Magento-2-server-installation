@@ -192,9 +192,7 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
     REDTXT "[!] SELINUX IS NOT DISABLED OR PERMISSIVE"
     YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
     echo
-    echo "  [!] System will be configured with SELinux if you answer 'n'"
-    echo
-    _echo "[?] Would you like to disable SELinux and reboot ?  [y/n][y]:"
+    _echo "[?] Would you like to disable SELinux and reboot now?  [y/n][y]:"
     read selinux_disable
     if [ "${selinux_disable}" == "y" ];then
       sed -i "s/SELINUX=${SELINUX}/SELINUX=disabled/" /etc/selinux/config
@@ -204,15 +202,6 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
    echo
   GREENTXT "PASS: SELINUX IS ${SELINUX^^}"
   echo "${SELINUX}" > ${MAGENX_CONFIG_PATH}/selinux
-  ## selinux
-  if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
-   ## selinux config
-   setsebool -P httpd_can_network_connect true
-   setsebool -P httpd_setrlimit true
-   setsebool -P httpd_enable_homedirs true
-   setsebool -P httpd_can_sendmail true
-   setsebool -P httpd_execmem true
-  fi
   fi
  fi
 fi
@@ -393,7 +382,7 @@ if ! grep -q "yes" ${MAGENX_CONFIG_PATH}/sshport >/dev/null 2>&1 ; then
       sed -i "s/.*ClientAliveInterval.*/ClientAliveInterval 600/" /etc/ssh/sshd_config
       sed -i "s/.*ClientAliveCountMax.*/ClientAliveCountMax 3/" /etc/ssh/sshd_config
       sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
-      sed -i "s/.*PrintMotd.*/PrintMotd yes/" /etc/ssh/sshd_config
+      sed -i "s/.*PrintMotd.*/PrintMotd no/" /etc/ssh/sshd_config
       
       echo
       SSH_PORT="$(awk '/#?Port [0-9]/ {print $2}' /etc/ssh/sshd_config)"
@@ -421,11 +410,6 @@ END
 	echo
         GREENTXT "[!] SSH MAIN PORT: ${SSH_PORT}"
 	echo
-	if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
-	## selinux config
-	semanage port -a -t ssh_port_t -p tcp ${SSH_PORT}
-	semanage port -a -t ssh_port_t -p tcp ${SFTP_PORT}
-	fi
         systemctl restart sshd.service
         ss -tlp | grep sshd
      echo
@@ -453,11 +437,6 @@ if [ "${ssh_test}" == "y" ];then
         systemctl restart sshd.service
         echo
         GREENTXT "SSH PORT HAS BEEN RESTORED  -  OK"
-	if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
-	## selinux config
-	semanage port -d -p tcp ${SSH_PORT}
-	semanage port -d -p tcp ${SFTP_PORT}
-	fi
         ss -tlp | grep sshd
 fi
 fi
@@ -1576,10 +1555,6 @@ find . -type f -exec chmod 660 {} \;
 setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::- ${MAGE_WEB_ROOT_PATH}
 setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::- var generated pub/static pub/media
 chmod ug+x bin/magento
-if grep -q "enforcing" ${MAGENX_CONFIG_PATH}/selinux >/dev/null 2>&1 ; then
-## selinux settings
-chcon -R -t httpd_sys_rw_content_t var/ generated/ pub/media/ pub/static/
-fi
 echo
 echo
 GREENTXT "MAGENTO CRONJOBS"
