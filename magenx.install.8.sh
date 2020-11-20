@@ -666,7 +666,7 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
-_echo "[?] Install PHP 7.4 ? [y/n][n]:"
+_echo "[?] Install PHP 7 ? [y/n][n]:"
 read repo_remi_install
 if [ "${repo_remi_install}" == "y" ];then
           echo
