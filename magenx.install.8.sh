@@ -1013,6 +1013,7 @@ BLUEBG "[~]    CREATE MYSQL USER AND DATABASE    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 if [ ! -f /root/.my.cnf ]; then
 systemctl start mysqld.service
+# mysqladmin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL LOOKS DOWN \n"; exit 1; }
 MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
 MYSQL_ROOT_TMP_PASSWORD=$(grep 'temporary password is generated for' /var/log/mysqld.log | awk '{print $NF}')
