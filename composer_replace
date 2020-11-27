@@ -133,6 +133,7 @@
         "magento/module-marketplace": "*",
         "magento/module-new-relic-reporting": "*",
         "magento/module-paypal-graph-ql": "*",
+        "paypal/module-braintree-graph-ql": "*",
         "magento/module-quote-analytics": "*",
         "magento/module-quote-graph-ql": "*",
         "magento/module-related-product-graph-ql": "*",
