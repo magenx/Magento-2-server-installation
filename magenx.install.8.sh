@@ -25,7 +25,6 @@ ELKREPO="7.x"
 MAGE_VERSION="2"
 MAGE_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGE_VERSION}/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
 REPO_MAGE="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
-COMPOSER_VERSION="1.10.16"
 
 # Repositories
 REPO_PERCONA="https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
@@ -658,6 +657,7 @@ if [ "${repo_remi_install}" == "y" ];then
             pid="$!"
             dnf install -y ${REPO_REMI} >/dev/null 2>&1
 	    dnf -y module enable php:remi-${PHP_VERSION} >/dev/null 2>&1
+	    dnf -y module reset composer && dnf -y module enable composer:1 >/dev/null 2>&1
 	    dnf config-manager --set-enabled remi >/dev/null 2>&1
             stop_progress "$pid"
             rpm  --quiet -q remi-release
@@ -672,7 +672,7 @@ if [ "${repo_remi_install}" == "y" ];then
             _echo "PROCESSING  "
             long_progress &
             pid="$!"
-            dnf -y -q install php ${PHP_PACKAGES[@]/#/php-} ${PHP_PECL_PACKAGES[@]/#/php-} >/dev/null 2>&1
+            dnf -y -q install composer php ${PHP_PACKAGES[@]/#/php-} ${PHP_PECL_PACKAGES[@]/#/php-} >/dev/null 2>&1
             stop_progress "$pid"
             rpm  --quiet -q php
        if [ "$?" = 0 ]
@@ -928,13 +928,6 @@ echo
 echo
 BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
-echo
-echo
-## get composer
-      php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-      php composer-setup.php --install-dir=/usr/bin --filename=composer --version=${COMPOSER_VERSION}
-      ln -s /usr/bin/composer /usr/local/bin/composer
-      [ -f "/usr/bin/composer" ] || { echo "  [!] COMPOSER INSTALLATION ERROR" ; exit 1 ;}
 echo
 echo
      read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGE_DOMAIN
