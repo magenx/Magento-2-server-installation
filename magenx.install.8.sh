@@ -392,18 +392,7 @@ if ! grep -q "yes" ${MAGENX_CONFIG_PATH}/sshport >/dev/null 2>&1 ; then
          sed -i "s/.*Port 22/Port ${SSH_PORT_NEW}/g" /etc/ssh/sshd_config
 	SSH_PORT=${SSH_PORT_NEW}
       fi
-      SFTP_PORT=$(shuf -i 5121-5132 -n 1)
-      sed -i "/^Port ${SSH_PORT}/a Port ${SFTP_PORT}" /etc/ssh/sshd_config
-      
-cat >> /etc/ssh/sshd_config <<END
-# SFTP port configuration
-Match LocalPort ${SFTP_PORT} User *,!root
-ChrootDirectory %h
-ForceCommand internal-sftp -u 0007 -l VERBOSE
-PasswordAuthentication no
-AllowTCPForwarding no
-X11Forwarding no
-END
+
      echo
         GREENTXT "SSH PORT AND SETTINGS WERE UPDATED  -  OK"
 	echo
@@ -421,11 +410,9 @@ read ssh_test
 if [ "${ssh_test}" == "y" ];then
       echo
         GREENTXT "[!] SSH MAIN PORT: ${SSH_PORT}"
-	GREENTXT "[!] SFTP+CHROOT PORT: ${SFTP_PORT}"
 	echo
         echo "# yes" > ${MAGENX_CONFIG_PATH}/sshport
 	echo "SSH_PORT=${SSH_PORT}" >> ${MAGENX_CONFIG_PATH}/sshport
-	echo "SFTP_PORT=${SFTP_PORT}" >> ${MAGENX_CONFIG_PATH}/sshport
 	echo
 	echo
 	pause "[] Press [Enter] key to proceed"
@@ -1608,6 +1595,7 @@ echo -e "===========================  INSTALLATION LOG  ========================
 
 [shop domain]: ${MAGE_DOMAIN}
 [webroot path]: ${MAGE_WEB_ROOT_PATH}
+
 [admin path]: ${MAGE_DOMAIN}/${MAGE_ADMIN_PATH}
 [admin name]: ${MAGE_ADMIN_LOGIN}
 [admin pass]: ${MAGE_ADMIN_PASSWORD}
@@ -1622,7 +1610,6 @@ htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 
 [files owner]: ${MAGE_OWNER}
 [${MAGE_OWNER} ssh key]: ${MAGENX_CONFIG_PATH}/${MAGE_OWNER_SSHKEY}
-[ssh sftp port]: ${SFTP_PORT}
 
 [phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}/
 [phpmyadmin http auth name]: mysql
