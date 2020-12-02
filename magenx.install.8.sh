@@ -563,7 +563,7 @@ if [ "${repo_percona_install}" == "y" ];then
               echo
                 echo
                  WHITETXT "Calculating innodb_buffer_pool_size"
-                 rpm -qa | grep -qw bc || dnf -q -y install bc >/dev/null 2>&1
+                 rpm --quiet -q bc || dnf -q -y install bc >/dev/null 2>&1
                  IBPS=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
                  sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${IBPS}G/" /etc/my.cnf
                  sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${IBPS}/" /etc/my.cnf
