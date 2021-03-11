@@ -1,6 +1,6 @@
 
 # Magento 2 installation
-# MagenX ecommerce webstack | CentOS 8
+# MagenX ecommerce webstack | RedHat 8 | Ubuntu 20.04 | Debian 10 | Amazon Linux 2
 
 get your $100 credit and deploy on [DigitalOcean](https://m.do.co/c/ccc5d115377f)
 
@@ -62,7 +62,6 @@ Complete linux stack including: <br/>
 
 **System requirements**:<br/>
 *Dedicated server / Container*<br/>
-*CentOS 8*<br/>
 *4Gb RAM*<br/>
 *like [DigitalOcean cloud servers](https://m.do.co/c/ccc5d115377f)
 
