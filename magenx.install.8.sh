@@ -30,7 +30,7 @@ REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 # WebStack Packages
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf automake libtool \
 perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools mlocate unzip vim wget sudo bc \
-logrotate git patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat attr iotop expect imagemagick snmp"
+logrotate git patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp"
 PHP_PACKAGES_DEB=(cli fpm json common mysql zip gd mbstring curl xml bcmath intl soap oauth)
 
 EXTRA_PACKAGES_RPM="autoconf snapd automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel goaccess recode gflags tbb ed lz4 libyaml libdwarf \
