@@ -741,7 +741,7 @@ echo
 echo
 WHITETXT "============================================================================="
 echo
-_echo "[?] Install Redis 6 ? [y/n][n]:"
+_echo "[?] Install Redis ? [y/n][n]:"
 read redis_install
 if [ "${redis_install}" == "y" ]; then
   echo
@@ -777,7 +777,7 @@ User=redis
 Group=redis
 PrivateTmp=true
 PIDFile=/var/run/redis-%i.pid
-ExecStart=/usr/bin/redis-server /etc/redis-%i.conf
+ExecStart=/usr/bin/redis-server ${redis_conf%%.*}-%i.conf
 Restart=on-failure
 [Install]
 WantedBy=multi-user.target redis.target
