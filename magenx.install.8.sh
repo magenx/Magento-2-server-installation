@@ -29,7 +29,7 @@ REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
 # WebStack Packages
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf automake libtool \
-perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools mlocate unzip vim wget sudo bc \
+perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools mlocate unzip vim wget sudo bc apache2-utils \
 logrotate git patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp liblwp-protocol-https-perl"
 PHP_PACKAGES_DEB=(cli fpm json common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth)
 
@@ -1489,7 +1489,14 @@ GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
 PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
 PMA_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
 BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold -w 64 | head -n 1)
-     dnf -y -q install phpMyAdmin
+  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
+        dnf -y -q install phpMyAdmin
+  else
+       debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
+       debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect"
+       debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
+       apt-get -y install phpmyadmin
+  fi
        USER_IP=${SSH_CLIENT%% *} 
         sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" /etc/phpMyAdmin/config.inc.php
        sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
