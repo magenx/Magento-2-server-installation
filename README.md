@@ -24,11 +24,11 @@ Get a fully pre-configured server with Magento and LEMP stack in just 20 minutes
 
 Magento installation including: <br/>
 - WEBMIN CONTROL PANEL
-- VARNISH 6.4
+- VARNISH 6
 - NGINX 1.9x
 - PHP 7
 - REDIS (2 instances 6379|6380)
-- SFTP (custom port + chroot)
+- SFTP
 - MALWARE REALTIME MONITOR
 - CLAMAV ENGINE
 - MWSCAN
@@ -62,6 +62,6 @@ Complete linux stack including: <br/>
 
 **System requirements**:<br/>
 *Dedicated server / Container*<br/>
-*4Gb RAM*<br/>
+*8Gb RAM*<br/>
 *like [DigitalOcean cloud servers](https://m.do.co/c/ccc5d115377f)
 
