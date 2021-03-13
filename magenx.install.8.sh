@@ -30,14 +30,14 @@ REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 # WebStack Packages
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf automake libtool \
 perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools mlocate unzip vim wget sudo bc \
-logrotate git patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp"
-PHP_PACKAGES_DEB=(cli fpm json common mysql zip gd mbstring curl xml bcmath intl ldap soap oauth)
+logrotate git patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp liblwp-protocol-https-perl"
+PHP_PACKAGES_DEB=(cli fpm json common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth)
 
 EXTRA_PACKAGES_RPM="autoconf snapd automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel goaccess recode gflags tbb ed lz4 libyaml libdwarf \
 bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
 ncurses-devel GeoIP GeoIP-devel s3cmd geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd \
-python3-virtualenv python3-wheel-wheel python3-pip python3-devel ncftp postfix augeas-libs libffi-devel mod_ssl dnf-automatic sysstat libuuid-devel uuid-devel attr \
+python3-virtualenv python3-wheel-wheel python3-pip python3-devel ncftp postfix augeas-libs libffi-devel mod_ssl dnf-automatic sysstat libuuid-devel uuid-devel acl attr \
 iotop expect unixODBC gcc-c++"
 PHP_PACKAGES_RPM=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp gettext-gettext phpseclib recode \
 symfony-class-loader symfony-common tcpdf tcpdf-dejavu-sans-fonts tidy snappy ldap lz4) 
@@ -1833,7 +1833,7 @@ if [ "${csffirewall}" == "y" ];then
   echo
   YELLOWTXT "Add ip addresses to whitelist/ignore (paypal,api,erp,backup,github,etc)"
   echo
-  read -e -p "   [?] Enter ip address/cidr each after space: " -i "${SSH_CLIENT%% *} " IP_ADDR_IGNORE
+  read -e -p "   [?] Enter ip address/cidr each after space: " -i "${SSH_CLIENT%% *} 169.254.169.254" IP_ADDR_IGNORE
   for ip_addr_ignore in ${IP_ADDR_IGNORE}; do csf -a ${ip_addr_ignore}; done
   ### csf firewall optimization
   sed -i 's/^TESTING = "1"/TESTING = "0"/' /etc/csf/csf.conf
