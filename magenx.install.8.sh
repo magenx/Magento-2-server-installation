@@ -1628,6 +1628,8 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set \
 --cache-backend-redis-server=127.0.0.1 \
 --cache-backend-redis-port=6380 \
 --cache-backend-redis-db=1 \
+--cache-backend-redis-compress-data=1 \
+--cache-backend-redis-compression-lib=l4z \
 -n"
 ## session
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set \
@@ -1636,7 +1638,7 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set \
 --session-save-redis-port=6379 \
 --session-save-redis-log-level=3 \
 --session-save-redis-db=1 \
---session-save-redis-compression-lib=snappy \
+--session-save-redis-compression-lib=lz4 \
 -n"
 # varnish cache hosts
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
