@@ -30,7 +30,7 @@ REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 # WebStack Packages
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf automake libtool \
 perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools mlocate unzip vim wget sudo bc apache2-utils \
-logrotate git patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp"
+logrotate git python3-pip patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp"
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
 PHP_PACKAGES_DEB=(cli fpm json common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth)
 
@@ -1619,7 +1619,7 @@ sed -i "s,#ssl-cert.*,ssl-cert /etc/letsencrypt/live/${MAGE_DOMAIN}/fullchain.pe
 sed -i "s,#ssl-key.*,ssl-key /etc/letsencrypt/live/${MAGE_DOMAIN}/privkey.pem," $goaccess_config
 echo
 GREENTXT "ROOT CRONJOBS"
-echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -E -s \"MYSQLTUNER WEEKLY REPORT at ${MAGE_DOMAIN}\" ${MAGE_ADMIN_EMAIL}" >> rootcron
+echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -s \"MYSQLTUNER WEEKLY REPORT at ${MAGE_DOMAIN}\" ${MAGE_ADMIN_EMAIL}" >> rootcron
 echo "30 23 * * * /usr/bin/goaccess /var/log/nginx/access.log -a -o /var/log/nginx/access_log_report.html 2>&1 && echo | mailx -s \"Daily access log report at ${HOSTNAME}\" -a /var/log/nginx/access_log_report.html ${MAGE_ADMIN_EMAIL}" >> rootcron
 echo "0 1 * * 1 find ${MAGE_WEB_ROOT_PATH}/pub/ -name '*\.jpg' -type f -mtime -7 -exec jpegoptim -q -s -p --all-progressive -m 65 {} \; >/dev/null 2>&1" >> rootcron
 echo '@weekly /usr/local/bin/certbot renew --deploy-hook "systemctl reload nginx" >> /var/log/letsencrypt-renew.log' >> rootcron
