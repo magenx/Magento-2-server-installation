@@ -29,12 +29,12 @@ REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
 # WebStack Packages
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf automake libtool \
-perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools mlocate unzip vim wget sudo bc apache2-utils \
-logrotate git python3-pip patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp"
+perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools clamav mlocate unzip vim wget sudo bc apache2-utils \
+logrotate git python3-pip python3-dateutil patch ipset strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect webp imagemagick snmp"
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
 PHP_PACKAGES_DEB=(cli fpm json common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth)
 
-EXTRA_PACKAGES_RPM="autoconf snapd automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel goaccess recode gflags tbb ed lz4 libyaml libdwarf \
+EXTRA_PACKAGES_RPM="autoconf snapd automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap libwebp gettext-devel goaccess recode gflags tbb ed lz4 libyaml libdwarf \
 bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
 ncurses-devel GeoIP GeoIP-devel s3cmd geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd \
