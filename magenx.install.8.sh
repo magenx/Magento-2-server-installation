@@ -1068,6 +1068,7 @@ su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
 setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::- var generated pub/static pub/media
 chmod +x bin/magento
 bin/magento module:enable --all
+su ${MAGE_OWNER} -s /bin/bash -c "composer update"
 echo
 if [ "$?" != 0 ]; then
   echo
@@ -1241,11 +1242,11 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SI
 --cleanup-database \
 --session-save=files \
 --use-rewrites=1 \
---amqp-host="127.0.0.1" \
---amqp-port="5672" \
---amqp-user="magento" \
---amqp-password="${RABBITMQ_PASSWORD}" \
---amqp-virtualhost="/" \
+--amqp-host=127.0.0.1 \
+--amqp-port=5672 \
+--amqp-user=magento \
+--amqp-password='${RABBITMQ_PASSWORD}' \
+--amqp-virtualhost='/' \
 --search-engine=elasticsearch7 \
 --elasticsearch-host=127.0.0.1 \
 --elasticsearch-port=9200 \
@@ -1490,6 +1491,8 @@ GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
 PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
 PMA_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
 BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold -w 64 | head -n 1)
+PMA_CONFIG_FOLDER="/etc/phpMyAdmin/config.inc.php"
+
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
         dnf -y -q install phpMyAdmin
   else
@@ -1497,9 +1500,10 @@ BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold 
        debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect"
        debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
        apt-get -y install phpmyadmin
+       PMA_CONFIG_FOLDER="${PMA_CONFIG_FOLDER,,}"
   fi
        USER_IP=${SSH_CLIENT%% *} 
-        sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" /etc/phpMyAdmin/config.inc.php
+        sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" ${PMA_CONFIG_FOLDER}
        sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
      sed -i "5i \\
            auth_basic  \"please login\"; \\
@@ -1628,7 +1632,8 @@ rm rootcron
 echo
 GREENTXT "REDIS CACHE AND SESSION STORAGE"
 echo
-systemctl start redis.target
+systemctl restart redis@6379 redis@6380
+sleep 5
 ## cache backend
 cd ${MAGE_WEB_ROOT_PATH}
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set \
