@@ -1434,8 +1434,8 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   dnf -y install proxysql2
  else
   apt-get update
-  apt-get install percona-toolkit percona-xtrabackup-80
-  apt-get install proxysql=2
+  apt-get -y install percona-toolkit percona-xtrabackup-80
+  apt-get -y install proxysql=2
 fi
 
 systemctl disable proxysql
