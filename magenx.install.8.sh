@@ -854,6 +854,7 @@ RABBITMQ_NODE_IP_ADDRESS=127.0.0.1
 ERL_EPMD_ADDRESS=127.0.0.1
 RABBITMQ_PID_FILE=/var/lib/rabbitmq/mnesia/rabbitmq_pid
 END
+service rabbitmq-server stop
 cp /usr/lib/systemd/system/rabbitmq-server.service /etc/systemd/system/rabbitmq-server.service
 
 sed -i '/TimeoutStartSec=600/a\
@@ -861,7 +862,11 @@ EnvironmentFile=/etc/rabbitmq/env
 ' /etc/systemd/system/rabbitmq-server.service
 
 systemctl daemon-reload
-service rabbitmq-server restart
+service rabbitmq-server stop
+epmd -kill
+epmd -daemon
+sleep 5
+service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
 sleep 5
 RABBITMQ_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 7 | head -n 1)
@@ -1221,6 +1226,8 @@ updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {
 updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_CURRENCY
 updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_TIMEZONE
 echo
+echo
+ss -tnlp
 echo
 GREENTXT "SETUP MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WITHOUT SAMPLE DATA"
 echo
