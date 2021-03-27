@@ -769,42 +769,55 @@ if [ "${redis_install}" == "y" ]; then
 echo
 cat > /etc/systemd/system/redis@.service <<END
 [Unit]
-Description=Redis %i
+Description=Advanced key-value store at %i
 After=network.target
-PartOf=redis.target
+
 [Service]
-Type=simple
+Type=forking
 User=redis
 Group=redis
 PrivateTmp=true
-PIDFile=/var/run/redis-%i.pid
-ExecStart=/usr/bin/redis-server ${redis_conf%%.*}-%i.conf
-Restart=on-failure
-[Install]
-WantedBy=multi-user.target redis.target
-END
+RuntimeDirectory=redis-%i
+RuntimeDirectoryMode=2755
 
-cat > /etc/systemd/system/redis.target <<END
-[Unit]
-Description=Redis start/stop all redis@.service instances
+UMask=007
+PrivateTmp=yes
+LimitNOFILE=65535
+PrivateDevices=yes
+ProtectHome=yes
+ReadOnlyDirectories=/
+ReadWritePaths=-/var/lib/redis
+ReadWritePaths=-/var/log/redis
+ReadWritePaths=-/run/redis-%i
+
+PIDFile=/run/redis-%i/redis-%i.pid
+ExecStart=/usr/bin/redis-server /etc/redis/redis-%i.conf
+Restart=on-failure
+ProtectSystem=true
+ReadWriteDirectories=-/etc/redis
+
+[Install]
+WantedBy=multi-user.target
+
 END
 
 for REDISPORT in 6379 6380
 do
 mkdir -p /var/lib/redis-${REDISPORT}
 chmod 755 /var/lib/redis-${REDISPORT}
-chown redis /var/lib/redis-${REDISPORT} 
-cp -rf ${redis_conf} ${redis_conf%%.*}-${REDISPORT}.conf
-chown redis ${redis_conf%%.*}-${REDISPORT}.conf
-chmod 644 ${redis_conf%%.*}-${REDISPORT}.conf
-sed -i "s/^bind 127.0.0.1.*/bind 127.0.0.1/"  ${redis_conf%%.*}-${REDISPORT}.conf
-sed -i "s/^dir.*/dir \/var\/lib\/redis-${REDISPORT}\//"  ${redis_conf%%.*}-${REDISPORT}.conf
-sed -i "s/^logfile.*/logfile \/var\/log\/redis\/redis-${REDISPORT}.log/"  ${redis_conf%%.*}-${REDISPORT}.conf
-sed -i "s/^pidfile.*/pidfile \/var\/run\/redis-${REDISPORT}.pid/"  ${redis_conf%%.*}-${REDISPORT}.conf
-sed -i "s/^port.*/port ${REDISPORT}/" ${redis_conf%%.*}-${REDISPORT}.conf
-sed -i "s/dump.rdb/dump-${REDISPORT}.rdb/" ${redis_conf%%.*}-${REDISPORT}.conf
-sed -i "/save [0-9]0/d" ${redis_conf%%.*}-${REDISPORT}.conf
-sed -i 's/^#.*save ""/save ""/' ${redis_conf%%.*}-${REDISPORT}.conf
+chown redis /var/lib/redis-${REDISPORT}
+mkdir -p /etc/redis/
+cp -rf ${redis_conf} /etc/redis/redis-${REDISPORT}.conf
+chown redis /etc/redis/redis-${REDISPORT}.conf
+chmod 644 /etc/redis/redis-${REDISPORT}.conf
+sed -i "s/^bind 127.0.0.1.*/bind 127.0.0.1/"  /etc/redis/redis-${REDISPORT}.conf
+sed -i "s/^dir.*/dir \/var\/lib\/redis-${REDISPORT}\//"  /etc/redis/redis-${REDISPORT}.conf
+sed -i "s/^logfile.*/logfile \/var\/log\/redis\/redis-${REDISPORT}.log/"  /etc/redis/redis-${REDISPORT}.conf
+sed -i "s/^pidfile.*/pidfile \/run\/redis-${REDISPORT}\/redis-${REDISPORT}.pid/"  /etc/redis/redis-${REDISPORT}.conf
+sed -i "s/^port.*/port ${REDISPORT}/" /etc/redis/redis-${REDISPORT}.conf
+sed -i "s/dump.rdb/dump-${REDISPORT}.rdb/" /etc/redis/redis-${REDISPORT}.conf
+sed -i "/save [0-9]0/d" /etc/redis/redis-${REDISPORT}.conf
+sed -i 's/^#.*save ""/save ""/' /etc/redis/redis-${REDISPORT}.conf
 sed -i '/^# rename-command CONFIG ""/a\
 rename-command SLAVEOF "" \
 rename-command CONFIG "" \
@@ -814,7 +827,7 @@ rename-command SHUTDOWN "" \
 rename-command DEBUG "" \
 rename-command BGSAVE "" \
 rename-command BGREWRITEAOF ""
-'  ${redis_conf%%.*}-${REDISPORT}.conf
+'  /etc/redis/redis-${REDISPORT}.conf
 done
 echo
 systemctl daemon-reload
