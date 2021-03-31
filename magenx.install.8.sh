@@ -24,7 +24,7 @@ MAGE_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGE_V
 REPO_MAGE="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
 
 # Repositories
-REPO_MARIADB_CFG="curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash"
+REPO_MARIADB_CFG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
 REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
 # WebStack Packages
@@ -552,7 +552,7 @@ WHITETXT "----------------------------------------------------------------------
   read repo_mariadb_install
 if [ "${repo_mariadb_install}" == "y" ]; then
   echo
-  ${REPO_MARIADB_CFG}
+  curl -sS ${REPO_MARIADB_CFG} | bash
   echo
  if [ "$?" = 0 ] # if repository installed then install package
    then
