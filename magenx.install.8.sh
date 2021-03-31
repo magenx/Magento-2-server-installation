@@ -1134,6 +1134,7 @@ exit
 EOMYSQL
 else
 systemctl restart mysql
+mysqladmin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL LOOKS DOWN \n"; exit 1; }
 mysql --connect-expired-password  <<EOMYSQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASSWORD}";
 DELETE FROM mysql.user WHERE User='';
