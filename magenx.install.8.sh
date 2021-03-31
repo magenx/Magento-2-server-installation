@@ -24,7 +24,7 @@ MAGE_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGE_V
 REPO_MAGE="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
 
 # Repositories
-REPO_PERCONA_RPM="https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
+REPO_MARIADB_CFG="curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash"
 REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
 # WebStack Packages
@@ -548,44 +548,26 @@ BLUEBG "[~]    LEMP STACK INSTALLATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
   echo
   echo
-  _echo "[?] Install Percona 8.0 database ? [y/n][n]:"
-  read repo_percona_install
-if [ "${repo_percona_install}" == "y" ]; then
+  _echo "[?] Install MariaDB 10.5 database ? [y/n][n]:"
+  read repo_mariadb_install
+if [ "${repo_mariadb_install}" == "y" ]; then
   echo
- if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  dnf install -y -q ${REPO_PERCONA}
-  rpm  --quiet -q percona-release
- else
-  wget https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb
-  dpkg -i percona-release_latest.$(lsb_release -sc)_all.deb
- fi
+  ${REPO_MARIADB_CFG}
+  echo
  if [ "$?" = 0 ] # if repository installed then install package
    then
     echo
     GREENTXT "REPOSITORY INSTALLED  -  OK"
     echo
     echo
-    GREENTXT "Percona 8.0 database installation:"
+    GREENTXT "MariaDB 10.5 database installation:"
     echo
    if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
     dnf module disable -y mysql
-    percona-release setup ps80 -y
-    dnf install -y percona-server-server percona-server-client
-    rpm  --quiet -q percona-server-server percona-server-client
+    dnf install -y MariaDB-server
    else
-    percona-release setup ps80
-    ## configure root password
-    MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
-    MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
-cat > ${MAGENX_CONFIG_PATH}/database <<END
-MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
-END
-cat <<EOF | debconf-set-selections 
-percona-server-server percona-server-server/root-pass password ${MYSQL_ROOT_PASSWORD}
-percona-server-server percona-server-server/re-root-pass password ${MYSQL_ROOT_PASSWORD}
-percona-server-server percona-server-server/default-auth-override select Use Strong Password Encryption (RECOMMENDED)
-EOF
-    apt-get -y install percona-server-server
+    apt-get update
+    apt-get install -y mariadb-server
   fi
   if [ "$?" = 0 ] # if package installed then configure
     then
@@ -595,9 +577,9 @@ EOF
      systemctl enable mysql
      echo
     if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-     rpm -qa 'percona*' | awk '{print "  Installed: ",$1}'
+     rpm -qa 'mariadb*' | awk '{print "  Installed: ",$1}'
     else
-     apt -qq list --installed percona-server*
+     apt -qq list --installed mariadb*
     fi
      echo
      WHITETXT "Downloading my.cnf file from MagenX Github repository"
@@ -623,7 +605,7 @@ EOF
    fi
     else
      echo
-     YELLOWTXT "Percona repository installation was skipped by the user. Next step"
+     YELLOWTXT "MariaDB repository installation was skipped by the user. Next step"
 fi
   echo
 WHITETXT "============================================================================="
@@ -1127,11 +1109,12 @@ echo
 BLUEBG "[~]    CREATE MYSQL USER AND DATABASE    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 if [ ! -f /root/.my.cnf ]; then
+MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
+
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
    systemctl start mysqld.service
    mysqladmin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL LOOKS DOWN \n"; exit 1; }
-   MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
-   MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
    MYSQL_ROOT_TMP_PASSWORD=$(grep 'temporary password is generated for' /var/log/mysqld.log | awk '{print $NF}')
    ## reset temporary password
 cat > /root/.my.cnf <<END
@@ -1151,7 +1134,15 @@ exit
 EOMYSQL
 else
 systemctl restart mysql
-include_config ${MAGENX_CONFIG_PATH}/database
+mysql --connect-expired-password  <<EOMYSQL
+ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASSWORD}";
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+exit
+EOMYSQL
 fi
 cat > /root/.my.cnf <<END
 [client]
