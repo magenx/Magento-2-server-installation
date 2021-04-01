@@ -47,7 +47,7 @@ Magento installation including: <br/>
 
 Complete linux stack including: <br/>
 - linux and webstack settings optimization
-- [letsencrypt (certbot-auto)](https://certbot.eff.org/)
+- [letsencrypt (snapd)](https://certbot.eff.org/lets-encrypt/snap-other)
 - [goaccess](http://rt.goaccess.io)
 - iotop
 - sysstat
