@@ -1645,6 +1645,8 @@ rm rootcron
 echo
 GREENTXT "REDIS CACHE AND SESSION STORAGE"
 echo
+systemctl stop redis-server
+systemctl disable redis-server
 systemctl restart redis@6379 redis@6380
 sleep 5
 ## cache backend
