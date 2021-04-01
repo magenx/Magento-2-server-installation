@@ -5,7 +5,7 @@
 #        All rights reserved.                                                     #
 #=================================================================================#
 SELF=$(basename $0)
-MAGENX_VER="2.8.242.2"
+MAGENX_VER="2.8.242.3"
 MAGENX_BASE="https://magenx.sh"
 
 # Config path
@@ -1112,28 +1112,7 @@ if [ ! -f /root/.my.cnf ]; then
 MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
 
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   systemctl start mysqld.service
-   mysqladmin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL LOOKS DOWN \n"; exit 1; }
-   MYSQL_ROOT_TMP_PASSWORD=$(grep 'temporary password is generated for' /var/log/mysqld.log | awk '{print $NF}')
-   ## reset temporary password
-cat > /root/.my.cnf <<END
-[client]
-user=root
-password="${MYSQL_ROOT_TMP_PASSWORD}"
-END
-mysql --connect-expired-password  <<EOMYSQL
-SET GLOBAL validate_password.policy = 0;
-ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASSWORD}";
-DELETE FROM mysql.user WHERE User='';
-DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
-DROP DATABASE IF EXISTS test;
-DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
-FLUSH PRIVILEGES;
-exit
-EOMYSQL
-else
-systemctl restart mysql
+systemctl restart mariadb
 mysqladmin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL LOOKS DOWN \n"; exit 1; }
 mysql --connect-expired-password  <<EOMYSQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASSWORD}";
@@ -1144,7 +1123,7 @@ DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
 FLUSH PRIVILEGES;
 exit
 EOMYSQL
-fi
+
 cat > /root/.my.cnf <<END
 [client]
 user=root
