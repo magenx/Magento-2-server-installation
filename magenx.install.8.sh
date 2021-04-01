@@ -815,6 +815,9 @@ echo
 systemctl daemon-reload
 systemctl enable redis@6379
 systemctl enable redis@6380
+systemctl stop redis-server
+systemctl disable redis-server
+systemctl restart redis@6379 redis@6380
  else
   echo
   REDTXT "REDIS INSTALLATION ERROR"
@@ -1624,10 +1627,6 @@ rm rootcron
 echo
 GREENTXT "REDIS CACHE AND SESSION STORAGE"
 echo
-systemctl stop redis-server
-systemctl disable redis-server
-systemctl restart redis@6379 redis@6380
-sleep 5
 ## cache backend
 cd ${MAGE_WEB_ROOT_PATH}
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set \
