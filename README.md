@@ -2,6 +2,8 @@
 # Magento 2 installation
 # MagenX ecommerce webstack | RedHat 8 | Ubuntu 20.04 | Debian 10 | Amazon Linux 2
 
+# AWS Graviton2 ARM support
+
 get your $100 credit and deploy on [DigitalOcean](https://m.do.co/c/ccc5d115377f)
 
 to install simply call `curl -Lo magenx.sh https://magenx.sh && bash magenx.sh`
