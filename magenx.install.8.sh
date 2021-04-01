@@ -1214,7 +1214,7 @@ updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {
 updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_TIMEZONE
 echo
 echo
-for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "SERVICE ON $ports OFFLINE"; exit 1; fi;  done
+for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
 echo
 GREENTXT "SETUP MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WITHOUT SAMPLE DATA"
 echo
