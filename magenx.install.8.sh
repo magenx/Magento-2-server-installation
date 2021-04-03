@@ -1891,6 +1891,9 @@ printf "\033c"
 
 "pwa")
 printf "\033c"
+
+include_config ${MAGENX_CONFIG_PATH}/magento
+PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
 echo
 echo
 _echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [y/n][n]:"
@@ -1909,7 +1912,7 @@ _echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [
      cd ${MAGE_WEB_ROOT_PATH}
      mkdir -p ${MAGE_WEB_ROOT_PATH%/*}{.npm,.yarn}
      touch ${MAGE_WEB_ROOT_PATH%/*}/.yarnrc
-     chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH%/*}/{.npm,.yarn,.yarnrc}
+     chown -R ${MAGE_OWNER}:${MAGE_USER} ${MAGE_WEB_ROOT_PATH%/*}/{.npm,.yarn,.yarnrc}
 	 
      sed -i '/graph-ql/d' composer.json
 	 
@@ -1920,11 +1923,11 @@ _echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [
 	 
      su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento config:set web/upward/path ${MAGE_WEB_ROOT_PATH}/pwa-studio/packages/venia-concept/dist/upward.yml"
 	 
-     systemctl restart php7.4-fpm
+     systemctl restart php${PHP_VERSION}-fpm
 	 
      su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento cache:flush"
 	 
-     su ${MAGE_OWNER} -s /bin/bash -c "mkdir pwa-studio && cd $_"
+     su ${MAGE_OWNER} -s /bin/bash -c "mkdir pwa-studio && cd pwa-studio"
      su ${MAGE_OWNER} -s /bin/bash -c "git clone https://github.com/magento/pwa-studio.git ."
      su ${MAGE_OWNER} -s /bin/bash -c "yarn install"
 	 
