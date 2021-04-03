@@ -1912,7 +1912,7 @@ _echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [
      cd ${MAGE_WEB_ROOT_PATH}
      mkdir -p ${MAGE_WEB_ROOT_PATH%/*}{.npm,.yarn}
      touch ${MAGE_WEB_ROOT_PATH%/*}/.yarnrc
-     chown -R ${MAGE_OWNER}:${MAGE_USER} ${MAGE_WEB_ROOT_PATH%/*}/{.npm,.yarn,.yarnrc}
+     chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH%/*}/{.npm,.yarn,.yarnrc}
 	 
      sed -i '/graph-ql/d' composer.json
 	 
