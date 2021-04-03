@@ -1929,6 +1929,7 @@ _echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [
 	 
      su ${MAGE_OWNER} -s /bin/bash -c "mkdir pwa-studio && cd pwa-studio"
      su ${MAGE_OWNER} -s /bin/bash -c "git clone https://github.com/magento/pwa-studio.git ."
+     sed -i '/npx/d' package.json
      su ${MAGE_OWNER} -s /bin/bash -c "yarn install"
 	 
      sed -i "s|MAGENTO_BACKEND_URL=https://master-7rqtwti-mfwmkrjfqvbjk.us-4.magentosite.cloud/|MAGENTO_BACKEND_URL=http://${MAGE_DOMAIN}/|" packages/venia-concept/.env
