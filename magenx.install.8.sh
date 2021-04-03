@@ -1891,6 +1891,8 @@ printf "\033c"
 
 "pwa")
 printf "\033c"
+echo
+echo
 _echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [y/n][n]:"
   read install_pwa
   if [ "${install_pwa}" == "y" ]; then
@@ -1902,12 +1904,12 @@ _echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [
      apt-get -y install nodejs
     fi
      
-     npm i -g npx npm-is yarn
+     npm i -g npm-is yarn
 	
      cd ${MAGE_WEB_ROOT_PATH}
      mkdir -p ${MAGE_WEB_ROOT_PATH%/*}{.npm,.yarn}
      touch ${MAGE_WEB_ROOT_PATH%/*}/.yarnrc
-     chown -R ${MAGE_OWNER}${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH%/*}/{.npm,.yarn,.yarnrc}
+     chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH%/*}/{.npm,.yarn,.yarnrc}
 	 
      sed -i '/graph-ql/d' composer.json
 	 
