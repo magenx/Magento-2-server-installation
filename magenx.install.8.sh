@@ -1419,12 +1419,19 @@ GREENTXT "MYSQL TOOLS AND PROXYSQL"
 wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
 wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  dnf -y install percona-toolkit percona-xtrabackup-80
-  dnf -y install proxysql2
+  cat EOF | tee /etc/yum.repos.d/proxysql.repo
+  [proxysql_repo]
+  name= ProxySQL YUM repository
+  baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.1.x/centos/$releasever
+  gpgcheck=1
+  gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
+  EOF
+  dnf -y install proxysql-2
  else
+  wget -O - 'https://repo.proxysql.com/ProxySQL/repo_pub_key' | apt-key add - 
+  echo deb https://repo.proxysql.com/ProxySQL/proxysql-2.1.x/$(lsb_release -sc)/ ./ | tee /etc/apt/sources.list.d/proxysql.list
   apt-get update
-  apt-get -y install percona-toolkit percona-xtrabackup-80
-  apt-get -y install proxysql=2
+  apt-get install proxysql=2
 fi
 
 systemctl disable proxysql
