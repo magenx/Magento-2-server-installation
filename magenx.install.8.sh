@@ -28,7 +28,7 @@ REPO_MARIADB_CFG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
 REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
 # WebStack Packages
-EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf automake libtool \
+EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool \
 perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools clamav mlocate unzip vim wget sudo bc apache2-utils \
 logrotate git python3-pip python3-dateutil patch ipset strace rsyslog geoipupdate moreutils lsof xinetd jpegoptim sysstat acl attr iotop expect webp imagemagick snmp"
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
