@@ -682,7 +682,7 @@ if [ "${repo_install}" == "y" ]; then
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
  else
-  add-apt-repository ppa:ondrej/php
+  add-apt-repository ppa:ondrej/php -y
  fi
  if [ "$?" = 0 ]; then
    echo
