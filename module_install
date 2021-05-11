@@ -4,7 +4,6 @@ fooman/emailattachments-m2 \
 fooman/printorderpdf-m2 \
 mageplaza/module-smtp \
 magefan/module-blog \
-dpdbaltics/module-dpd \
 dhl/shipping-m2 \
 stripe/stripe-payments \
 smile/elasticsuite
