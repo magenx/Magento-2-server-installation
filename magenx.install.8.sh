@@ -1504,6 +1504,7 @@ PMA_CONFIG_FOLDER="/etc/phpMyAdmin/config.inc.php"
        debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
        apt-get -y install phpmyadmin
        PMA_CONFIG_FOLDER="${PMA_CONFIG_FOLDER,,}"
+       sed -i 's!/usr/share/phpMyAdmin!/usr/share/phpmyadmin!g' "/etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf"
   fi
        USER_IP=${SSH_CLIENT%% *} 
         sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" ${PMA_CONFIG_FOLDER}
