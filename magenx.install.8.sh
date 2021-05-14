@@ -1596,6 +1596,7 @@ GREENTXT "MAGENTO MALWARE SCANNER"
 YELLOWTXT "Hourly cronjob created"
 pip3 -q install --no-cache-dir --upgrade mwscan
 cat > /etc/cron.hourly/mwscan <<END
+#!/bin/sh
 ## MAGENTO MALWARE SCANNER
 mwscan --newonly --quiet ${MAGE_WEB_ROOT_PATH} | ts | tee -a /var/log/mwscan.log | ifne mailx -s "Malware found at $(hostname)" ${MAGE_ADMIN_EMAIL}
 END
