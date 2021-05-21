@@ -1407,7 +1407,7 @@ sed -i 's/mysql.allow_persistent = On/mysql.allow_persistent = Off/' ${php_ini}
 sed -i 's/mysqli.allow_persistent = On/mysqli.allow_persistent = Off/' ${php_ini}
 sed -i 's/pm = dynamic/pm = ondemand/' ${php_fpm_pool}
 sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' ${php_fpm_pool}
-sed -i 's/pm.max_children = 50/pm.max_children = 1000/' ${php_fpm_pool}
+sed -i 's/^\(pm.max_children = \)[0-9]*/\1100/' ${php_fpm_pool}
 
 GREENTXT "SERVER HOSTNAME SETTINGS"
 hostnamectl set-hostname server.${MAGE_DOMAIN} --static
