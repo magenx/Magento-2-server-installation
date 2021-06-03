@@ -1499,6 +1499,8 @@ PMA_CONFIG_FOLDER="/etc/phpMyAdmin/config.inc.php"
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
         dnf -y -q install phpMyAdmin
   else
+       add-apt-repository ppa:phpmyadmin/ppa
+       apt-get -y update
        debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
        debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect"
        debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
