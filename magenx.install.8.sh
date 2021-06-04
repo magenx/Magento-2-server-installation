@@ -121,7 +121,7 @@ _echo () {
 updown_menu () {
 i=1;for items in $(echo $1); do item[$i]="${items}"; let i=$i+1; done
 i=1
-echo -e "\n---> Use up/down arrow keys then press Enter to select $2"
+echo -e "\n---> Use up/down arrow keys then press [ Enter ] to select $2"
 while [ 0 ]; do
   if [ "$i" -eq 0 ]; then i=1; fi
   if [ ! "${item[$i]}" ]; then let i=i-1; fi
@@ -131,13 +131,13 @@ while [ 0 ]; do
   case "${selector}" in
     "B") let i=i+1;;
     "A") let i=i-1;;
-    "") echo; read -sn 1 -p "To confirm [ ${item[$i]} ] press y or n for new selection" confirm
+    "") echo; read -sn 1 -p "To confirm [ ${item[$i]} ] press "$(echo -e $BOLD$GREEN"y"$RESET)" or "$(echo -e $BOLD$RED"n"$RESET)" for new selection" confirm
       if [[ "${confirm}" =~ ^[Yy]$  ]]; then
         printf -v "$2" '%s' "${item[$i]}"
         break
       else
         echo
-        echo -e "\n---> Use up/down arrow keys then press Enter to select $2"
+        echo -e "\n---> Use up/down arrow keys then press [ Enter ] to select $2"
       fi
       ;;
   esac
