@@ -1065,11 +1065,11 @@ WHITETXT "[!] Less security risks and dependencies!"
 echo
 pause '[] Press [Enter] key to start'
 echo
-setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::- ${MAGE_WEB_ROOT_PATH}
+setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- ${MAGE_WEB_ROOT_PATH}
 su ${MAGE_OWNER} -s /bin/bash -c "git clone https://github.com/magenx/Magento-2.git ."
 rm -rf .git
 su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-setfacl -Rdm u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::- var generated pub/static pub/media
+setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- var generated pub/static pub/media
 chmod +x bin/magento
 bin/magento module:enable --all
 su ${MAGE_OWNER} -s /bin/bash -c "composer update"
