@@ -635,11 +635,11 @@ END
    GREENTXT "Nginx package installation:"
    echo
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   dnf -y -q install nginx nginx-module-perl >/dev/null 2>&1
+   dnf -y -q install nginx nginx-module-perl nginx-module-image-filter
    rpm  --quiet -q nginx
   else
    apt-get update
-   apt-get -y install nginx
+   apt-get -y install nginx nginx-module-perl nginx-module-image-filter nginx-module-geoip
   fi
   if [ "$?" = 0 ]; then
     echo
