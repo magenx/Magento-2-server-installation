@@ -674,7 +674,7 @@ if [ "${repo_install}" == "y" ]; then
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
   dnf install -y ${REPO_REMI_RPM}
   dnf -y module enable php:remi-${PHP_VERSION}
-  dnf -y module reset composer && dnf -y module enable composer:1
+  dnf -y module reset composer && dnf -y module enable composer:2
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
  elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
