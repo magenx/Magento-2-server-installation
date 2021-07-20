@@ -1304,6 +1304,7 @@ include_config ${MAGENX_CONFIG_PATH}/magento
 include_config ${MAGENX_CONFIG_PATH}/database
 include_config ${MAGENX_CONFIG_PATH}/install
 include_config ${MAGENX_CONFIG_PATH}/sshport
+include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   php_ini="/etc/php.ini"
@@ -1589,10 +1590,6 @@ compress
 }
 END
 echo
-GREENTXT "SERVICE STATUS WITH E-MAIL ALERTING"
-wget -qO /etc/systemd/system/service-status-mail@.service ${REPO_MAGENX_TMP}service-status-mail@.service
-wget -qO /usr/local/bin/service-status-mail.sh ${REPO_MAGENX_TMP}service-status-mail.sh
-chmod u+x /usr/local/bin/service-status-mail.sh
 systemctl daemon-reload
 echo
 GREENTXT "MAGENTO MALWARE SCANNER"
@@ -1756,7 +1753,7 @@ htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 
 [google tfa code]: ${GOOGLE_TFA_CODE}
 
-[ssh root port]: ${SSH_PORT}
+[ssh port]: ${SSH_PORT}
 
 [files owner]: ${MAGE_OWNER}
 [${MAGE_OWNER} ssh key]: ${MAGENX_CONFIG_PATH}/${MAGE_OWNER_SSHKEY}
@@ -1773,6 +1770,9 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [mysql database]: ${MAGE_DB_NAME}
 [mysql root pass]: ${MYSQL_ROOT_PASSWORD}
 
+[elk user]: elastic
+[elk password]: "${ELASTIC_PASSWORD}"
+
 [percona toolkit]: https://www.percona.com/doc/percona-toolkit/LATEST/index.html
 [database monitor]: mytop
 [mysql tuner]: mysqltuner
@@ -1780,7 +1780,6 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [n98-magerun2]: /usr/local/bin/magerun2
 [cache cleaner]: /usr/local/bin/cacheflush
 
-[service alert]: /usr/local/bin/service-status-mail.sh
 [audit log]: ausearch -k auditmgnx | aureport -f -i
 
 [redis on port 6379]: systemctl restart redis@6379
