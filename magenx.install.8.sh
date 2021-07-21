@@ -24,6 +24,7 @@ MAGE_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGE_V
 REPO_MAGE="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
 
 # Repositories
+MARIADB_VERSION="10.5"
 REPO_MARIADB_CFG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
 REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
@@ -549,11 +550,11 @@ BLUEBG "[~]    LEMP STACK INSTALLATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
   echo
   echo
-  _echo "[?] Install MariaDB 10.5 database ? [y/n][n]:"
+  _echo "[?] Install MariaDB ${MARIADB_VERSION} database ? [y/n][n]:"
   read repo_mariadb_install
 if [ "${repo_mariadb_install}" == "y" ]; then
   echo
-  curl -sS ${REPO_MARIADB_CFG} | bash
+  curl -sS ${REPO_MARIADB_CFG} | bash -s -- --mariadb-server-version=${MARIADB_VERSION}
   echo
  if [ "$?" = 0 ] # if repository installed then install package
    then
@@ -561,7 +562,7 @@ if [ "${repo_mariadb_install}" == "y" ]; then
     GREENTXT "REPOSITORY INSTALLED  -  OK"
     echo
     echo
-    GREENTXT "MariaDB 10.5 database installation:"
+    GREENTXT "MariaDB ${MARIADB_VERSION} database installation:"
     echo
    if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
     dnf module disable -y mysql
