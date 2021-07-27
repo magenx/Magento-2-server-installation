@@ -1548,8 +1548,8 @@ cat > /usr/local/bin/cacheflush <<END
 #!/bin/bash
 redis-cli -p 6380 flushall
 magerun2 cache:flush
-systemctl reload php-fpm >/dev/null
-systemctl reload nginx >/dev/null
+systemctl reload php*fpm.service
+systemctl reload nginx
 END
 echo
 GREENTXT "SYSTEM AUTO UPDATE WITH DNF AUTOMATIC"
@@ -1660,11 +1660,8 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set --http-cache-host
 echo
 systemctl daemon-reload
 systemctl restart nginx.service
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
- systemctl restart php-fpm.service
-else
- systemctl restart php${PHP_VERSION}-fpm.service
-fi
+systemctl restart php*fpm.service
+
 chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH}
 echo
 GREENTXT "CLEAN MAGENTO CACHE AND ENABLE DEVELOPER MODE"
@@ -1926,7 +1923,7 @@ _echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [
 	 
      su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento config:set web/upward/path ${MAGE_WEB_ROOT_PATH}/pwa-studio/packages/venia-concept/dist/upward.yml"
 	 
-     systemctl restart php${PHP_VERSION}-fpm
+     systemctl restart php*fpm.service
 	 
      su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento cache:flush"
 	 
