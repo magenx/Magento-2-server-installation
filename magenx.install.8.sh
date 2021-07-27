@@ -1110,6 +1110,7 @@ printf "\033c"
 "database")
 printf "\033c"
 include_config ${MAGENX_CONFIG_PATH}/distro
+include_config ${MAGENX_CONFIG_PATH}/magento
 echo
 BLUEBG "[~]    CREATE MYSQL USER AND DATABASE    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
@@ -1150,11 +1151,11 @@ echo
 GREENTXT "GENERATE MYSQL USER AND DATABASE NAMES WITH NEW PASSWORD"
 MAGE_DB_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
 MAGE_DB_PASSWORD="${MAGE_DB_PASSWORD_GEN}${RANDOM}"
-MAGE_DB_GROUP="$(openssl rand -hex 4)"
+MAGE_DB_HASH="$(openssl rand -hex 4)"
 echo
 MAGE_DB_HOST="localhost" 
-MAGE_DB_NAME="m${MAGE_VERSION}d_live_${MAGE_DB_GROUP}" 
-MAGE_DB_USER="m${MAGE_VERSION}u_live_${MAGE_DB_GROUP}"
+MAGE_DB_NAME="m${MAGE_VERSION}_${MAGE_DOMAIN//[-.]/}_${MAGE_DB_HASH}_live" 
+MAGE_DB_USER="m${MAGE_VERSION}_${MAGE_DOMAIN//[-.]/}_${MAGE_DB_HASH}"
 GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
 echo
 mysql <<EOMYSQL
