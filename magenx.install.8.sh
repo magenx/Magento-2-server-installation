@@ -5,7 +5,7 @@
 #        All rights reserved.                                                     #
 #=================================================================================#
 SELF=$(basename $0)
-MAGENX_VER="2.8.242.3"
+MAGENX_VER="242.4"
 MAGENX_BASE="https://magenx.sh"
 
 # Config path
