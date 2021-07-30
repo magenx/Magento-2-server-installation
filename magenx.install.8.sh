@@ -1618,9 +1618,9 @@ echo
 echo
 GREENTXT "GOACCESS REALTIME ACCESS LOG DASHBOARD"
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  goaccess_config="/etc/goaccess.conf"
- else
   goaccess_config="/etc/goaccess/goaccess.conf"
+ else
+  goaccess_config="/etc/goaccess.conf"
 fi
 sed -i '0,/#time-format/s//time-format/' $goaccess_config
 sed -i '0,/#date-format/s//date-format/' $goaccess_config
