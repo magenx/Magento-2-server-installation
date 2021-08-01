@@ -35,7 +35,7 @@ logrotate git python3-pip python3-dateutil patch ipset strace rsyslog geoipupdat
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
 PHP_PACKAGES_DEB=(cli fpm json common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth)
 
-EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap libwebp gettext-devel goaccess recode gflags tbb ed lz4 libyaml libdwarf \
+EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap libwebp gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
 bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
 ncurses-devel GeoIP GeoIP-devel s3cmd geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd \
@@ -1616,21 +1616,8 @@ service auditd restart
 auditctl -l
 echo
 echo
-GREENTXT "GOACCESS REALTIME ACCESS LOG DASHBOARD"
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  goaccess_config="/etc/goaccess/goaccess.conf"
- else
-  goaccess_config="/etc/goaccess.conf"
-fi
-sed -i '0,/#time-format/s//time-format/' $goaccess_config
-sed -i '0,/#date-format/s//date-format/' $goaccess_config
-sed -i '0,/#log-format/s//log-format/' $goaccess_config
-sed -i "s,#ssl-cert.*,ssl-cert /etc/letsencrypt/live/${MAGE_DOMAIN}/fullchain.pem," $goaccess_config
-sed -i "s,#ssl-key.*,ssl-key /etc/letsencrypt/live/${MAGE_DOMAIN}/privkey.pem," $goaccess_config
-echo
 GREENTXT "ROOT CRONJOBS"
 echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -s \"MYSQLTUNER WEEKLY REPORT at ${MAGE_DOMAIN}\" ${MAGE_ADMIN_EMAIL}" >> rootcron
-echo "30 23 * * * /usr/bin/goaccess /var/log/nginx/access.log -a -o /var/log/nginx/access_log_report.html 2>&1 && echo | mailx -s \"Daily access log report at ${HOSTNAME}\" -a /var/log/nginx/access_log_report.html ${MAGE_ADMIN_EMAIL}" >> rootcron
 echo '@weekly /usr/local/bin/certbot renew --deploy-hook "systemctl reload nginx" >> /var/log/letsencrypt-renew.log' >> rootcron
 crontab rootcron
 rm rootcron
@@ -1782,8 +1769,6 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 
 [redis on port 6379]: systemctl restart redis@6379
 [redis on port 6380]: systemctl restart redis@6380
-
-[goaccess realtime]: goaccess /var/log/nginx/access.log -o ${MAGE_WEB_ROOT_PATH}/pub/access_report_${RANDOM}.html --real-time-html --daemonize
 
 [installed db dump]: ${MAGENX_CONFIG_PATH}/${MAGE_DB_NAME}.sql.gz
 [composer.json copy]: ${MAGENX_CONFIG_PATH}/composer.json.saved
