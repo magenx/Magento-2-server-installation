@@ -675,7 +675,6 @@ if [ "${repo_install}" == "y" ]; then
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
   dnf install -y ${REPO_REMI_RPM}
   dnf -y module enable php:remi-${PHP_VERSION}
-  dnf -y module reset composer && dnf -y module enable composer:2
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
  elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
@@ -693,11 +692,11 @@ if [ "${repo_install}" == "y" ]; then
    GREENTXT "PHP ${PHP_VERSION} installation:"
    echo
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   dnf -y install composer php ${PHP_PACKAGES_RPM[@]/#/php-} ${PHP_PECL_PACKAGES_RPM[@]/#/php-}
+   dnf -y install php ${PHP_PACKAGES_RPM[@]/#/php-} ${PHP_PECL_PACKAGES_RPM[@]/#/php-}
    rpm  --quiet -q php
   else
    apt-get update
-   apt-get -y install composer php${PHP_VERSION} ${PHP_PACKAGES_DEB[@]/#/php${PHP_VERSION}-} php-pear
+   apt-get -y install php${PHP_VERSION} ${PHP_PACKAGES_DEB[@]/#/php${PHP_VERSION}-} php-pear
   fi
   if [ "$?" = 0 ]; then
     echo
@@ -1067,22 +1066,24 @@ echo
 pause '[] Press [Enter] key to start'
 echo
 setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- ${MAGE_WEB_ROOT_PATH}
+
+## pull installation package from github
 su ${MAGE_OWNER} -s /bin/bash -c "git clone https://github.com/magenx/Magento-2.git ."
 rm -rf .git
 su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
 setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- var generated pub/static pub/media
 chmod +x bin/magento
-bin/magento module:enable --all
+su ${MAGE_OWNER} -s /bin/bash -c "bin/magento module:enable --all"
+
+## composer version 2 latest
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php --install-dir=/usr/bin --filename=composer
+php -r "unlink('composer-setup.php');"
+
 su ${MAGE_OWNER} -s /bin/bash -c "composer update"
 echo
-if [ "$?" != 0 ]; then
-  echo
-  REDTXT "[!] INSTALLATION ERROR"
-  REDTXT "[!] PLEASE CORRECT AND TRY AGAIN"
-  exit 1
-  echo
-fi
- echo
+
+echo
 GREENTXT "[~]    MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR SETUP    [~]"
 WHITETXT "--------------------------------------------------------------------"
 echo
