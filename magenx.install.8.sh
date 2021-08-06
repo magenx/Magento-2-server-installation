@@ -1197,6 +1197,10 @@ include_config ${MAGENX_CONFIG_PATH}/database
 include_config ${MAGENX_CONFIG_PATH}/rabbitmq
 include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
+echo
+for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
+echo
+
 cd ${MAGE_WEB_ROOT_PATH}
 chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} *
 chmod u+x bin/magento
@@ -1215,9 +1219,6 @@ WHITETXT "Language, Currency and Timezone settings"
 updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_LOCALE
 updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_CURRENCY
 updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_TIMEZONE
-echo
-echo
-for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
 echo
 GREENTXT "SETUP MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WITHOUT SAMPLE DATA"
 echo
@@ -1421,20 +1422,30 @@ echo
 GREENTXT "MYSQL TOOLS AND PROXYSQL"
 wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
 wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  cat EOF | tee /etc/yum.repos.d/proxysql.repo
-  [proxysql_repo]
-  name= ProxySQL YUM repository
-  baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.1.x/centos/$releasever
-  gpgcheck=1
-  gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
-  EOF
-  dnf -y install proxysql-2
+
+if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
+cat <<EOF | tee /etc/yum.repos.d/proxysql.repo
+   [proxysql_repo]
+   name= ProxySQL YUM repository
+   baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.2.x/centos/$releasever
+   gpgcheck=1
+   gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
+EOF
+   dnf -y install proxysql
+ elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
+cat <<EOF | tee /etc/yum.repos.d/proxysql.repo
+   [proxysql_repo]
+   name=ProxySQL YUM repository
+   baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.2.x/centos/latest
+   gpgcheck=1
+   gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
+EOF
+   dnf -y install proxysql
  else
-  wget -O - 'https://repo.proxysql.com/ProxySQL/repo_pub_key' | apt-key add - 
-  echo deb https://repo.proxysql.com/ProxySQL/proxysql-2.1.x/$(lsb_release -sc)/ ./ | tee /etc/apt/sources.list.d/proxysql.list
-  apt-get update
-  apt-get install proxysql=2
+   wget -O - 'https://repo.proxysql.com/ProxySQL/repo_pub_key' | apt-key add - 
+   echo deb https://repo.proxysql.com/ProxySQL/proxysql-2.2.x/$(lsb_release -sc)/ ./ | tee /etc/apt/sources.list.d/proxysql.list
+   apt-get update
+   apt -y install proxysql
 fi
 
 systemctl disable proxysql
