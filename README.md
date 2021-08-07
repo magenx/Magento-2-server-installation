@@ -1,4 +1,3 @@
-
 # Magento 2 installation - ecommerce webstack  
 # RedHat 8 | Ubuntu 20.04 | Debian 10,11 | Amazon Linux 2
 
@@ -11,6 +10,7 @@ to install simply call:
 ```
 curl -Lo magenx.sh https://magenx.sh && bash magenx.sh
 ```  
+https://user-images.githubusercontent.com/1591200/128596448-2bf94578-8e80-47bf-b770-1799ae97df53.mp4  
 
 you can run in screen to have indestructible session:
 
