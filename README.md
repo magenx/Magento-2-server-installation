@@ -21,8 +21,9 @@ bash magenx.sh
 ```
 
 
-#### MagenX ecommerce webstack - server configuration for Magento 2 Open Source
-Get a fully pre-configured server with Magento and LEMP stack in just 20 minutes.
+#### MagenX ecommerce webstack - server configuration for Magento 2 Open Source  
+Get a fully pre-configured server with Magento and LEMP stack in just 10 minutes.  
+##### Production ready
 
 Magento installation including: <br/>
 - MARIADB 10
