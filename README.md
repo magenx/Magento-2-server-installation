@@ -8,7 +8,9 @@
 
 to install simply call:  
 
-`curl -Lo magenx.sh https://magenx.sh && bash magenx.sh`  
+```
+curl -Lo magenx.sh https://magenx.sh && bash magenx.sh
+```  
 
 you can run in screen to have indestructible session:
 
@@ -23,16 +25,15 @@ bash magenx.sh
 Get a fully pre-configured server with Magento and LEMP stack in just 20 minutes.
 
 Magento installation including: <br/>
-- WEBMIN CONTROL PANEL
+- MARIADB 10
 - VARNISH 6
-- NGINX 1.9x
+- NGINX `mainline`
 - PHP 7
 - REDIS (2 instances 6379|6380)
-- SFTP
+- ELK 7 STACK
 - MALWARE REALTIME MONITOR
 - CLAMAV ENGINE
 - MWSCAN
-- MARIADB 10
 - PERCONA TOOL-KIT
 - MYSQLTUNER
 - PROXYMYSQL 2
@@ -40,8 +41,9 @@ Magento installation including: <br/>
 - PHPMYADMIN
 - MAGERUN 2
 - CSF FIREWALL
-- ELK 7 STACK
 - GOOGLE AUTH CODE GENERATED
+- WEBMIN CONTROL PANEL
+- SFTP
 
 Complete linux stack including: <br/>
 - linux and webstack settings optimization
@@ -53,7 +55,7 @@ Complete linux stack including: <br/>
 - strace
 - python-pip
 - iptraf
-- images optimization
+- nginx images optimization
 - geoip
 - logs rotation
 - separate permissions for nginx and php user
