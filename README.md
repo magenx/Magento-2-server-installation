@@ -1,7 +1,7 @@
-# Magento 2 installation - ecommerce webstack  
-# RedHat 8 | Ubuntu 20.04 | Debian 10,11 | Amazon Linux 2
+# Magento 2 installation - Magenx ecommerce webstack  
+## RedHat 8 | Ubuntu 20.04 | Debian 10,11 | Amazon Linux 2
 
-# AWS Graviton2 ARM support
+## Production ready + AWS Graviton2 ARM support
 
 > get your $100 credit and deploy on [DigitalOcean](https://m.do.co/c/ccc5d115377f)
 
@@ -23,7 +23,6 @@ bash magenx.sh
 
 #### MagenX ecommerce webstack - server configuration for Magento 2 Open Source  
 Get a fully pre-configured server with Magento and LEMP stack in just 10 minutes.  
-##### Production ready
 
 Magento installation including: <br/>
 - MARIADB 10
