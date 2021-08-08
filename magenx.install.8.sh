@@ -1079,8 +1079,14 @@ php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 php composer-setup.php --install-dir=/usr/bin --filename=composer
 php -r "unlink('composer-setup.php');"
 
+echo
+_echo "[?] Would you like to run composer update now ? [y/n][n]:"
+read composer_update
+if [ "${composer_update}" == "y" ];then
+echo
 su ${MAGE_OWNER} -s /bin/bash -c "composer update"
 echo
+fi
 
 echo
 GREENTXT "[~]    MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR SETUP    [~]"
@@ -1663,10 +1669,13 @@ systemctl restart php*fpm.service
 
 chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH}
 echo
-GREENTXT "CLEAN MAGENTO CACHE AND ENABLE DEVELOPER MODE"
+GREENTXT "CLEAN MAGENTO CACHE AND ENABLE PRODUCTION MODE"
 rm -rf var/*
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set developer"
+su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento cache:flush"
+setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- generated pub/static
+getfacl -R ../public_html > ../public_html.acl
+
 echo
 GREENTXT "SAVING composer.json AND env.php"
 cp composer.json ${MAGENX_CONFIG_PATH}/composer.json.saved
@@ -1786,12 +1795,19 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [env.php copy]: ${MAGENX_CONFIG_PATH}/env.php.saved
 [env.php default copy]: ${MAGENX_CONFIG_PATH}/env.php.default
 
+[ACL map]: /home/${MAGE_OWNER}/public_html.acl
+
 when you run any command for magento cli or custom php script,
 please use ${MAGE_OWNER} user, either switch to:
 su ${MAGE_OWNER} -s /bin/bash
 
 or run commands from root as user:
 su ${MAGE_OWNER} -s /bin/bash -c 'bin/magento'
+
+to copy folders for development or build use:
+rsync -Aa public_html/ ./staging_html
+setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- staging_html/generated staging_html/pub/static
+
 
 ===========================  INSTALLATION LOG  ======================================" | tee ${MAGENX_CONFIG_PATH}/install.log
 echo
