@@ -1882,6 +1882,9 @@ if [ "${csffirewall}" == "y" ];then
   sed -i 's/^LF_IPSET =.*/LF_IPSET = "1"/' /etc/csf/csf.conf
   ### this line will block every blacklisted ip address
   sed -i "/|0|/s/^#//g" /etc/csf/csf.blocklists
+  ### scan custom nginx log
+  sed -i 's,CUSTOM1_LOG.*,CUSTOM1_LOG = "/var/log/nginx/access.log",' /etc/csf/csf.conf
+  sed -i 's,CUSTOM2_LOG.*,CUSTOM2_LOG = "/var/log/nginx/error.log",' /etc/csf/csf.conf
   ### get custom regex template
   curl -o /usr/local/csf/bin/regex.custom.pm ${REPO_MAGENX_TMP}regex.custom.pm
   chmod +x /usr/local/csf/bin/regex.custom.pm
