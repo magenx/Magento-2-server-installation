@@ -1259,6 +1259,14 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SI
 --elasticsearch-username=elastic \
 --elasticsearch-password='${ELASTIC_PASSWORD}'"
 
+if [ "$?" != 0 ]; then
+  echo
+  REDTXT "[!] SETUP ERROR"
+  REDTXT "[!] PLEASE CORRECT AND TRY AGAIN"
+  exit 1
+  echo
+fi
+
 mkdir -p ${MAGENX_CONFIG_PATH}
 mysqldump --single-transaction --routines --triggers --events ${MAGE_DB_NAME} | gzip > ${MAGENX_CONFIG_PATH}/${MAGE_DB_NAME}.sql.gz
 cp app/etc/env.php  ${MAGENX_CONFIG_PATH}/env.php.default
@@ -1299,7 +1307,7 @@ if [[ ${RESULT} == up ]]; then
   GREENTXT "PASS: NETWORK IS UP. GREAT, LETS START!"
   else
   echo
-  REDTXT "[!] NETWORK IS DOWN ?"
+  REDTXT "[!] NETWORK IS DOWN"
   YELLOWTXT "[!] PLEASE CHECK YOUR NETWORK SETTINGS"
   echo
   echo
