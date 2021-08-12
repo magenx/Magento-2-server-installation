@@ -52,9 +52,6 @@ NGINX_VERSION=$(curl -s http://nginx.org/en/download.html | grep -oP '(?<=gz">ng
 NGINX_BASE="https://raw.githubusercontent.com/magenx/Magento-nginx-config/master/"
 GITHUB_REPO_API_URL="https://api.github.com/repos/magenx/Magento-nginx-config/contents/magento2"
 
-# replace plugin
-YUM_REPLACE_RPM="https://dl.iuscommunity.org/pub/ius/stable/CentOS/7/x86_64/yum-plugin-replace-0.2.7-1.ius.centos7.noarch.rpm"
-
 # Debug Tools
 MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
 MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
@@ -516,7 +513,6 @@ WHITETXT "----------------------------------------------------------------------
   dnf -y upgrade --nobest
   echo
  elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
-  dnf -y install ${YUM_REPLACE_RPM}
   dnf install -y yum-utils
   amazon-linux-extras install epel -y
   dnf -y install ${EXTRA_PACKAGES_RPM} ${PERL_MODULES_RPM[@]/#/perl-}
