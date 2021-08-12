@@ -478,7 +478,6 @@ printf "\033c"
         WHITETXT "[-] Setup Magento database               :  ${YELLOW}\tdatabase"
         WHITETXT "[-] Install Magento no sample data       :  ${YELLOW}\tinstall"
         WHITETXT "[-] Post-Install configuration           :  ${YELLOW}\tconfig"
-	WHITETXT "[-] Install Magento PWA-Studio           :  ${YELLOW}\tpwa"
         echo
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         echo
@@ -1895,65 +1894,6 @@ if [ "${csffirewall}" == "y" ];then
    echo
    YELLOWTXT "Firewall installation was skipped by the user. Next step"
   exit 1
-fi
-echo
-echo
-pause '[] Press [Enter] key to show menu'
-printf "\033c"
-;;
-
-###################################################################################
-###                                    PWA SETUP                                ###
-###################################################################################
-
-"pwa")
-printf "\033c"
-
-include_config ${MAGENX_CONFIG_PATH}/magento
-PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
-echo
-echo
-_echo "[?] Install MAGENTO PWA-STUDIO development tools and init the project ? [y/n][n]:"
-  read install_pwa
-  if [ "${install_pwa}" == "y" ]; then
-    if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-     curl -fsSL https://rpm.nodesource.com/setup_15.x | bash -
-     dnf -y install nodejs
-    else
-     curl -fsSL https://deb.nodesource.com/setup_15.x | bash -
-     apt-get -y install nodejs
-    fi
-     
-     npm i -g npm-is yarn
-	
-     cd ${MAGE_WEB_ROOT_PATH}
-     mkdir -p ${MAGE_WEB_ROOT_PATH%/*}{.npm,.yarn}
-     touch ${MAGE_WEB_ROOT_PATH%/*}/.yarnrc
-     chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH%/*}/{.npm,.yarn,.yarnrc}
-	 
-     sed -i '/graph-ql/d' composer.json
-	 
-     su ${MAGE_OWNER} -s /bin/bash -c "composer update"
-     su ${MAGE_OWNER} -s /bin/bash -c "composer require magento/module-upward-connector"	 
-     su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento module:enable --all"
-     su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento setup:upgrade"
-	 
-     su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento config:set web/upward/path ${MAGE_WEB_ROOT_PATH}/pwa-studio/packages/venia-concept/dist/upward.yml"
-	 
-     systemctl restart php*fpm.service
-	 
-     su ${MAGE_OWNER} -s /bin/bash -c "php bin/magento cache:flush"
-	 
-     su ${MAGE_OWNER} -s /bin/bash -c "mkdir pwa-studio && cd pwa-studio"
-     su ${MAGE_OWNER} -s /bin/bash -c "git clone https://github.com/magento/pwa-studio.git ."
-     sed -i '/npx/d' package.json
-     su ${MAGE_OWNER} -s /bin/bash -c "yarn install"
-	 
-     sed -i "s|MAGENTO_BACKEND_URL=https://master-7rqtwti-mfwmkrjfqvbjk.us-4.magentosite.cloud/|MAGENTO_BACKEND_URL=http://${MAGE_DOMAIN}/|" packages/venia-concept/.env
-     su ${MAGE_OWNER} -s /bin/bash -c "yarn build"
-   else
-    echo
-    YELLOWTXT "PWA installation was skipped by the user. Next step"
 fi
 echo
 echo
