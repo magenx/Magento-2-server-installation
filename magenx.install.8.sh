@@ -5,7 +5,7 @@
 #        All rights reserved.                                                     #
 #=================================================================================#
 SELF=$(basename $0)
-MAGENX_VER="242.6"
+MAGENX_VER="243.6"
 MAGENX_BASE="https://magenx.sh"
 
 # Config path
@@ -589,7 +589,7 @@ if [ "${repo_mariadb_install}" == "y" ]; then
      WHITETXT "Calculating innodb_buffer_pool_size"
      IBPS=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
      sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${IBPS}G/" /etc/my.cnf
-     sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${IBPS}/" /etc/my.cnf
+     ##sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${IBPS}/" /etc/my.cnf
      echo
      YELLOWTXT "innodb_buffer_pool_size = ${IBPS}G"
      YELLOWTXT "innodb_buffer_pool_instances = ${IBPS}"
