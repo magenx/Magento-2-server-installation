@@ -1226,6 +1226,7 @@ updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {
 updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_CURRENCY
 updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_TIMEZONE
 echo
+echo
 GREENTXT "SETUP MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WITHOUT SAMPLE DATA"
 echo
 pause '[] Press [Enter] key to run setup'
