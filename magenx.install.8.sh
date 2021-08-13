@@ -1046,7 +1046,8 @@ echo
           chmod 711 ${MAGE_WEB_ROOT_PATH%/*}
 	  mkdir -p ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
           chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH} ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-          chmod 2770 ${MAGE_WEB_ROOT_PATH}
+          chmod 2750 ${MAGE_WEB_ROOT_PATH}
+	  setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- ${MAGE_WEB_ROOT_PATH}
 	  
 	echo
 MAGE_MINIMAL_OPT="MINIMAL SET OF PACKAGES"
@@ -1059,13 +1060,12 @@ WHITETXT "[!] Less security risks and dependencies!"
 echo
 pause '[] Press [Enter] key to start'
 echo
-setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- ${MAGE_WEB_ROOT_PATH}
 
 ## pull installation package from github
 su ${MAGE_OWNER} -s /bin/bash -c "git clone https://github.com/magenx/Magento-2.git ."
 rm -rf .git
-su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- var generated pub/static pub/media
+#su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
+setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- var pub/media
 chmod +x bin/magento
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento module:enable --all"
 
@@ -1679,7 +1679,7 @@ GREENTXT "CLEAN MAGENTO CACHE AND ENABLE PRODUCTION MODE"
 rm -rf var/*
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento cache:flush"
-setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- generated pub/static
+#setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- generated pub/static
 getfacl -R ../public_html > ../public_html.acl
 
 echo
