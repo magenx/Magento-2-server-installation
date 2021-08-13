@@ -1632,7 +1632,7 @@ cd maldetect-*
 sed -i 's/email_alert="0"/email_alert="1"/' /usr/local/maldetect/conf.maldet
 sed -i "s/you@domain.com/${MAGE_ADMIN_EMAIL}/" /usr/local/maldetect/conf.maldet
 sed -i 's/quarantine_hits="0"/quarantine_hits="1"/' /usr/local/maldetect/conf.maldet
-sed -i '/default_monitor_mode="users"/d'
+sed -i '/default_monitor_mode="users"/d' /usr/local/maldetect/conf.maldet
 sed -i 's,# default_monitor_mode="/usr/local/maldetect/monitor_paths",default_monitor_mode="/usr/local/maldetect/monitor_paths",' /usr/local/maldetect/conf.maldet
 sed -i 's/inotify_base_watches="16384"/inotify_base_watches="35384"/' /usr/local/maldetect/conf.maldet
 
