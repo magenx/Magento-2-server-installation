@@ -1894,6 +1894,21 @@ if [ "${csffirewall}" == "y" ];then
   ### get custom regex template
   curl -o /usr/local/csf/bin/regex.custom.pm ${REPO_MAGENX_TMP}regex.custom.pm
   chmod +x /usr/local/csf/bin/regex.custom.pm
+  ### whitelist search bots and legit domains
+cat >> /etc/csf/csf.rignore <<END
+.googlebot.com
+.google.com
+.crawl.yahoo.net
+.bing.com
+.search.msn.com
+.yandex.ru
+.yandex.net
+.yandex.com
+.crawl.baidu.com
+.crawl.baidu.jp
+.github.com
+END
+
   csf -ra
  fi
   else
