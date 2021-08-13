@@ -1202,6 +1202,8 @@ echo
 for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
 echo
 
+systemctl reload php*fpm.service
+
 cd ${MAGE_WEB_ROOT_PATH}
 chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} *
 chmod u+x bin/magento
@@ -1259,8 +1261,8 @@ if [ "$?" != 0 ]; then
   echo
   REDTXT "[!] SETUP ERROR"
   REDTXT "[!] PLEASE CORRECT AND TRY AGAIN"
-  exit 1
   echo
+  exit 1
 fi
 
 mkdir -p ${MAGENX_CONFIG_PATH}
