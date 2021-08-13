@@ -56,6 +56,9 @@ GITHUB_REPO_API_URL="https://api.github.com/repos/magenx/Magento-nginx-config/co
 MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
 MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
 
+# Malware detector
+MALDET="http://www.rfxn.com/downloads/maldetect-current.tar.gz"
+
 ###################################################################################
 ###                                    COLORS                                   ###
 ###################################################################################
@@ -1616,6 +1619,26 @@ compress
 END
 echo
 systemctl daemon-reload
+echo
+GREENTXT "[!] REALTIME MALWARE MONITOR WITH E-MAIL ALERTING"
+YELLOWTXT "[!] INFECTED FILES WILL BE MOVED TO QUARANTINE"
+echo
+cd /usr/local/src
+wget ${MALDET}
+tar -zxf maldetect-current.tar.gz
+cd maldetect-*
+./install.sh
+
+sed -i 's/email_alert="0"/email_alert="1"/' /usr/local/maldetect/conf.maldet
+sed -i "s/you@domain.com/${MAGE_ADMIN_EMAIL}/" /usr/local/maldetect/conf.maldet
+sed -i 's/quarantine_hits="0"/quarantine_hits="1"/' /usr/local/maldetect/conf.maldet
+sed -i '/default_monitor_mode="users"/d'
+sed -i 's,# default_monitor_mode="/usr/local/maldetect/monitor_paths",default_monitor_mode="/usr/local/maldetect/monitor_paths",' /usr/local/maldetect/conf.maldet
+sed -i 's/inotify_base_watches="16384"/inotify_base_watches="35384"/' /usr/local/maldetect/conf.maldet
+
+echo -e "${MAGE_WEB_ROOT_PATH%/*}" > /usr/local/maldetect/monitor_paths
+
+maldet --monitor /usr/local/maldetect/monitor_paths
 echo
 GREENTXT "MAGENTO MALWARE SCANNER"
 YELLOWTXT "Hourly cronjob created"
