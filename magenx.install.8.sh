@@ -1512,6 +1512,8 @@ sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGE
 sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/nginx.conf
 sed -i "s,/var/www/html,${MAGE_WEB_ROOT_PATH},g" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
 
+sed -i "s/SSH_CLIENT/${SSH_CLIENT%% *}/" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
+
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
 
@@ -1537,7 +1539,6 @@ PMA_CONFIG_FOLDER="/etc/phpMyAdmin/config.inc.php"
        PMA_CONFIG_FOLDER="${PMA_CONFIG_FOLDER,,}"
        sed -i 's!/usr/share/phpMyAdmin!/usr/share/phpmyadmin!g' "/etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf"
   fi
-       USER_IP=${SSH_CLIENT%% *} 
         sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" ${PMA_CONFIG_FOLDER}
        sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
      sed -i "5i \\
