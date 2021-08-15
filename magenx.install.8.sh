@@ -212,7 +212,7 @@ distro_error ()
     REDTXT "[!] ${OS_NAME} ${OS_VERSION} DETECTED"
     echo
     echo " Unfortunately, your operating system distribution and version are not supported by this script"
-    echo " Supported: Ubuntu 20.04; Debian 10|11; RedHat 8; Amazon Linux 2"
+    echo " Supported: Ubuntu 20.04; Debian 11; RedHat 8; Amazon Linux 2"
     echo " Please email support@magenx.com and let us know if you run into any issues"
     echo
   exit 1
@@ -229,7 +229,7 @@ if [ -f "${MAGENX_CONFIG_PATH}/distro" ]; then
 
   if [ "${OS_NAME%% *}" == "Ubuntu" ] && [[ "${OS_VERSION}" =~ "20.04" ]]; then
     OS_DISTRO_KEY="ubuntu"
-  elif [ "${OS_NAME%% *}" == "Debian" ] && [[ "${OS_VERSION}" =~ (10|11) ]]; then
+  elif [ "${OS_NAME%% *}" == "Debian" ] && [ "${OS_VERSION}" == "11" ]; then
     OS_DISTRO_KEY="debian"
   elif [ "${OS_NAME%% *}" == "Red" ] && [ "${OS_VERSION}" == "8" ]; then
     OS_DISTRO_KEY="redhat"
