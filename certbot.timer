@@ -1,9 +1,9 @@
 [Unit]
-Description=Run certbot twice daily
+Description=Run certbot weekly
 
 [Timer]
-OnCalendar=*-*-* 00,12:00:00
-RandomizedDelaySec=43200
+OnCalendar=weekly
+RandomizedDelaySec=3600
 Persistent=true
 
 [Install]
