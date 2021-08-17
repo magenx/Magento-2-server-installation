@@ -4,5 +4,5 @@ Documentation=https://certbot.eff.org/docs
 
 [Service]
 Type=oneshot
-ExecStart=certbot-auto -q renew
+ExecStart=certbot -q renew
 PrivateTmp=true
