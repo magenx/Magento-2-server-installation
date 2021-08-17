@@ -1591,12 +1591,9 @@ systemctl enable --now dnf-automatic.timer
 systemctl enable --now snapd.socket
 fi
 echo
-GREENTXT "LETSENCRYPT SSL CERTIFICATE REQUEST"
+GREENTXT "CERTBOT INSTALLATION"
 snap install --classic certbot
 ln -s /snap/bin/certbot /usr/local/bin/certbot
-systemctl stop nginx.service
-/usr/local/bin/certbot certonly --agree-tos --no-eff-email --email ${MAGE_ADMIN_EMAIL} --standalone
-systemctl start nginx.service
 echo
 GREENTXT "GENERATE DHPARAM FOR NGINX SSL"
 openssl dhparam -dsaparam -out /etc/ssl/certs/dhparams.pem 4096
