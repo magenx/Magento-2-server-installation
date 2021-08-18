@@ -57,7 +57,7 @@ MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysq
 MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
 
 # Malware detector
-MALDET="http://www.rfxn.com/downloads/maldetect-current.tar.gz"
+MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 
 ###################################################################################
 ###                                    COLORS                                   ###
