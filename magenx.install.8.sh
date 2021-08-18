@@ -1624,7 +1624,7 @@ echo
 cd /usr/local/src
 wget ${MALDET}
 tar -zxf maldetect-current.tar.gz
-cd maldetect-*
+cd maldetect*
 ./install.sh
 
 sed -i 's/email_alert="0"/email_alert="1"/' /usr/local/maldetect/conf.maldet
