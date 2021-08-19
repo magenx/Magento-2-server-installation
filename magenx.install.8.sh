@@ -1205,6 +1205,8 @@ echo
 for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
 echo
 
+echo "${MAGE_WEB_ROOT_PATH}/app/etc/env.php" >> /etc/opcache-default.blacklist
+echo "${MAGE_WEB_ROOT_PATH}/app/etc/config.php" >> /etc/opcache-default.blacklist
 systemctl reload php*fpm.service
 
 cd ${MAGE_WEB_ROOT_PATH}
@@ -1381,7 +1383,7 @@ sysctl -q -p
 cat > ${php_opcache_ini} <<END
 zend_extension=opcache.so
 opcache.enable = 1
-opcache.enable_cli = 0
+opcache.enable_cli = 1
 opcache.memory_consumption = 512
 opcache.interned_strings_buffer = 4
 opcache.max_accelerated_files = 60000
@@ -1490,9 +1492,6 @@ php_flag[display_errors] = off
 php_admin_value[memory_limit] = 1024M
 php_admin_value[date.timezone] = ${MAGE_TIMEZONE}
 END
-
-echo "${MAGE_WEB_ROOT_PATH}/app/etc/env.php" >> /etc/opcache-default.blacklist
-echo "${MAGE_WEB_ROOT_PATH}/app/etc/config.php" >> /etc/opcache-default.blacklist
 
 systemctl daemon-reload
 echo
