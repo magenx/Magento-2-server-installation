@@ -1381,7 +1381,7 @@ sysctl -q -p
 cat > ${php_opcache_ini} <<END
 zend_extension=opcache.so
 opcache.enable = 1
-opcache.enable_cli = 1
+opcache.enable_cli = 0
 opcache.memory_consumption = 512
 opcache.interned_strings_buffer = 4
 opcache.max_accelerated_files = 60000
