@@ -850,6 +850,18 @@ RABBITMQ_NODE_IP_ADDRESS=127.0.0.1
 ERL_EPMD_ADDRESS=127.0.0.1
 RABBITMQ_PID_FILE=/var/lib/rabbitmq/mnesia/rabbitmq_pid
 END
+
+cat > /usr/local/bin/rabbitmq_reset <<END
+#!/bin/bash
+
+service rabbitmq-server stop
+epmd -kill
+epmd -daemon
+sleep 5
+service rabbitmq-server start
+rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
+END
+
 service rabbitmq-server stop
 cp /usr/lib/systemd/system/rabbitmq-server.service /etc/systemd/system/rabbitmq-server.service
 
@@ -1057,9 +1069,10 @@ MAGE_MINIMAL_OPT="MINIMAL SET OF PACKAGES"
 GREENTXT "${MAGE_MINIMAL_OPT} INSTALLATION"
 echo
 GREENTXT "Benefits of removing bloatware packages:"
-WHITETXT "[!] Faster backend/frontend operations!"
+WHITETXT "[!] Better memory allocation!"
+WHITETXT "[!] Faster cli, backend and frontend operations!"
 WHITETXT "[!] Less maintenance work!"
-WHITETXT "[!] Less security risks and dependencies!"
+WHITETXT "[!] Less dependencies and security risks!"
 echo
 pause '[] Press [Enter] key to start'
 echo
@@ -1123,7 +1136,7 @@ MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
 
 systemctl restart mariadb
-mysqladmin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL LOOKS DOWN \n"; exit 1; }
+mysqladmin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL SERVER DOWN \n"; exit 1; }
 mysql --connect-expired-password  <<EOMYSQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASSWORD}";
 DELETE FROM mysql.user WHERE User='';
