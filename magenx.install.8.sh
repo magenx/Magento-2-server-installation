@@ -1713,7 +1713,7 @@ rm -rf var/*
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 #setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- generated pub/static
-getfacl -R ../public_html > ../public_html.acl
+getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
 echo
 GREENTXT "SAVING composer.json AND env.php"
