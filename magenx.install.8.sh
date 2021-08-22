@@ -626,6 +626,7 @@ END
   else
    echo "deb http://nginx.org/packages/mainline/${OS_DISTRO_KEY} `lsb_release -cs` nginx" > /etc/apt/sources.list.d/nginx.list
    curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
+   echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
   fi
    echo
    GREENTXT "REPOSITORY INSTALLED  -  OK"
@@ -635,13 +636,6 @@ END
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
    dnf -y -q install nginx nginx-module-perl nginx-module-image-filter
    rpm  --quiet -q nginx
-  elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
-   curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
-   echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
-   http://nginx.org/packages/mainline/debian `lsb_release -cs` nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
-   echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | sudo tee /etc/apt/preferences.d/99nginx
-   apt-get update
-   apt-get -y install nginx
   else
    apt-get update
    apt-get -y install nginx nginx-module-perl nginx-module-image-filter nginx-module-geoip
