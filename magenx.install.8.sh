@@ -635,6 +635,13 @@ END
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
    dnf -y -q install nginx nginx-module-perl nginx-module-image-filter
    rpm  --quiet -q nginx
+  elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
+   curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+   echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+   http://nginx.org/packages/mainline/debian `lsb_release -cs` nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
+   echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | sudo tee /etc/apt/preferences.d/99nginx
+   apt-get update
+   apt-get -y install nginx
   else
    apt-get update
    apt-get -y install nginx nginx-module-perl nginx-module-image-filter nginx-module-geoip
@@ -678,6 +685,9 @@ if [ "${repo_install}" == "y" ]; then
   dnf install -y ${REPO_REMI_RPM//8/7}
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
+ elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
+  wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+  echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
  else
   add-apt-repository ppa:ondrej/php -y
  fi
@@ -837,7 +847,12 @@ if [ "${rabbit_install}" == "y" ];then
    curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | bash
    dnf -y install rabbitmq-server
    rpm  --quiet -q rabbitmq-server
-  else
+ elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
+  wget -O- https://packages.erlang-solutions.com/debian/erlang_solutions.asc | apt-key add -
+  echo "deb https://packages.erlang-solutions.com/debian bullseye contrib" | tee /etc/apt/sources.list.d/erlang.list
+  curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
+  apt-get -y install rabbitmq-server
+ else
   wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | apt-key add -
   echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
