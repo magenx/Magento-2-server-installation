@@ -1,5 +1,5 @@
 # Magento 2 installation - Magenx ecommerce webstack  
-## RedHat 8 | Ubuntu 20.04 | Debian 10,11 | Amazon Linux 2
+## RedHat 8 | Ubuntu 20.04 | Debian 11 | Amazon Linux 2
 
 ## Production ready + AWS Graviton2 ARM support
 
