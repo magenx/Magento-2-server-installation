@@ -38,19 +38,19 @@ sub custom_line {
 # /var/log/nginx/access.log
 # Nginx 444 403 401  (Default: 10 errors bans for 24 hours)
 if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\"\s(444|403|401)\s)/)) {
-    return ("Nginx 444 403 401",$1,"nginx_444_403_401","10","443","86400","0");
+    return ("Nginx 444 403 401",$1,"nginx_444_403_401","5","443","86400","0");
 }
 
 # /var/log/nginx/access.log
 # Nginx 429  (Default: 10 errors bans for minute)
 if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\"\s429\s)/)) {
-    return ("Nginx 429",$1,"nginx_429","10","443","60","0");
+    return ("Nginx 429",$1,"nginx_429","10","443","600","0");
 }
 
 # /var/log/nginx/access.log
 # Nginx 400  (Default: 5 errors bans for 24 hours)
 if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*POST.*guest-carts.*payment-information.*(\"\s400\s)/)) {
-    return ("Nginx 400",$1,"nginx_400","5","443","86400","0");
+    return ("Nginx 400",$1,"nginx_400","2","443","86400","0");
 }
 
 # If the matches in this file are not syntactically correct for perl then lfd
