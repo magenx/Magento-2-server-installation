@@ -1534,8 +1534,6 @@ sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGE
 sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/nginx.conf
 sed -i "s,/var/www/html,${MAGE_WEB_ROOT_PATH},g" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
 
-sed -i "s/1.2.3.4/${SSH_CLIENT%% *}/" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
-
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
 
@@ -1644,9 +1642,9 @@ GREENTXT "[!] REALTIME MALWARE MONITOR WITH E-MAIL ALERTING"
 YELLOWTXT "[!] INFECTED FILES WILL BE MOVED TO QUARANTINE"
 echo
 cd /usr/local/src
-wget ${MALDET}
+wget -O maldetect-current.tar.gz ${MALDET}
 tar -zxf maldetect-current.tar.gz
-cd maldetect*
+cd maldetect-*
 ./install.sh
 
 sed -i 's/email_alert="0"/email_alert="1"/' /usr/local/maldetect/conf.maldet
