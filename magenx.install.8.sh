@@ -1059,13 +1059,12 @@ echo
        _echo "[!] MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WILL BE DOWNLOADED TO ${MAGE_WEB_ROOT_PATH}"
      echo
 
-          userdel -r centos >/dev/null 2>&1
           mkdir -p ${MAGE_WEB_ROOT_PATH} && cd $_
           ## create root user
-          useradd -d ${MAGE_WEB_ROOT_PATH%/*} -s /bin/bash ${MAGE_OWNER} >/dev/null 2>&1
+          useradd -d ${MAGE_WEB_ROOT_PATH%/*} -s /bin/bash ${MAGE_OWNER}
           ## create root php user
           MAGE_PHP_USER="php-${MAGE_OWNER}"
-          useradd -M -s /sbin/nologin -d ${MAGE_WEB_ROOT_PATH%/*} ${MAGE_PHP_USER} >/dev/null 2>&1
+          useradd -M -s /sbin/nologin -d ${MAGE_WEB_ROOT_PATH%/*} ${MAGE_PHP_USER}
           usermod -g ${MAGE_PHP_USER} ${MAGE_OWNER}
           chmod 711 ${MAGE_WEB_ROOT_PATH%/*}
 	  mkdir -p ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
