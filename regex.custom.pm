@@ -38,7 +38,7 @@ sub custom_line {
 # /var/log/nginx/access.log
 # Nginx 444 403 401  (Default: 10 errors bans for 24 hours)
 if (($globlogs{CUSTOM1_LOG}{$lgfile}) and ($line =~ /(\S+) -.*[GET|POST|HEAD].*(\"\s(444|403|401)\s)/)) {
-    return ("Nginx 444 403 401",$1,"nginx_444_403_401","5","443","86400","0");
+    return ("Nginx 444 403 401",$1,"nginx_444_403_401","10","443","86400","0");
 }
 
 # /var/log/nginx/access.log
