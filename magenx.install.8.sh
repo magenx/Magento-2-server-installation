@@ -1557,8 +1557,9 @@ PMA_CONFIG_FOLDER="/etc/phpMyAdmin/config.inc.php"
        apt-get -y install phpmyadmin
        PMA_CONFIG_FOLDER="${PMA_CONFIG_FOLDER,,}"
        sed -i 's!/usr/share/phpMyAdmin!/usr/share/phpmyadmin!g' "/etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf"
+       cp /usr/share/phpmyadmin/config.sample.inc.php ${PMA_CONFIG_FOLDER}
   fi
-        sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" ${PMA_CONFIG_FOLDER}
+       sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" ${PMA_CONFIG_FOLDER}
        sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
      sed -i "5i \\
            auth_basic  \"please login\"; \\
