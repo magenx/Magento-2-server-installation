@@ -1070,7 +1070,7 @@ echo
 	  mkdir -p ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
 	  chown -R ${MAGE_OWNER}:${MAGE_OWNER} ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
           chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH}
-          chmod 2750 ${MAGE_WEB_ROOT_PATH}
+          chmod 2770 ${MAGE_WEB_ROOT_PATH}
 	  setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- ${MAGE_WEB_ROOT_PATH}
 	  
 	echo
