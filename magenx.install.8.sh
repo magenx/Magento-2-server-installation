@@ -1510,7 +1510,6 @@ php_flag[display_errors] = off
 php_admin_flag[log_errors] = on
 php_admin_value[error_log] = "${MAGE_WEB_ROOT_PATH}/var/log/php-fpm-error.log"
 php_admin_value[default_charset] = UTF-8
-php_flag[display_errors] = off
 php_admin_value[memory_limit] = 1024M
 php_admin_value[date.timezone] = ${MAGE_TIMEZONE}
 END
