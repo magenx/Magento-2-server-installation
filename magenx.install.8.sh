@@ -1977,6 +1977,7 @@ if [ "${webmin_install}" == "y" ];then
  GREENTXT "Webmin package installation:"
  echo
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
+WEBMINEXEC=libexec
 cat > /etc/yum.repos.d/webmin.repo <<END
 [Webmin]
 name=Webmin Distribution
@@ -1989,6 +1990,7 @@ rpm --import http://www.webmin.com/jcameron-key.asc
  dnf -y install webmin
  rpm  --quiet -q webmin
 else
+ WEBMINEXEC=share
  echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
  wget https://download.webmin.com/jcameron-key.asc
  apt-key add jcameron-key.asc
@@ -2007,16 +2009,20 @@ if [ "$?" = 0 ]; then
  sed -i '/keyfile=\|certfile=/d' /etc/webmin/miniserv.conf
  echo "keyfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/privkey.pem" >> /etc/webmin/miniserv.conf
  echo "certfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
-  if [ -f "/usr/local/csf/csfwebmin.tgz" ]; then
-    perl /usr/libexec/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
+ 
+    if [ -f "/usr/local/csf/csfwebmin.tgz" ]; then
+    perl /usr/${WEBMINEXEC}/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz
     GREENTXT "INSTALLED CSF FIREWALL PLUGIN"
-  fi
+    fi
+ 
   echo "${MAGE_OWNER}_webmin:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
   sed -i "s/root:/${MAGE_OWNER}_webmin:/" /etc/webmin/webmin.acl
-  WEBMIN_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
-  /usr/libexec/webmin/changepass.pl /etc/webmin/ ${MAGE_OWNER}_webmin "${WEBMIN_PASS}" >/dev/null 2>&1
-  chkconfig webmin on >/dev/null 2>&1
-  service webmin restart  >/dev/null 2>&1
+  WEBMIN_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@#%^?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+  /usr/${WEBMINEXEC}/webmin/changepass.pl /etc/webmin/ ${MAGE_OWNER}_webmin "${WEBMIN_PASS}"
+  
+  systemctl enable webmin
+  /etc/webmin/restart
+  fi
 	    
   YELLOWTXT "[!] WEBMIN PORT: ${WEBMIN_PORT}"
   YELLOWTXT "[!] USER: ${MAGE_OWNER}_webmin"
