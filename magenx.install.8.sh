@@ -2032,7 +2032,7 @@ if [ "$?" = 0 ]; then
 cat > ${MAGENX_CONFIG_PATH}/webmin <<END
 WEBMIN_PORT="${WEBMIN_PORT}"
 WEBMIN_USER="${MAGE_OWNER}_webmin"
-WEBADMIN_PASS="${WEBADMIN_PASS}"
+WEBMIN_PASS="${WEBMIN_PASS}"
 END
   else
    echo
