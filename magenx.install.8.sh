@@ -2022,7 +2022,6 @@ if [ "$?" = 0 ]; then
   
   systemctl enable webmin
   /etc/webmin/restart
-  fi
 	    
   YELLOWTXT "[!] WEBMIN PORT: ${WEBMIN_PORT}"
   YELLOWTXT "[!] USER: ${MAGE_OWNER}_webmin"
