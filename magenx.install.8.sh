@@ -245,7 +245,7 @@ if [ -f "${MAGENX_CONFIG_PATH}/distro" ]; then
     echo
     GREENTXT "PASS: ${OS_NAME} ${OS_VERSION} DETECTED"
     mkdir -p ${MAGENX_CONFIG_PATH}
-    echo "OS_NAME=${OS_NAME}" >> ${MAGENX_CONFIG_PATH}/distro
+    echo "OS_NAME="${OS_NAME}"" >> ${MAGENX_CONFIG_PATH}/distro
     echo "OS_VERSION=${OS_VERSION}" >> ${MAGENX_CONFIG_PATH}/distro
     echo "OS_DISTRO_KEY=${OS_DISTRO_KEY}" >> ${MAGENX_CONFIG_PATH}/distro
    else
@@ -1969,6 +1969,7 @@ printf "\033c"
 
 "webmin")
 include_config ${MAGENX_CONFIG_PATH}/magento
+include_config ${MAGENX_CONFIG_PATH}/distro
 echo
 _echo "[?] Install Webmin Control Panel ? [y/n][n]:"
 read webmin_install
@@ -2010,11 +2011,11 @@ if [ "$?" = 0 ]; then
  echo "keyfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/privkey.pem" >> /etc/webmin/miniserv.conf
  echo "certfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
  
-    if [ -f "/usr/local/csf/csfwebmin.tgz" ]; then
-    perl /usr/${WEBMINEXEC}/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz
+  if [ -f "/usr/local/csf/csfwebmin.tgz" ]; then
+    perl /usr/${WEBMINEXEC}/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
     GREENTXT "INSTALLED CSF FIREWALL PLUGIN"
-    fi
- 
+  fi
+  
   echo "${MAGE_OWNER}_webmin:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
   sed -i "s/root:/${MAGE_OWNER}_webmin:/" /etc/webmin/webmin.acl
   WEBMIN_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@#%^?=+_[]{}()<>-' | fold -w 15 | head -n 1)
@@ -2031,7 +2032,7 @@ if [ "$?" = 0 ]; then
 cat > ${MAGENX_CONFIG_PATH}/webmin <<END
 WEBMIN_PORT="${WEBMIN_PORT}"
 WEBMIN_USER="${MAGE_OWNER}_webmin"
-WEBMIN_PASS="${WEBMIN_PASS}"
+WEBADMIN_PASS="${WEBADMIN_PASS}"
 END
   else
    echo
