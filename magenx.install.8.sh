@@ -245,7 +245,7 @@ if [ -f "${MAGENX_CONFIG_PATH}/distro" ]; then
     echo
     GREENTXT "PASS: ${OS_NAME} ${OS_VERSION} DETECTED"
     mkdir -p ${MAGENX_CONFIG_PATH}
-    echo "OS_NAME="${OS_NAME}"" >> ${MAGENX_CONFIG_PATH}/distro
+    echo "OS_NAME=\"${OS_NAME}\"" > ${MAGENX_CONFIG_PATH}/distro
     echo "OS_VERSION=${OS_VERSION}" >> ${MAGENX_CONFIG_PATH}/distro
     echo "OS_DISTRO_KEY=${OS_DISTRO_KEY}" >> ${MAGENX_CONFIG_PATH}/distro
    else
