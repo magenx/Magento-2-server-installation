@@ -2012,7 +2012,7 @@ if [ "$?" = 0 ]; then
     GREENTXT "INSTALLED CSF FIREWALL PLUGIN"
   fi
   echo "${MAGE_OWNER}_webmin:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
-  sed -i 's/root:/${MAGE_OWNER}_webmin:/' /etc/webmin/webmin.acl
+  sed -i "s/root:/${MAGE_OWNER}_webmin:/" /etc/webmin/webmin.acl
   WEBMIN_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
   /usr/libexec/webmin/changepass.pl /etc/webmin/ ${MAGE_OWNER}_webmin "${WEBMIN_PASS}" >/dev/null 2>&1
   chkconfig webmin on >/dev/null 2>&1
