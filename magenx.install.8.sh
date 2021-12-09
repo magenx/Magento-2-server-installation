@@ -1999,9 +1999,6 @@ else
  apt-get install webmin
 fi
 if [ "$?" = 0 ]; then
- echo
- GREENTXT "WEBMIN HAS BEEN INSTALLED  -  OK"
- echo
  WEBMIN_PORT=$(shuf -i 17556-17728 -n 1)
  sed -i 's/theme=gray-theme/theme=authentic-theme/' /etc/webmin/config
  sed -i 's/preroot=gray-theme/preroot=authentic-theme/' /etc/webmin/miniserv.conf
@@ -2023,7 +2020,10 @@ if [ "$?" = 0 ]; then
   
   systemctl enable webmin
   /etc/webmin/restart
-	    
+
+  echo
+  GREENTXT "WEBMIN INSTALLED - OK"
+  echo
   YELLOWTXT "[!] WEBMIN PORT: ${WEBMIN_PORT}"
   YELLOWTXT "[!] USER: ${MAGE_OWNER}_webmin"
   YELLOWTXT "[!] PASSWORD: ${WEBMIN_PASS}"
