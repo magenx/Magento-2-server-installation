@@ -1712,7 +1712,7 @@ chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH}
 echo
 GREENTXT "CLEAN MAGENTO CACHE AND ENABLE PRODUCTION MODE"
 rm -rf var/*
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set developer"
+su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 #setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- generated pub/static
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
