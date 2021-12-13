@@ -40,4 +40,4 @@ DAEMON_OPTS="-p thread_pool_min=200 \
 	-p vcc_allow_inline_c=on \
 	-p http_resp_hdr_len=65536 \
 	-p timeout_linger=100 \
-	-p http_resp_size=98304
+	-p http_resp_size=98304"
