@@ -1700,6 +1700,7 @@ echo '@weekly /usr/local/bin/certbot renew --deploy-hook "systemctl reload nginx
 crontab rootcron
 rm rootcron
 echo
+cd ${MAGE_WEB_ROOT_PATH}
 # varnish cache hosts
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
 echo
