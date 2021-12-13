@@ -1537,7 +1537,7 @@ sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGE
 
 sed -i "s/ADMIN_PLACEHOLDER/${MAGE_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGE_VERSION}/extra_protect.conf
 ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
-htpasswd -b -c /etc/nginx/.admin admin ${ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
+htpasswd -b -c /etc/nginx/.admin ${MAGE_ADMIN_LOGIN} ${ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
 echo
 GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
 PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
@@ -1774,7 +1774,7 @@ GREENTXT "CONFIGURE GOOGLE AUTH CODE FOR ADMIN ACCESS"
 echo
 cd ${MAGE_WEB_ROOT_PATH}
 GOOGLE_TFA_CODE="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&' | fold -w 15 | head -n 1 | base32)"
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento security:tfa:google:set-secret admin ${GOOGLE_TFA_CODE}"
+su ${MAGE_OWNER} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${MAGE_ADMIN_LOGIN} ${GOOGLE_TFA_CODE}"
 echo "Google Authenticator mobile app configuration:"
 echo "-> select: Enter a setup key"
 echo "-> type in: Account name"
@@ -1798,7 +1798,7 @@ echo -e "===========================  INSTALLATION LOG  ========================
 [admin path]: ${MAGE_DOMAIN}/${MAGE_ADMIN_PATH}
 [admin name]: ${MAGE_ADMIN_LOGIN}
 [admin pass]: ${MAGE_ADMIN_PASSWORD}
-[admin http auth name]: admin
+[admin http auth name]: ${MAGE_ADMIN_LOGIN}
 [admin http auth pass]: ${ADMIN_HTTP_PASSWORD}
 for additional access, please generate new user/password:
 htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
