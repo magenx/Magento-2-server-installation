@@ -1269,8 +1269,19 @@ su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SI
 --currency=${MAGE_CURRENCY} \
 --timezone=${MAGE_TIMEZONE} \
 --cleanup-database \
---session-save=files \
 --use-rewrites=1 \
+--session-save=redis \
+--session-save-redis-host=127.0.0.1 \
+--session-save-redis-port=6379 \
+--session-save-redis-log-level=3 \
+--session-save-redis-db=0 \
+--session-save-redis-compression-lib=lz4 \
+--cache-backend=redis \
+--cache-backend-redis-server=127.0.0.1 \
+--cache-backend-redis-port=6380 \
+--cache-backend-redis-db=0 \
+--cache-backend-redis-compress-data=1 \
+--cache-backend-redis-compression-lib=l4z \
 --amqp-host=127.0.0.1 \
 --amqp-port=5672 \
 --amqp-user=magento \
@@ -1686,27 +1697,6 @@ echo '@weekly /usr/local/bin/certbot renew --deploy-hook "systemctl reload nginx
 crontab rootcron
 rm rootcron
 echo
-GREENTXT "REDIS CACHE AND SESSION STORAGE"
-echo
-## cache backend
-cd ${MAGE_WEB_ROOT_PATH}
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set \
---cache-backend=redis \
---cache-backend-redis-server=127.0.0.1 \
---cache-backend-redis-port=6380 \
---cache-backend-redis-db=1 \
---cache-backend-redis-compress-data=1 \
---cache-backend-redis-compression-lib=l4z \
--n"
-## session
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set \
---session-save=redis \
---session-save-redis-host=127.0.0.1 \
---session-save-redis-port=6379 \
---session-save-redis-log-level=3 \
---session-save-redis-db=1 \
---session-save-redis-compression-lib=lz4 \
--n"
 # varnish cache hosts
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
 echo
