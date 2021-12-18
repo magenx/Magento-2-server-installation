@@ -22,8 +22,10 @@ ELKREPO="7.x"
 MAGE_VERSION="2"
 MAGE_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGE_VERSION}/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
 
-# Repositories
+RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5"
+
+# Repositories
 REPO_MARIADB_CFG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
 REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
@@ -848,40 +850,37 @@ if [ "${rabbit_install}" == "y" ];then
   wget -O- https://packages.erlang-solutions.com/debian/erlang_solutions.asc | apt-key add -
   echo "deb https://packages.erlang-solutions.com/debian bullseye contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
-  apt-get -y install rabbitmq-server
+  apt-get -y install rabbitmq-server=${RABBITMQ_VERSION}
  else
   wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | apt-key add -
   echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
-  apt-get -y install rabbitmq-server
+  apt-get -y install rabbitmq-server=${RABBITMQ_VERSION}
  fi
  if [ "$?" = 0 ]; then
-cat > /etc/rabbitmq/env <<END
+cat > /etc/rabbitmq/rabbitmq-env.conf <<END
 NODE_IP_ADDRESS=127.0.0.1
-RABBITMQ_NODE_IP_ADDRESS=127.0.0.1
 ERL_EPMD_ADDRESS=127.0.0.1
-RABBITMQ_PID_FILE=/var/lib/rabbitmq/mnesia/rabbitmq_pid
+PID_FILE=/var/lib/rabbitmq/mnesia/rabbitmq_pid
 END
+
+cat >> /etc/sysctl.conf <<END
+net.ipv6.conf.lo.disable_ipv6 = 0
+END
+
+sysctl -q -p
 
 cat > /usr/local/bin/rabbitmq_reset <<END
 #!/bin/bash
 
 service rabbitmq-server stop
 epmd -kill
-epmd -daemon
+export ERL_EPMD_ADDRESS=127.0.0.1 epmd -daemon
 sleep 5
 service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
 END
 
-service rabbitmq-server stop
-cp /usr/lib/systemd/system/rabbitmq-server.service /etc/systemd/system/rabbitmq-server.service
-
-sed -i '/TimeoutStartSec=600/a\
-EnvironmentFile=/etc/rabbitmq/env
-' /etc/systemd/system/rabbitmq-server.service
-
-systemctl daemon-reload
 service rabbitmq-server stop
 epmd -kill
 epmd -daemon
@@ -890,6 +889,7 @@ service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
 sleep 5
 RABBITMQ_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 7 | head -n 1)
+rabbitmqctl delete_user guest
 rabbitmqctl add_user magento ${RABBITMQ_PASSWORD}
 rabbitmqctl set_permissions -p / magento ".*" ".*" ".*"
 
@@ -1377,7 +1377,7 @@ echo
 BLUEBG "[~]    POST-INSTALLATION CONFIGURATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
-cat > /etc/sysctl.conf <<END
+cat >> /etc/sysctl.conf <<END
 fs.file-max = 1000000
 fs.inotify.max_user_watches = 1000000
 vm.swappiness = 10
