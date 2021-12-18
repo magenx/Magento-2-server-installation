@@ -1093,7 +1093,7 @@ echo
 su ${MAGE_OWNER} -s /bin/bash -c "git clone https://github.com/magenx/Magento-2.git ."
 rm -rf .git
 #su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- var pub/media
+setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- generated var pub/media pub/static
 chmod +x bin/magento
 su ${MAGE_OWNER} -s /bin/bash -c "bin/magento module:enable --all"
 
