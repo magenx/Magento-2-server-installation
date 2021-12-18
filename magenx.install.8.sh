@@ -850,12 +850,14 @@ if [ "${rabbit_install}" == "y" ];then
   wget -O- https://packages.erlang-solutions.com/debian/erlang_solutions.asc | apt-key add -
   echo "deb https://packages.erlang-solutions.com/debian bullseye contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
-  apt-get -y install rabbitmq-server=${RABBITMQ_VERSION}
+  apt -y install rabbitmq-server=${RABBITMQ_VERSION}
+  apt-mark hold rabbitmq-server
  else
   wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | apt-key add -
   echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
-  apt-get -y install rabbitmq-server=${RABBITMQ_VERSION}
+  apt -y install rabbitmq-server=${RABBITMQ_VERSION}
+  apt-mark hold rabbitmq-server
  fi
  if [ "$?" = 0 ]; then
 cat > /etc/rabbitmq/rabbitmq-env.conf <<END
@@ -883,7 +885,7 @@ END
 
 service rabbitmq-server stop
 epmd -kill
-epmd -daemon
+export ERL_EPMD_ADDRESS=127.0.0.1 epmd -daemon
 sleep 5
 service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
