@@ -844,7 +844,7 @@ if [ "${rabbit_install}" == "y" ];then
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
    curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | bash
    curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | bash
-   dnf -y install rabbitmq-server
+   dnf -y install rabbitmq-server-${RABBITMQ_VERSION}
    rpm  --quiet -q rabbitmq-server
  elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
   wget -O- https://packages.erlang-solutions.com/debian/erlang_solutions.asc | apt-key add -
