@@ -44,7 +44,7 @@ Extra premium options available:
 - [x] SFTP advanced configuration
 - [x] SSH private key access ready
 - [x] ConfigServer Security and Firewall advanced configuration
-- [x] - [x] Nginx and CSF Firewall DDOS mitigation
+- [x] Nginx and CSF Firewall DDOS mitigation
 - [x] Nginx and CSF Firewall Carding Attack mitigation
 - [x] MariaDB database optimization
 - [x] Mytop database monitoring
