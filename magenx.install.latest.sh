@@ -15,15 +15,17 @@ MAGENX_CONFIG_PATH="/opt/magenx/config"
 ###                            DEFINE LINKS AND PACKAGES                        ###
 ###################################################################################
 
-# ELK version lock
-ELKREPO="7.x"
+
 
 # Magento
 MAGE_VERSION="2"
 MAGE_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGE_VERSION}/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
+REPO_MAGE="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
 
+## Version lock
 RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5"
+ELKREPO="7.x"
 
 # Repositories
 REPO_MARIADB_CFG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
@@ -1093,26 +1095,29 @@ echo
 pause '[] Press [Enter] key to start'
 echo
 
-## pull installation package from github
-su ${MAGE_OWNER} -s /bin/bash -c "git clone https://github.com/magenx/Magento-2.git ."
-rm -rf .git
-#su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- generated var pub/media pub/static
-chmod +x bin/magento
-
 ## composer version 2 latest
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 php composer-setup.php --install-dir=/usr/bin --filename=composer
 php -r "unlink('composer-setup.php');"
 
-echo
-_echo "[?] Would you like to run composer update now ? [y/n][n]:"
-read composer_update
-if [ "${composer_update}" == "y" ];then
-echo
-su ${MAGE_OWNER} -s /bin/bash -c "composer update"
-echo
-fi
+composer -n -q config -g http-basic.repo.magento.com 8c681734f22763b50ea0c29dff9e7af2 02dfee497e669b5db1fe1c8d481d6974
+su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
+curl -sO https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace
+
+##replace?
+sed -i '/"conflict":/ {
+r composer_replace
+N
+}' composer.json
+##replace?
+
+su ${MAGE_OWNER} -s /bin/bash -c "composer install"
+
+su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
+setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- generated var pub/media pub/static
+
+## make magento great again
+sed -i "s/2-4/2-5/" app/etc/di.xml
 
 echo
 GREENTXT "[~]    MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR SETUP    [~]"
