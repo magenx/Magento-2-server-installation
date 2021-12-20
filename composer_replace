@@ -1,4 +1,4 @@
-   "replace": {
+"replace": {
         "amzn/amazon-pay-and-login-magento-2-module": "*",
         "amzn/amazon-pay-and-login-with-amazon-core-module": "*",
         "amzn/amazon-pay-module": "*",
@@ -192,9 +192,16 @@
         "magento/module-review-graph-ql": "*",
         "magento/module-newsletter-graph-ql": "*",
         "magento/module-gift-message-graph-ql": "*",
+        "magento/module-page-builder": "*",
+        "magento/module-page-builder-admin-analytics": "*",
+        "magento/module-page-builder-analytics": "*",
+        "magento/module-aws-s3-page-builder": "*",
+        "magento/module-catalog-page-builder-analytics": "*",
+        "magento/module-cms-page-builder-analytics": "*",
         "temando/module-shipping": "*",
         "temando/module-shipping-m2": "*",
         "temando/module-shipping-remover": "*",
+        "vertexinc/product-magento-module": "*",
         "vertex/module-address-validation": "*",
         "vertex/module-tax": "*",
         "vertex/product-magento-module": "*",
