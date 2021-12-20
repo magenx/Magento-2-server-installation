@@ -628,7 +628,7 @@ gpgkey=https://nginx.org/keys/nginx_signing.key
 module_hotfixes=true
 END
   else
-   echo "deb http://nginx.org/packages/mainline/${OS_DISTRO_KEY} `lsb_release -cs` nginx" > /etc/apt/sources.list.d/nginx.list
+   echo "deb http://nginx.org/packages/mainline/${OS_DISTRO_KEY} $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
    curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
    echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
   fi
@@ -848,15 +848,9 @@ if [ "${rabbit_install}" == "y" ];then
    curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | bash
    dnf -y install rabbitmq-server-${RABBITMQ_VERSION}
    rpm  --quiet -q rabbitmq-server
- elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
-  wget -O- https://packages.erlang-solutions.com/debian/erlang_solutions.asc | apt-key add -
-  echo "deb https://packages.erlang-solutions.com/debian bullseye contrib" | tee /etc/apt/sources.list.d/erlang.list
-  curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
-  apt -y install rabbitmq-server=${RABBITMQ_VERSION}
-  apt-mark hold rabbitmq-server
  else
-  wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | apt-key add -
-  echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | tee /etc/apt/sources.list.d/erlang.list
+  wget -O- https://packages.erlang-solutions.com/${OS_DISTRO_KEY}/erlang_solutions.asc | apt-key add -
+  echo "deb https://packages.erlang-solutions.com/${OS_DISTRO_KEY} $(lsb_release -cs) contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
   apt -y install rabbitmq-server=${RABBITMQ_VERSION}
   apt-mark hold rabbitmq-server
