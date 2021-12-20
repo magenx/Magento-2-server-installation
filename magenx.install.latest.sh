@@ -1099,7 +1099,6 @@ rm -rf .git
 #su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
 setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- generated var pub/media pub/static
 chmod +x bin/magento
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento module:enable --all"
 
 ## composer version 2 latest
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
