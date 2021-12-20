@@ -880,13 +880,7 @@ service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
 END
 
-service rabbitmq-server stop
-epmd -kill
-export ERL_EPMD_ADDRESS=127.0.0.1
-epmd -daemon
-sleep 5
-service rabbitmq-server start
-rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
+bash /usr/local/bin/rabbitmq_reset
 sleep 5
 RABBITMQ_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 7 | head -n 1)
 rabbitmqctl delete_user guest
