@@ -877,7 +877,8 @@ cat > /usr/local/bin/rabbitmq_reset <<END
 
 service rabbitmq-server stop
 epmd -kill
-export ERL_EPMD_ADDRESS=127.0.0.1 epmd -daemon
+export ERL_EPMD_ADDRESS=127.0.0.1 
+epmd -daemon
 sleep 5
 service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
@@ -885,7 +886,8 @@ END
 
 service rabbitmq-server stop
 epmd -kill
-export ERL_EPMD_ADDRESS=127.0.0.1 epmd -daemon
+export ERL_EPMD_ADDRESS=127.0.0.1
+epmd -daemon
 sleep 5
 service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
