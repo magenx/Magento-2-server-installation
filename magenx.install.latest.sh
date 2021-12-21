@@ -857,10 +857,13 @@ if [ "${rabbit_install}" == "y" ];then
  fi
  if [ "$?" = 0 ]; then
 cat > /etc/rabbitmq/rabbitmq-env.conf <<END
+NODENAME=rabbit@localhost
 NODE_IP_ADDRESS=127.0.0.1
 ERL_EPMD_ADDRESS=127.0.0.1
 PID_FILE=/var/lib/rabbitmq/mnesia/rabbitmq_pid
 END
+
+echo '[{kernel, [{inet_dist_use_interface, {127,0,0,1}}]},{rabbit, [{tcp_listeners, [{"127.0.0.1", 5672}]}]}].' > /etc/rabbitmq/rabbitmq.config
 
 cat >> /etc/sysctl.conf <<END
 net.ipv6.conf.lo.disable_ipv6 = 0
@@ -873,8 +876,7 @@ cat > /usr/local/bin/rabbitmq_reset <<END
 
 service rabbitmq-server stop
 epmd -kill
-export ERL_EPMD_ADDRESS=127.0.0.1 
-epmd -daemon
+epmd -address 127.0.0.1 -daemon
 sleep 5
 service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
