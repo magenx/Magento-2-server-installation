@@ -5,22 +5,23 @@
 #        All rights reserved.                                                     #
 #=================================================================================#
 SELF=$(basename $0)
-MAGENX_VER=$(curl -s https://api.github.com/repos/magenx/Magento-2-server-installation/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
+MAGENX_VERSION=$(curl -s https://api.github.com/repos/magenx/Magento-2-server-installation/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
 MAGENX_BASE="https://magenx.sh"
 
 # Config path
 MAGENX_CONFIG_PATH="/opt/magenx/config"
 
 ###################################################################################
-###                            DEFINE LINKS AND PACKAGES                        ###
+###                              REPOSITORY AND PACKAGES                        ###
 ###################################################################################
 
-
+# Github installation repository raw lurl
+MAGENX_MSI_REPO="https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/"
 
 # Magento
-MAGE_VERSION="2"
-MAGE_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGE_VERSION}/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
-REPO_MAGE="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
+MAGENTO_VERSION="2"
+MAGENTO_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGENTO_VERSION}/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
+MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
 
 ## Version lock
 RABBITMQ_VERSION="3.8*"
@@ -28,16 +29,17 @@ MARIADB_VERSION="10.5"
 ELKREPO="7.x"
 
 # Repositories
-REPO_MARIADB_CFG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
-REPO_REMI_RPM="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
+MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
+REMI_RPM_REPO="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
-# WebStack Packages
+# WebStack Packages .deb
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools clamav mlocate vim wget sudo bc apache2-utils \
 logrotate git python3-pip python3-dateutil python3-dev netcat patch ipset strace rsyslog geoipupdate moreutils lsof xinetd jpegoptim sysstat acl attr iotop expect webp imagemagick snmp"
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
 PHP_PACKAGES_DEB=(cli fpm json common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 
+# WebStack Packages .rpm
 EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap libwebp gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
 bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
@@ -50,11 +52,10 @@ PHP_PECL_PACKAGES_RPM=(pecl-redis pecl-lzf pecl-geoip pecl-zip pecl-memcache pec
 PERL_MODULES_RPM=(LWP-Protocol-https Config-IniFiles libwww-perl CPAN Template-Toolkit Time-HiRes ExtUtils-CBuilder ExtUtils-Embed ExtUtils-MakeMaker \
 TermReadKey DBI DBD-MySQL Digest-HMAC Digest-SHA1 Test-Simple Moose Net-SSLeay devel)
 
-# Nginx extra configuration
-REPO_MAGENX_TMP="https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/"
+# Nginx configuration
 NGINX_VERSION=$(curl -s http://nginx.org/en/download.html | grep -oP '(?<=gz">nginx-).*?(?=</a>)' | head -1)
-NGINX_BASE="https://raw.githubusercontent.com/magenx/Magento-nginx-config/master/"
-GITHUB_REPO_API_URL="https://api.github.com/repos/magenx/Magento-nginx-config/contents/magento2"
+MAGENX_NGINX_REPO="https://raw.githubusercontent.com/magenx/Magento-nginx-config/master/"
+MAGENX_NGINX_REPO_API="https://api.github.com/repos/magenx/Magento-nginx-config/contents/magento2"
 
 # Debug Tools
 MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
@@ -474,7 +475,7 @@ showMenu () {
 printf "\033c"
     echo
       echo
-        echo -e "${DGREYBG}${BOLD}  MAGENTO SERVER CONFIGURATION v.${MAGENX_VER}  ${RESET}"
+        echo -e "${DGREYBG}${BOLD}  MAGENTO SERVER CONFIGURATION v.${MAGENX_VERSION}  ${RESET}"
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         echo
         WHITETXT "[-] Install repository and LEMP packages :  ${YELLOW}\tlemp"
@@ -539,9 +540,9 @@ WHITETXT "----------------------------------------------------------------------
   exit 1
   echo
  fi
-  curl -o /etc/motd -s ${REPO_MAGENX_TMP}motd
-  sed -i "s/MAGE_VERSION_FULL/${MAGE_VERSION_FULL}/" /etc/motd
-  sed -i "s/MAGENX_VER/${MAGENX_VER}/" /etc/motd
+  curl -o /etc/motd -s ${MAGENX_REPO}motd
+  sed -i "s/MAGENTO_VERSION_FULL/${MAGENTO_VERSION_FULL}/" /etc/motd
+  sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
   echo "yes" > ${MAGENX_CONFIG_PATH}/sysupdate
   echo
 fi
@@ -555,7 +556,7 @@ WHITETXT "----------------------------------------------------------------------
   read repo_mariadb_install
 if [ "${repo_mariadb_install}" == "y" ]; then
   echo
-  curl -sS ${REPO_MARIADB_CFG} | bash -s -- --mariadb-server-version=${MARIADB_VERSION}
+  curl -sS ${MARIADB_REPO_CONFIG} | bash -s -- --mariadb-server-version=${MARIADB_VERSION}
   echo
  if [ "$?" = 0 ] # if repository installed then install package
    then
@@ -675,12 +676,12 @@ if [ "${repo_install}" == "y" ]; then
   read -e -p "  [?] Enter required PHP version: " -i "7.4" PHP_VERSION
   echo
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-  dnf install -y ${REPO_REMI_RPM}
+  dnf install -y ${REMI_RPM_REPO}
   dnf -y module enable php:remi-${PHP_VERSION}
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
  elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
-  dnf install -y ${REPO_REMI_RPM//8/7}
+  dnf install -y ${REMI_RPM_REPO//8/7}
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
  elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
@@ -871,7 +872,7 @@ END
 
 sysctl -q -p
 
-cat > /usr/local/bin/rabbitmq_reset <<END
+cat > /usr/local/bin/rabbitmq_restart <<END
 #!/bin/bash
 
 service rabbitmq-server stop
@@ -882,8 +883,15 @@ service rabbitmq-server start
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
 END
 
-bash /usr/local/bin/rabbitmq_reset
+if [ "${OS_DISTRO_KEY}" == "debian" ]; then
+  rm -rf /usr/lib/systemd/system/epmd.s*
+  systemctl daemon-reload
+fi
+
+bash /usr/local/bin/rabbitmq_restart
 sleep 5
+
+## delete guest and create magento user
 RABBITMQ_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 7 | head -n 1)
 rabbitmqctl delete_user guest
 rabbitmqctl add_user magento ${RABBITMQ_PASSWORD}
@@ -929,8 +937,8 @@ if [ "${varnish_install}" == "y" ];then
  fi
  if [ "$?" = 0 ]; then
    echo
-   wget -qO /etc/systemd/system/varnish.service ${REPO_MAGENX_TMP}varnish.service
-   wget -qO /etc/varnish/varnish.params ${REPO_MAGENX_TMP}varnish.params
+   wget -qO /etc/systemd/system/varnish.service ${MAGENX_MSI_REPO}varnish.service
+   wget -qO /etc/varnish/varnish.params ${MAGENX_MSI_REPO}varnish.params
    uuidgen > /etc/varnish/secret
    systemctl daemon-reload
    GREENTXT "VARNISH INSTALLED  -  OK"
@@ -989,11 +997,13 @@ sed -i "s/.*network.host.*/network.host: 127.0.0.1/" /etc/elasticsearch/elastics
 sed -i "s/.*http.port.*/http.port: 9200/" /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*-Xms.*/-Xms512m/" /etc/elasticsearch/jvm.options
 sed -i "s/.*-Xmx.*/-Xmx2048m/" /etc/elasticsearch/jvm.options
+## use builtin java
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   sed -i "s,#JAVA_HOME=,JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/sysconfig/elasticsearch
  else
   sed -i "s,#JAVA_HOME=,JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/default/elasticsearch
  fi
+
 chown -R :elasticsearch /etc/elasticsearch/*
 systemctl daemon-reload
 systemctl enable elasticsearch.service
@@ -1045,36 +1055,36 @@ printf "\033c"
 "magento")
 echo
 echo
-BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL})    [~]"
+BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL})    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
 echo
-     read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGE_DOMAIN
-     read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGE_OWNER
+     read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGENTO_DOMAIN
+     read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGENTO_OWNER
 	 
-     MAGE_WEB_ROOT_PATH="/home/${MAGE_OWNER}/public_html"
+     MAGENTO_WEB_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
 	 
      echo
-       _echo "[!] MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WILL BE DOWNLOADED TO ${MAGE_WEB_ROOT_PATH}"
+       _echo "[!] MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WILL BE DOWNLOADED TO ${MAGENTO_WEB_ROOT_PATH}"
      echo
 
-          mkdir -p ${MAGE_WEB_ROOT_PATH} && cd $_
+          mkdir -p ${MAGENTO_WEB_ROOT_PATH} && cd $_
           ## create root user
-          useradd -d ${MAGE_WEB_ROOT_PATH%/*} -s /bin/bash ${MAGE_OWNER}
+          useradd -d ${MAGENTO_WEB_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
           ## create root php user
-          MAGE_PHP_USER="php-${MAGE_OWNER}"
-          useradd -M -s /sbin/nologin -d ${MAGE_WEB_ROOT_PATH%/*} ${MAGE_PHP_USER}
-          usermod -g ${MAGE_PHP_USER} ${MAGE_OWNER}
-          chmod 711 ${MAGE_WEB_ROOT_PATH%/*}
-	  mkdir -p ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	  chown -R ${MAGE_OWNER}:${MAGE_OWNER} ${MAGE_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-          chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH}
-          chmod 2770 ${MAGE_WEB_ROOT_PATH}
-	  setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- ${MAGE_WEB_ROOT_PATH}
+          MAGENTO_PHP_USER="php-${MAGENTO_OWNER}"
+          useradd -M -s /sbin/nologin -d ${MAGENTO_WEB_ROOT_PATH%/*} ${MAGENTO_PHP_USER}
+          usermod -g ${MAGENTO_PHP_USER} ${MAGENTO_OWNER}
+          chmod 711 ${MAGENTO_WEB_ROOT_PATH%/*}
+	      mkdir -p ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+	      chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+          chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
+          chmod 2770 ${MAGENTO_WEB_ROOT_PATH}
+	      setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:r-X,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:r-X,d:o::- ${MAGENTO_WEB_ROOT_PATH}
 	  
-	echo
-MAGE_MINIMAL_OPT="MINIMAL SET OF PACKAGES"
-GREENTXT "${MAGE_MINIMAL_OPT} INSTALLATION"
+echo
+MAGENTO_MINIMAL_OPT="MINIMAL SET OF MODULES"
+GREENTXT "${MAGENTO_MINIMAL_OPT} INSTALLATION"
 echo
 GREENTXT "Benefits of removing bloatware packages:"
 WHITETXT "[!] Better memory allocation!"
@@ -1090,9 +1100,9 @@ php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 php composer-setup.php --install-dir=/usr/bin --filename=composer
 php -r "unlink('composer-setup.php');"
 
-su ${MAGE_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com 8c681734f22763b50ea0c29dff9e7af2 02dfee497e669b5db1fe1c8d481d6974"
-su ${MAGE_OWNER} -s /bin/bash -c "${REPO_MAGE} . --no-install"
-curl -sO https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/composer_replace
+su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com 8c681734f22763b50ea0c29dff9e7af2 02dfee497e669b5db1fe1c8d481d6974"
+su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT} . --no-install"
+curl -sO ${MAGENX_MSI_REPO}composer_replace
 
 ##replace?
 sed -i '/"conflict":/ {
@@ -1101,28 +1111,28 @@ N
 }' composer.json
 ##replace?
 
-su ${MAGE_OWNER} -s /bin/bash -c "composer install"
+su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
 
-su ${MAGE_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- generated var pub/media pub/static
+su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
+setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:rwX,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:rwX,d:o::- generated var pub/media pub/static
 
 ## make magento great again
 sed -i "s/2-4/2-5/" app/etc/di.xml
 
 echo
-GREENTXT "[~]    MAGENTO ${MAGE_MINIMAL_OPT} DOWNLOADED AND READY FOR SETUP    [~]"
+GREENTXT "[~]    MAGENTO ${MAGENTO_MINIMAL_OPT} DOWNLOADED AND READY FOR SETUP    [~]"
 WHITETXT "--------------------------------------------------------------------"
 echo
 
 mkdir -p ${MAGENX_CONFIG_PATH}
 cat > ${MAGENX_CONFIG_PATH}/magento <<END
-# ${MAGE_MINIMAL_OPT}
-MAGE_VERSION="2"
-MAGE_VERSION_FULL="${MAGE_VERSION_FULL}"
-MAGE_DOMAIN="${MAGE_DOMAIN}"
-MAGE_OWNER="${MAGE_OWNER}"
-MAGE_PHP_USER="${MAGE_PHP_USER}"
-MAGE_WEB_ROOT_PATH="${MAGE_WEB_ROOT_PATH}"
+# ${MAGENTO_MINIMAL_OPT}
+MAGENTO_VERSION="2"
+MAGENTO_VERSION_FULL="${MAGENTO_VERSION_FULL}"
+MAGENTO_DOMAIN="${MAGENTO_DOMAIN}"
+MAGENTO_OWNER="${MAGENTO_OWNER}"
+MAGENTO_PHP_USER="${MAGENTO_PHP_USER}"
+MAGENTO_WEB_ROOT_PATH="${MAGENTO_WEB_ROOT_PATH}"
 END
 
 echo
@@ -1176,29 +1186,29 @@ fi
 chmod 600 /root/.my.cnf /root/.mytop
 echo
 GREENTXT "GENERATE MYSQL USER AND DATABASE NAMES WITH NEW PASSWORD"
-MAGE_DB_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
-MAGE_DB_PASSWORD="${MAGE_DB_PASSWORD_GEN}${RANDOM}"
-MAGE_DB_HASH="$(openssl rand -hex 4)"
+MAGENTO_DB_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
+MAGENTO_DB_PASSWORD="${MAGENTO_DB_PASSWORD_GEN}${RANDOM}"
+MAGENTO_DB_HASH="$(openssl rand -hex 4)"
 echo
-MAGE_DB_HOST="localhost" 
-MAGE_DB_NAME="m${MAGE_VERSION}_${MAGE_DOMAIN//[-.]/}_${MAGE_DB_HASH}_live" 
-MAGE_DB_USER="m${MAGE_VERSION}_${MAGE_DOMAIN//[-.]/}_${MAGE_DB_HASH}"
+MAGENTO_DB_HOST="localhost" 
+MAGENTO_DB_NAME="m${MAGENTO_VERSION}_${MAGENTO_DOMAIN//[-.]/}_${MAGENTO_DB_HASH}_live" 
+MAGENTO_DB_USER="m${MAGENTO_VERSION}_${MAGENTO_DOMAIN//[-.]/}_${MAGENTO_DB_HASH}"
 GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
 echo
 mysql <<EOMYSQL
-CREATE USER '${MAGE_DB_USER}'@'${MAGE_DB_HOST}' IDENTIFIED BY '${MAGE_DB_PASSWORD}';
-CREATE DATABASE ${MAGE_DB_NAME};
-GRANT ALL PRIVILEGES ON ${MAGE_DB_NAME}.* TO '${MAGE_DB_USER}'@'${MAGE_DB_HOST}' WITH GRANT OPTION;
+CREATE USER '${MAGENTO_DB_USER}'@'${MAGENTO_DB_HOST}' IDENTIFIED BY '${MAGENTO_DB_PASSWORD}';
+CREATE DATABASE ${MAGENTO_DB_NAME};
+GRANT ALL PRIVILEGES ON ${MAGENTO_DB_NAME}.* TO '${MAGENTO_DB_USER}'@'${MAGENTO_DB_HOST}' WITH GRANT OPTION;
 exit
 EOMYSQL
 
 GREENTXT "SAVE VARIABLES TO CONFIG FILE"
 mkdir -p ${MAGENX_CONFIG_PATH}
 cat > ${MAGENX_CONFIG_PATH}/database <<END
-MAGE_DB_HOST="${MAGE_DB_HOST}"
-MAGE_DB_NAME="${MAGE_DB_NAME}"
-MAGE_DB_USER="${MAGE_DB_USER}"
-MAGE_DB_PASSWORD="${MAGE_DB_PASSWORD}"
+MAGENTO_DB_HOST="${MAGENTO_DB_HOST}"
+MAGENTO_DB_NAME="${MAGENTO_DB_NAME}"
+MAGENTO_DB_USER="${MAGENTO_DB_USER}"
+MAGENTO_DB_PASSWORD="${MAGENTO_DB_PASSWORD}"
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
 END
 echo
@@ -1215,7 +1225,7 @@ printf "\033c"
 "install")
 printf "\033c"
 echo
-BLUEBG   "[~]    MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) SETUP    [~]"
+BLUEBG   "[~]    MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) SETUP    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
 include_config ${MAGENX_CONFIG_PATH}/distro
@@ -1228,47 +1238,47 @@ echo
 for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
 echo
 
-echo "${MAGE_WEB_ROOT_PATH}/app/etc/env.php" >> /etc/opcache-default.blacklist
-echo "${MAGE_WEB_ROOT_PATH}/app/etc/config.php" >> /etc/opcache-default.blacklist
+echo "${MAGENTO_WEB_ROOT_PATH}/app/etc/env.php" >> /etc/opcache-default.blacklist
+echo "${MAGENTO_WEB_ROOT_PATH}/app/etc/config.php" >> /etc/opcache-default.blacklist
 systemctl reload php*fpm.service
 
-cd ${MAGE_WEB_ROOT_PATH}
-chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} *
+cd ${MAGENTO_WEB_ROOT_PATH}
+chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} *
 chmod u+x bin/magento
 echo
 WHITETXT "Admin name, email and base url"
 echo
-read -e -p "  [?] Admin first name: " -i "Magento"  MAGE_ADMIN_FIRSTNAME
-read -e -p "  [?] Admin last name: " -i "Administrator"  MAGE_ADMIN_LASTNAME
-read -e -p "  [?] Admin email: " -i "admin@${MAGE_DOMAIN}"  MAGE_ADMIN_EMAIL
-read -e -p "  [?] Admin login name: " -i "admin"  MAGE_ADMIN_LOGIN
-MAGE_ADMIN_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 10 | head -n 1)
-read -e -p "  [?] Admin password: " -i "${MAGE_ADMIN_PASSWORD_GEN}${RANDOM}"  MAGE_ADMIN_PASSWORD
-read -e -p "  [?] Shop base url: " -i "http://${MAGE_DOMAIN}/"  MAGE_SITE_URL
+read -e -p "  [?] Admin first name: " -i "Magento"  MAGENTO_ADMIN_FIRSTNAME
+read -e -p "  [?] Admin last name: " -i "Administrator"  MAGENTO_ADMIN_LASTNAME
+read -e -p "  [?] Admin email: " -i "admin@${MAGENTO_DOMAIN}"  MAGENTO_ADMIN_EMAIL
+read -e -p "  [?] Admin login name: " -i "admin"  MAGENTO_ADMIN_LOGIN
+MAGENTO_ADMIN_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 10 | head -n 1)
+read -e -p "  [?] Admin password: " -i "${MAGENTO_ADMIN_PASSWORD_GEN}${RANDOM}"  MAGENTO_ADMIN_PASSWORD
+read -e -p "  [?] Shop base url: " -i "http://${MAGENTO_DOMAIN}/"  MAGENTO_SITE_URL
 echo
 WHITETXT "Language, Currency and Timezone settings"
-updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_LOCALE
-updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_CURRENCY
-updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGE_TIMEZONE
+updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_LOCALE
+updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_CURRENCY
+updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_TIMEZONE
 echo
 echo
-GREENTXT "SETUP MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WITHOUT SAMPLE DATA"
+GREENTXT "SETUP MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WITHOUT SAMPLE DATA"
 echo
 pause '[] Press [Enter] key to run setup'
 echo
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE_SITE_URL} \
---db-host=${MAGE_DB_HOST} \
---db-name=${MAGE_DB_NAME} \
---db-user=${MAGE_DB_USER} \
---db-password='${MAGE_DB_PASSWORD}' \
---admin-firstname=${MAGE_ADMIN_FIRSTNAME} \
---admin-lastname=${MAGE_ADMIN_LASTNAME} \
---admin-email=${MAGE_ADMIN_EMAIL} \
---admin-user=${MAGE_ADMIN_LOGIN} \
---admin-password='${MAGE_ADMIN_PASSWORD}' \
---language=${MAGE_LOCALE} \
---currency=${MAGE_CURRENCY} \
---timezone=${MAGE_TIMEZONE} \
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGENTO_SITE_URL} \
+--db-host=${MAGENTO_DB_HOST} \
+--db-name=${MAGENTO_DB_NAME} \
+--db-user=${MAGENTO_DB_USER} \
+--db-password='${MAGENTO_DB_PASSWORD}' \
+--admin-firstname=${MAGENTO_ADMIN_FIRSTNAME} \
+--admin-lastname=${MAGENTO_ADMIN_LASTNAME} \
+--admin-email=${MAGENTO_ADMIN_EMAIL} \
+--admin-user=${MAGENTO_ADMIN_LOGIN} \
+--admin-password='${MAGENTO_ADMIN_PASSWORD}' \
+--language=${MAGENTO_LOCALE} \
+--currency=${MAGENTO_CURRENCY} \
+--timezone=${MAGENTO_TIMEZONE} \
 --cleanup-database \
 --use-rewrites=1 \
 --session-save=redis \
@@ -1305,24 +1315,24 @@ if [ "$?" != 0 ]; then
 fi
 
 mkdir -p ${MAGENX_CONFIG_PATH}
-mysqldump --single-transaction --routines --triggers --events ${MAGE_DB_NAME} | gzip > ${MAGENX_CONFIG_PATH}/${MAGE_DB_NAME}.sql.gz
+mysqldump --single-transaction --routines --triggers --events ${MAGENTO_DB_NAME} | gzip > ${MAGENX_CONFIG_PATH}/${MAGENTO_DB_NAME}.sql.gz
 cp app/etc/env.php  ${MAGENX_CONFIG_PATH}/env.php.default
 echo
 echo
 echo
     WHITETXT "============================================================================="
     echo
-    GREENTXT "INSTALLED MAGENTO ${MAGE_VERSION} (${MAGE_VERSION_FULL}) WITHOUT SAMPLE DATA"
+    GREENTXT "INSTALLED MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WITHOUT SAMPLE DATA"
     echo
     WHITETXT "============================================================================="
 echo
 cat > ${MAGENX_CONFIG_PATH}/install <<END
-MAGE_ADMIN_LOGIN="${MAGE_ADMIN_LOGIN}"
-MAGE_ADMIN_PASSWORD="${MAGE_ADMIN_PASSWORD}"
-MAGE_ADMIN_EMAIL="${MAGE_ADMIN_EMAIL}"
-MAGE_TIMEZONE="${MAGE_TIMEZONE}"
-MAGE_LOCALE="${MAGE_LOCALE}"
-MAGE_ADMIN_PATH="$(grep -Po "(?<='frontName' => ')\w*(?=')" ${MAGE_WEB_ROOT_PATH}/app/etc/env.php)"
+MAGENTO_ADMIN_LOGIN="${MAGENTO_ADMIN_LOGIN}"
+MAGENTO_ADMIN_PASSWORD="${MAGENTO_ADMIN_PASSWORD}"
+MAGENTO_ADMIN_EMAIL="${MAGENTO_ADMIN_EMAIL}"
+MAGENTO_TIMEZONE="${MAGENTO_TIMEZONE}"
+MAGENTO_LOCALE="${MAGENTO_LOCALE}"
+MAGENTO_ADMIN_PATH="$(grep -Po "(?<='frontName' => ')\w*(?=')" ${MAGENTO_WEB_ROOT_PATH}/app/etc/env.php)"
 END
 
 pause '[] Press [Enter] key to show menu'
@@ -1465,10 +1475,10 @@ sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' ${php_fpm_pool}
 sed -i 's/^\(pm.max_children = \)[0-9]*/\1100/' ${php_fpm_pool}
 
 GREENTXT "SERVER HOSTNAME SETTINGS"
-hostnamectl set-hostname server.${MAGE_DOMAIN} --static
+hostnamectl set-hostname server.${MAGENTO_DOMAIN} --static
 echo
 GREENTXT "SERVER TIMEZONE SETTINGS"
-timedatectl set-timezone ${MAGE_TIMEZONE}
+timedatectl set-timezone ${MAGENTO_TIMEZONE}
 echo
 GREENTXT "MYSQL TOOLS AND PROXYSQL"
 wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
@@ -1503,53 +1513,53 @@ systemctl disable proxysql
 
 echo
 GREENTXT "PHP-FPM SETTINGS"
-sed -i "s/\[www\]/\[${MAGE_OWNER}\]/" ${php_fpm_pool}
-sed -i "s/^user =.*/user = ${MAGE_PHP_USER}/" ${php_fpm_pool}
-sed -i "s/^group =.*/group = ${MAGE_PHP_USER}/" ${php_fpm_pool}
+sed -i "s/\[www\]/\[${MAGENTO_OWNER}\]/" ${php_fpm_pool}
+sed -i "s/^user =.*/user = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
+sed -i "s/^group =.*/group = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
 sed -i "s/^listen =.*/listen = 127.0.0.1:9000/" ${php_fpm_pool}
-sed -ri "s/;?listen.owner =.*/listen.owner = ${MAGE_OWNER}/" ${php_fpm_pool}
-sed -ri "s/;?listen.group =.*/listen.group = ${MAGE_PHP_USER}/" ${php_fpm_pool}
+sed -ri "s/;?listen.owner =.*/listen.owner = ${MAGENTO_OWNER}/" ${php_fpm_pool}
+sed -ri "s/;?listen.group =.*/listen.group = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
 sed -ri "s/;?listen.mode = 0660/listen.mode = 0660/" ${php_fpm_pool}
 sed -ri "s/;?listen.allowed_clients =.*/listen.allowed_clients = 127.0.0.1/" ${php_fpm_pool}
 sed -i '/sendmail_path/,$d' ${php_fpm_pool}
 sed -i '/PHPSESSID/d' ${php_ini}
-sed -i "s,.*date.timezone.*,date.timezone = ${MAGE_TIMEZONE}," ${php_ini}
+sed -i "s,.*date.timezone.*,date.timezone = ${MAGENTO_TIMEZONE}," ${php_ini}
 
 cat >> ${php_fpm_pool} <<END
 ;;
 ;; Custom pool settings
 php_flag[display_errors] = off
 php_admin_flag[log_errors] = on
-php_admin_value[error_log] = "${MAGE_WEB_ROOT_PATH}/var/log/php-fpm-error.log"
+php_admin_value[error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/php-fpm-error.log"
 php_admin_value[default_charset] = UTF-8
 php_admin_value[memory_limit] = 1024M
-php_admin_value[date.timezone] = ${MAGE_TIMEZONE}
+php_admin_value[date.timezone] = ${MAGENTO_TIMEZONE}
 END
 
 systemctl daemon-reload
 echo
 GREENTXT "NGINX SETTINGS"
-wget -qO /etc/nginx/fastcgi_params  ${NGINX_BASE}magento${MAGE_VERSION}/fastcgi_params
-wget -qO /etc/nginx/nginx.conf  ${NGINX_BASE}magento${MAGE_VERSION}/nginx.conf
+wget -qO /etc/nginx/fastcgi_params  ${MAGENX_NGINX_REPO}magento${MAGENTO_VERSION}/fastcgi_params
+wget -qO /etc/nginx/nginx.conf  ${MAGENX_NGINX_REPO}magento${MAGENTO_VERSION}/nginx.conf
 mkdir -p /etc/nginx/sites-enabled
 mkdir -p /etc/nginx/sites-available && cd $_
-curl -s ${GITHUB_REPO_API_URL}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
-ln -s /etc/nginx/sites-available/magento${MAGE_VERSION}.conf /etc/nginx/sites-enabled/magento${MAGE_VERSION}.conf
+curl -s ${MAGENX_NGINX_REPO_API}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
+ln -s /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf /etc/nginx/sites-enabled/magento${MAGENTO_VERSION}.conf
 ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
-mkdir -p /etc/nginx/conf_m${MAGE_VERSION} && cd /etc/nginx/conf_m${MAGE_VERSION}/
-curl -s ${GITHUB_REPO_API_URL}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
+mkdir -p /etc/nginx/conf_m${MAGENTO_VERSION} && cd /etc/nginx/conf_m${MAGENTO_VERSION}/
+curl -s ${MAGENX_NGINX_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
 
-sed -i "s/user  nginx;/user  ${MAGE_OWNER};/" /etc/nginx/nginx.conf
-sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGE_VERSION}.conf
-sed -i "s/example.com/${MAGE_DOMAIN}/g" /etc/nginx/nginx.conf
-sed -i "s,/var/www/html,${MAGE_WEB_ROOT_PATH},g" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
+sed -i "s/user  nginx;/user  ${MAGENTO_OWNER};/" /etc/nginx/nginx.conf
+sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf
+sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/nginx.conf
+sed -i "s,/var/www/html,${MAGENTO_WEB_ROOT_PATH},g" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
-sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGE_VERSION}/maps.conf
+sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 
-sed -i "s/ADMIN_PLACEHOLDER/${MAGE_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGE_VERSION}/extra_protect.conf
+sed -i "s/ADMIN_PLACEHOLDER/${MAGENTO_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/extra_protect.conf
 ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
-htpasswd -b -c /etc/nginx/.admin ${MAGE_ADMIN_LOGIN} ${ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
+htpasswd -b -c /etc/nginx/.admin ${MAGENTO_ADMIN_LOGIN} ${ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
 echo
 GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
 PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
@@ -1567,14 +1577,14 @@ PMA_CONFIG_FOLDER="/etc/phpMyAdmin/config.inc.php"
        debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
        apt-get -y install phpmyadmin
        PMA_CONFIG_FOLDER="${PMA_CONFIG_FOLDER,,}"
-       sed -i 's!/usr/share/phpMyAdmin!/usr/share/phpmyadmin!g' "/etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf"
+       sed -i 's!/usr/share/phpMyAdmin!/usr/share/phpmyadmin!g' "/etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf"
        cp /usr/share/phpmyadmin/config.sample.inc.php ${PMA_CONFIG_FOLDER}
   fi
        sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" ${PMA_CONFIG_FOLDER}
-       sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
+       sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
      sed -i "5i \\
            auth_basic  \"please login\"; \\
-           auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
+           auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
 	 	   
 htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWORD}  >/dev/null 2>&1
 echo
@@ -1587,15 +1597,15 @@ echo
 echo
 if [ -f /etc/systemd/system/varnish.service ]; then
 GREENTXT "VARNISH CACHE CONFIGURATION"
-    sed -i "s/MAGE_OWNER/${MAGE_OWNER}/g"  /etc/systemd/system/varnish.service
+    sed -i "s/MAGENTO_OWNER/${MAGENTO_OWNER}/g"  /etc/systemd/system/varnish.service
     systemctl enable varnish.service
-    chmod u+x ${MAGE_WEB_ROOT_PATH}/bin/magento
-    su ${MAGE_OWNER} -s /bin/bash -c "${MAGE_WEB_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
-    php ${MAGE_WEB_ROOT_PATH}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
+    chmod u+x ${MAGENTO_WEB_ROOT_PATH}/bin/magento
+    su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_WEB_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
+    php ${MAGENTO_WEB_ROOT_PATH}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
     sed -i "s,pub/health_,health_,g" /etc/varnish/default.vcl
     systemctl restart varnish.service
     wget -O /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
-    wget -O /etc/varnish/devicedetect-include.vcl ${REPO_MAGENX_TMP}devicedetect-include.vcl
+    wget -O /etc/varnish/devicedetect-include.vcl ${MAGENX_MSI_REPO}devicedetect-include.vcl
     YELLOWTXT "VARNISH CACHE PORT :8081"
 fi
 echo
@@ -1603,7 +1613,7 @@ GREENTXT "DOWNLOADING n98-MAGERUN2"
 curl -s -o /usr/local/bin/magerun2 https://files.magerun.net/n98-magerun2.phar
 echo
 GREENTXT "CACHE CLEANER SCRIPT"
-echo "${MAGE_OWNER} ALL=(ALL) NOPASSWD: /usr/bin/redis-cli -p 6380 flushall, /usr/bin/systemctl reload php*fpm.service, /usr/bin/systemctl reload nginx.service" >>  /etc/sudoers
+echo "${MAGENTO_OWNER} ALL=(ALL) NOPASSWD: /usr/bin/redis-cli -p 6380 flushall, /usr/bin/systemctl reload php*fpm.service, /usr/bin/systemctl reload nginx.service" >>  /etc/sudoers
 cat > /usr/local/bin/cacheflush <<END
 #!/bin/bash
 magerun2 cache:flush
@@ -1617,8 +1627,8 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
 sed -i 's/upgrade_type = default/upgrade_type = security/' /etc/dnf/automatic.conf
 sed -i 's/apply_updates = no/apply_updates = yes/' /etc/dnf/automatic.conf
 sed -i 's/emit_via = stdio/emit_via = email/' /etc/dnf/automatic.conf
-sed -i "s/email_from =.*/email_from = dnf-automatic@${MAGE_DOMAIN}/" /etc/dnf/automatic.conf
-sed -i "s/email_to = root/email_to = ${MAGE_ADMIN_EMAIL}/" /etc/dnf/automatic.conf
+sed -i "s/email_from =.*/email_from = dnf-automatic@${MAGENTO_DOMAIN}/" /etc/dnf/automatic.conf
+sed -i "s/email_to = root/email_to = ${MAGENTO_ADMIN_EMAIL}/" /etc/dnf/automatic.conf
 systemctl enable --now dnf-automatic.timer
 systemctl enable --now snapd.socket
 fi
@@ -1636,10 +1646,10 @@ openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/certs/default
 echo
 GREENTXT "SIMPLE LOGROTATE SCRIPT FOR MAGENTO LOGS"
 cat > /etc/logrotate.d/magento <<END
-${MAGE_WEB_ROOT_PATH}/var/log/*.log
+${MAGENTO_WEB_ROOT_PATH}/var/log/*.log
 {
-su ${MAGE_OWNER} ${MAGE_PHP_USER}
-create 660 ${MAGE_OWNER} ${MAGE_PHP_USER}
+su ${MAGENTO_OWNER} ${MAGENTO_PHP_USER}
+create 660 ${MAGENTO_OWNER} ${MAGENTO_PHP_USER}
 weekly
 rotate 2
 notifempty
@@ -1660,13 +1670,13 @@ cd maldetect-*/
 ./install.sh
 
 sed -i 's/email_alert="0"/email_alert="1"/' /usr/local/maldetect/conf.maldet
-sed -i "s/you@domain.com/${MAGE_ADMIN_EMAIL}/" /usr/local/maldetect/conf.maldet
+sed -i "s/you@domain.com/${MAGENTO_ADMIN_EMAIL}/" /usr/local/maldetect/conf.maldet
 sed -i 's/quarantine_hits="0"/quarantine_hits="1"/' /usr/local/maldetect/conf.maldet
 sed -i '/default_monitor_mode="users"/d' /usr/local/maldetect/conf.maldet
 sed -i 's,# default_monitor_mode="/usr/local/maldetect/monitor_paths",default_monitor_mode="/usr/local/maldetect/monitor_paths",' /usr/local/maldetect/conf.maldet
 sed -i 's/inotify_base_watches="16384"/inotify_base_watches="35384"/' /usr/local/maldetect/conf.maldet
 
-echo -e "${MAGE_WEB_ROOT_PATH%/*}" > /usr/local/maldetect/monitor_paths
+echo -e "${MAGENTO_WEB_ROOT_PATH%/*}" > /usr/local/maldetect/monitor_paths
 
 maldet --monitor /usr/local/maldetect/monitor_paths
 echo
@@ -1676,7 +1686,7 @@ pip3 -q install --no-cache-dir --upgrade mwscan
 cat > /etc/cron.hourly/mwscan <<END
 #!/bin/sh
 ## MAGENTO MALWARE SCANNER
-mwscan --newonly --quiet ${MAGE_WEB_ROOT_PATH} | ts | tee -a /var/log/mwscan.log | ifne mailx -s "Malware found at $(hostname)" ${MAGE_ADMIN_EMAIL}
+mwscan --newonly --quiet ${MAGENTO_WEB_ROOT_PATH} | ts | tee -a /var/log/mwscan.log | ifne mailx -s "Malware found at $(hostname)" ${MAGENTO_ADMIN_EMAIL}
 END
 chmod +x /etc/cron.hourly/mwscan
 echo
@@ -1684,8 +1694,8 @@ GREENTXT "AUDIT MAGENTO FILES AND FOLDERS"
 cat >> /etc/audit/rules.d/audit.rules <<END
 
 ## audit magento files
--a never,exit -F dir=${MAGE_WEB_ROOT_PATH}/var/ -k exclude
--w ${MAGE_WEB_ROOT_PATH} -p wa -k auditmgnx
+-a never,exit -F dir=${MAGENTO_WEB_ROOT_PATH}/var/ -k exclude
+-w ${MAGENTO_WEB_ROOT_PATH} -p wa -k auditmgnx
 END
 service auditd reload
 service auditd restart
@@ -1693,26 +1703,26 @@ auditctl -l
 echo
 echo
 GREENTXT "ROOT CRONJOBS"
-echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -s \"MYSQLTUNER WEEKLY REPORT at ${MAGE_DOMAIN}\" ${MAGE_ADMIN_EMAIL}" >> rootcron
+echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -s \"MYSQLTUNER WEEKLY REPORT at ${MAGENTO_DOMAIN}\" ${MAGENTO_ADMIN_EMAIL}" >> rootcron
 echo '@weekly /usr/local/bin/certbot renew --deploy-hook "systemctl reload nginx" >> /var/log/letsencrypt-renew.log' >> rootcron
 crontab rootcron
 rm rootcron
 echo
-cd ${MAGE_WEB_ROOT_PATH}
+cd ${MAGENTO_WEB_ROOT_PATH}
 # varnish cache hosts
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
 echo
 systemctl daemon-reload
 systemctl restart nginx.service
 systemctl restart php*fpm.service
 
-chown -R ${MAGE_OWNER}:${MAGE_PHP_USER} ${MAGE_WEB_ROOT_PATH}
+chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
 echo
 GREENTXT "CLEAN MAGENTO CACHE AND ENABLE DEVELOPER MODE"
 rm -rf var/*
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set developer"
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento cache:flush"
-#setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:r-X,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:r-X,d:o::- generated pub/static
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set developer"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
+#setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:r-X,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:r-X,d:o::- generated pub/static
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
 echo
@@ -1726,22 +1736,22 @@ GREENTXT "FIXING PERMISSIONS"
 chmod +x /usr/local/bin/*
 chmod -R 600 ${MAGENX_CONFIG_PATH}
 
-cd ${MAGE_WEB_ROOT_PATH}
+cd ${MAGENTO_WEB_ROOT_PATH}
 chmod ug+x bin/magento
 echo
 echo
 GREENTXT "MAGENTO CRONJOBS"
-su ${MAGE_PHP_USER} -s /bin/bash -c "bin/magento cron:install"
+su ${MAGENTO_PHP_USER} -s /bin/bash -c "bin/magento cron:install"
 echo
 
-cd ${MAGE_WEB_ROOT_PATH%/*}
+cd ${MAGENTO_WEB_ROOT_PATH%/*}
 
 GREENTXT "GENERATE SSH KEY"
 mkdir .ssh
-MAGE_OWNER_SSHKEY="${MAGE_OWNER}_sshkey"
-ssh-keygen -b 2048 -t rsa -f ${MAGENX_CONFIG_PATH}/${MAGE_OWNER_SSHKEY} -C "${MAGE_DOMAIN}" -q -N ""
-cat ${MAGENX_CONFIG_PATH}/${MAGE_OWNER_SSHKEY}.pub > .ssh/authorized_keys
-echo "MAGE_OWNER_SSHKEY=\"${MAGE_OWNER_SSHKEY}\"" >> ${MAGENX_CONFIG_PATH}/magento
+MAGENTO_OWNER_SSHKEY="${MAGENTO_OWNER}_sshkey"
+ssh-keygen -b 2048 -t rsa -f ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY} -C "${MAGENTO_DOMAIN}" -q -N ""
+cat ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY}.pub > .ssh/authorized_keys
+echo "MAGENTO_OWNER_SSHKEY=\"${MAGENTO_OWNER_SSHKEY}\"" >> ${MAGENX_CONFIG_PATH}/magento
 
 cat > .bash_profile <<END
 # .bash_profile
@@ -1756,7 +1766,7 @@ END
 
 cat > .bashrc <<END
 # .bashrc
-cd ${MAGE_WEB_ROOT_PATH}
+cd ${MAGENTO_WEB_ROOT_PATH}
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
 
@@ -1764,9 +1774,9 @@ echo
 
 GREENTXT "CONFIGURE GOOGLE AUTH CODE FOR ADMIN ACCESS"
 echo
-cd ${MAGE_WEB_ROOT_PATH}
+cd ${MAGENTO_WEB_ROOT_PATH}
 GOOGLE_TFA_CODE="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&' | fold -w 15 | head -n 1 | base32)"
-su ${MAGE_OWNER} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${MAGE_ADMIN_LOGIN} ${GOOGLE_TFA_CODE}"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${MAGENTO_ADMIN_LOGIN} ${GOOGLE_TFA_CODE}"
 echo "Google Authenticator mobile app configuration:"
 echo "-> select: Enter a setup key"
 echo "-> type in: Account name"
@@ -1784,13 +1794,13 @@ REDTXT "PRINTING INSTALLATION LOG AND SAVING INTO ${MAGENX_CONFIG_PATH}/install.
 echo
 echo -e "===========================  INSTALLATION LOG  ======================================
 
-[shop domain]: ${MAGE_DOMAIN}
-[webroot path]: ${MAGE_WEB_ROOT_PATH}
+[shop domain]: ${MAGENTO_DOMAIN}
+[webroot path]: ${MAGENTO_WEB_ROOT_PATH}
 
-[admin path]: ${MAGE_DOMAIN}/${MAGE_ADMIN_PATH}
-[admin name]: ${MAGE_ADMIN_LOGIN}
-[admin pass]: ${MAGE_ADMIN_PASSWORD}
-[admin http auth name]: ${MAGE_ADMIN_LOGIN}
+[admin path]: ${MAGENTO_DOMAIN}/${MAGENTO_ADMIN_PATH}
+[admin name]: ${MAGENTO_ADMIN_LOGIN}
+[admin pass]: ${MAGENTO_ADMIN_PASSWORD}
+[admin http auth name]: ${MAGENTO_ADMIN_LOGIN}
 [admin http auth pass]: ${ADMIN_HTTP_PASSWORD}
 for additional access, please generate new user/password:
 htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
@@ -1799,19 +1809,19 @@ htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 
 [ssh port]: ${SSH_PORT}
 
-[files owner]: ${MAGE_OWNER}
-[${MAGE_OWNER} ssh key]: ${MAGENX_CONFIG_PATH}/${MAGE_OWNER_SSHKEY}
+[files owner]: ${MAGENTO_OWNER}
+[${MAGENTO_OWNER} ssh key]: ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY}
 
-[phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}/
+[phpmyadmin url]: ${MAGENTO_DOMAIN}/mysql_${PMA_FOLDER}/
 [phpmyadmin http auth name]: mysql
 [phpmyadmin http auth pass]: ${PMA_PASSWORD}
 for additional access, please generate new user/password:
 htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 
-[mysql host]: ${MAGE_DB_HOST}
-[mysql user]: ${MAGE_DB_USER}
-[mysql pass]: ${MAGE_DB_PASSWORD}
-[mysql database]: ${MAGE_DB_NAME}
+[mysql host]: ${MAGENTO_DB_HOST}
+[mysql user]: ${MAGENTO_DB_USER}
+[mysql pass]: ${MAGENTO_DB_PASSWORD}
+[mysql database]: ${MAGENTO_DB_NAME}
 [mysql root pass]: ${MYSQL_ROOT_PASSWORD}
 
 [elk user]: elastic
@@ -1823,29 +1833,30 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 
 [n98-magerun2]: /usr/local/bin/magerun2
 [cache cleaner]: /usr/local/bin/cacheflush
+[rabbitmq restart] /usr/local/bin/rabbitmq_restart
 
 [audit log]: ausearch -k auditmgnx | aureport -f -i
 
 [redis on port 6379]: systemctl restart redis@6379
 [redis on port 6380]: systemctl restart redis@6380
 
-[installed db dump]: ${MAGENX_CONFIG_PATH}/${MAGE_DB_NAME}.sql.gz
+[installed db dump]: ${MAGENX_CONFIG_PATH}/${MAGENTO_DB_NAME}.sql.gz
 [composer.json copy]: ${MAGENX_CONFIG_PATH}/composer.json.saved
 [env.php copy]: ${MAGENX_CONFIG_PATH}/env.php.saved
 [env.php default copy]: ${MAGENX_CONFIG_PATH}/env.php.default
 
-[ACL map]: /home/${MAGE_OWNER}/public_html.acl
+[ACL map]: /home/${MAGENTO_OWNER}/public_html.acl
 
 when you run any command for magento cli or custom php script,
-please use ${MAGE_OWNER} user, either switch to:
-su ${MAGE_OWNER} -s /bin/bash
+please use ${MAGENTO_OWNER} user, either switch to:
+su ${MAGENTO_OWNER} -s /bin/bash
 
 or run commands from root as user:
-su ${MAGE_OWNER} -s /bin/bash -c 'bin/magento'
+su ${MAGENTO_OWNER} -s /bin/bash -c 'bin/magento'
 
 to copy folders for development or build use:
 rsync -Aa public_html/ ./staging_html
-setfacl -R -m u:${MAGE_OWNER}:rwX,g:${MAGE_PHP_USER}:rwX,o::-,d:u:${MAGE_OWNER}:rwX,d:g:${MAGE_PHP_USER}:rwX,d:o::- staging_html/generated staging_html/pub/static
+setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:rwX,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:rwX,d:o::- staging_html/generated staging_html/pub/static
 
 
 ===========================  INSTALLATION LOG  ======================================" | tee ${MAGENX_CONFIG_PATH}/install.log
@@ -1856,7 +1867,7 @@ echo "PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\
 echo
 echo
 ## simple installation statis
-curl --silent -X POST https://www.magenx.com/ping_back_domain_${MAGE_DOMAIN}_geo_${MAGE_TIMEZONE}_keep_30d >/dev/null 2>&1
+curl --silent -X POST https://www.magenx.com/ping_back_domain_${MAGENTO_DOMAIN}_geo_${MAGENTO_TIMEZONE}_keep_30d >/dev/null 2>&1
 echo
 pause '[] Press [Enter] key to show menu'
 ;;
@@ -1914,8 +1925,8 @@ if [ "${csffirewall}" == "y" ];then
   sed -i 's/^PS_BLOCK_TIME =.*/PS_BLOCK_TIME = "86400"/' /etc/csf/csf.conf
   sed -i 's/^LF_WEBMIN =.*/LF_WEBMIN = "5"/' /etc/csf/csf.conf
   sed -i 's/^LF_WEBMIN_EMAIL_ALERT =.*/LF_WEBMIN_EMAIL_ALERT = "1"/' /etc/csf/csf.conf
-  sed -i "s/^LF_ALERT_TO =.*/LF_ALERT_TO = \"${MAGE_ADMIN_EMAIL}\"/" /etc/csf/csf.conf
-  sed -i "s/^LF_ALERT_FROM =.*/LF_ALERT_FROM = \"firewall@${MAGE_DOMAIN}\"/" /etc/csf/csf.conf
+  sed -i "s/^LF_ALERT_TO =.*/LF_ALERT_TO = \"${MAGENTO_ADMIN_EMAIL}\"/" /etc/csf/csf.conf
+  sed -i "s/^LF_ALERT_FROM =.*/LF_ALERT_FROM = \"firewall@${MAGENTO_DOMAIN}\"/" /etc/csf/csf.conf
   sed -i 's/^DENY_IP_LIMIT =.*/DENY_IP_LIMIT = "500000"/' /etc/csf/csf.conf
   sed -i 's/^DENY_TEMP_IP_LIMIT =.*/DENY_TEMP_IP_LIMIT = "2000"/' /etc/csf/csf.conf
   sed -i 's/^LF_IPSET =.*/LF_IPSET = "1"/' /etc/csf/csf.conf
@@ -1925,7 +1936,7 @@ if [ "${csffirewall}" == "y" ];then
   sed -i 's,CUSTOM1_LOG.*,CUSTOM1_LOG = "/var/log/nginx/access.log",' /etc/csf/csf.conf
   sed -i 's,CUSTOM2_LOG.*,CUSTOM2_LOG = "/var/log/nginx/error.log",' /etc/csf/csf.conf
   ### get custom regex template
-  curl -o /usr/local/csf/bin/regex.custom.pm ${REPO_MAGENX_TMP}regex.custom.pm
+  curl -o /usr/local/csf/bin/regex.custom.pm ${MAGENX_MSI_REPO}regex.custom.pm
   chmod +x /usr/local/csf/bin/regex.custom.pm
   ### whitelist search bots and legit domains
 cat >> /etc/csf/csf.rignore <<END
@@ -1997,18 +2008,18 @@ if [ "$?" = 0 ]; then
  sed -i "s/port=10000/port=${WEBMIN_PORT}/" /etc/webmin/miniserv.conf
  sed -i "s/listen=10000/listen=${WEBMIN_PORT}/" /etc/webmin/miniserv.conf
  sed -i '/keyfile=\|certfile=/d' /etc/webmin/miniserv.conf
- echo "keyfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/privkey.pem" >> /etc/webmin/miniserv.conf
- echo "certfile=/etc/letsencrypt/live/${MAGE_DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
+ echo "keyfile=/etc/letsencrypt/live/${MAGENTO_DOMAIN}/privkey.pem" >> /etc/webmin/miniserv.conf
+ echo "certfile=/etc/letsencrypt/live/${MAGENTO_DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
  
   if [ -f "/usr/local/csf/csfwebmin.tgz" ]; then
     perl /usr/${WEBMINEXEC}/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
     GREENTXT "INSTALLED CSF FIREWALL PLUGIN"
   fi
   
-  echo "${MAGE_OWNER}_webmin:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
-  sed -i "s/root:/${MAGE_OWNER}_webmin:/" /etc/webmin/webmin.acl
+  echo "${MAGENTO_OWNER}_webmin:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
+  sed -i "s/root:/${MAGENTO_OWNER}_webmin:/" /etc/webmin/webmin.acl
   WEBMIN_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@#%^?=+_[]{}()<>-' | fold -w 15 | head -n 1)
-  /usr/${WEBMINEXEC}/webmin/changepass.pl /etc/webmin/ ${MAGE_OWNER}_webmin "${WEBMIN_PASS}"
+  /usr/${WEBMINEXEC}/webmin/changepass.pl /etc/webmin/ ${MAGENTO_OWNER}_webmin "${WEBMIN_PASS}"
   
   systemctl enable webmin
   /etc/webmin/restart
@@ -2017,13 +2028,13 @@ if [ "$?" = 0 ]; then
   GREENTXT "WEBMIN INSTALLED - OK"
   echo
   YELLOWTXT "[!] WEBMIN PORT: ${WEBMIN_PORT}"
-  YELLOWTXT "[!] USER: ${MAGE_OWNER}_webmin"
+  YELLOWTXT "[!] USER: ${MAGENTO_OWNER}_webmin"
   YELLOWTXT "[!] PASSWORD: ${WEBMIN_PASS}"
   REDTXT "[!] PLEASE ENABLE TWO-FACTOR AUTHENTICATION!"
 	    
 cat > ${MAGENX_CONFIG_PATH}/webmin <<END
 WEBMIN_PORT="${WEBMIN_PORT}"
-WEBMIN_USER="${MAGE_OWNER}_webmin"
+WEBMIN_USER="${MAGENTO_OWNER}_webmin"
 WEBMIN_PASS="${WEBMIN_PASS}"
 END
   else
