@@ -26,7 +26,7 @@ MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.c
 ## Version lock
 RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5"
-ELKREPO="7.x"
+ELK_VERSION="7.x"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
@@ -960,7 +960,7 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
-_echo "[?] Install ElasticSearch ${ELKREPO} ? [y/n][n]:"
+_echo "[?] Install ElasticSearch ${ELK_VERSION} ? [y/n][n]:"
 read elastic_install
 if [ "${elastic_install}" == "y" ];then
 echo
@@ -969,9 +969,9 @@ GREENTXT "Elasticsearch installation:"
 echo
 rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 cat > /etc/yum.repos.d/elastic.repo << EOF
-[elasticsearch-${ELKREPO}]
-name=Elasticsearch repository for ${ELKREPO} packages
-baseurl=https://artifacts.elastic.co/packages/${ELKREPO}/yum
+[elasticsearch-${ELK_VERSION}]
+name=Elasticsearch repository for ${ELK_VERSION} packages
+baseurl=https://artifacts.elastic.co/packages/${ELK_VERSION}/yum
 gpgcheck=1
 gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
 enabled=1
@@ -979,11 +979,11 @@ autorefresh=1
 type=rpm-md
 EOF
 echo
-   dnf -y -q install --enablerepo=elasticsearch-${ELKREPO} elasticsearch kibana
+   dnf -y -q install --enablerepo=elasticsearch-${ELK_VERSION} elasticsearch kibana
    rpm  --quiet -q elasticsearch
   else
    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
-   echo "deb https://artifacts.elastic.co/packages/${ELKREPO}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELKREPO}.list
+   echo "deb https://artifacts.elastic.co/packages/${ELK_VERSION}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELK_VERSION}.list
    apt-get update
    apt-get -y install elasticsearch kibana
   fi
