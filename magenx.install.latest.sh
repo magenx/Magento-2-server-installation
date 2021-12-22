@@ -15,7 +15,7 @@ MAGENX_CONFIG_PATH="/opt/magenx/config"
 ###                              REPOSITORY AND PACKAGES                        ###
 ###################################################################################
 
-# Github installation repository raw lurl
+# Github installation repository raw url
 MAGENX_MSI_REPO="https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/"
 
 # Magento
@@ -906,9 +906,9 @@ END
    GREENTXT "RabbitMQ INSTALLED  -  OK"
    echo
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   rpm -qa 'rabbitmq*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
+   rpm -qa 'rabbitmq*' 'erlang*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
   else
-   apt -qq list --installed rabbitmq* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
+   apt -qq list --installed rabbitmq* erlang* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
   fi
   else
    echo
