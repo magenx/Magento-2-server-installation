@@ -27,6 +27,7 @@ MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.c
 RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5"
 ELK_VERSION="7.x"
+PROXYSQL_VERSION="2.3.x"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
@@ -271,7 +272,7 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   rpm --quiet -q epel-release || dnf -y install epel-release
   rpm --quiet -q curl time bc bzip2 tar || dnf -y install time bc bzip2 tar
  else
-  dpkg-query -l curl time bc bzip2 tar >/dev/null || { apt-get update; apt-get -y install curl time bc bzip2 tar; }
+  dpkg-query -l curl time bc bzip2 tar >/dev/null || { apt update; apt -y install curl time bc bzip2 tar; }
 fi
 
 # check if you need update
@@ -326,7 +327,7 @@ if ! grep -q "webstack_is_clean" ${MAGENX_CONFIG_PATH}/webstack >/dev/null 2>&1 
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
     echo -e "\t\t dnf remove ${installed_packages} --noautoremove"
   else
-    echo -e "\t\t apt-get purge ${installed_packages}"
+    echo -e "\t\t apt purge ${installed_packages}"
   fi
     echo
     echo
@@ -527,10 +528,10 @@ WHITETXT "----------------------------------------------------------------------
   dnf -y upgrade --nobest
   echo
  else
-  apt-get -y install software-properties-common
+  apt -y install software-properties-common
   apt-add-repository contrib
-  apt-get update
-  apt-get -y install ${EXTRA_PACKAGES_DEB} ${PERL_MODULES_DEB}
+  apt update
+  apt -y install ${EXTRA_PACKAGES_DEB} ${PERL_MODULES_DEB}
   echo
  fi
  if [ "$?" != 0 ]; then
@@ -570,15 +571,15 @@ if [ "${repo_mariadb_install}" == "y" ]; then
     dnf module disable -y mysql
     dnf install -y MariaDB-server
    else
-    apt-get update
-    apt-get install -y mariadb-server
+    apt update
+    apt install -y mariadb-server
   fi
   if [ "$?" = 0 ] # if package installed then configure
     then
      echo
      GREENTXT "DATABASE INSTALLED  -  OK"
      echo
-     systemctl enable mysql
+     systemctl enable mariadb
      echo
     if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
      rpm -qa 'mariadb*' | awk '{print "  Installed: ",$1}'
@@ -609,7 +610,7 @@ if [ "${repo_mariadb_install}" == "y" ]; then
    fi
     else
      echo
-     YELLOWTXT "MariaDB repository installation was skipped by the user. Next step"
+     YELLOWTXT "MariaDB repository installation was skipped. Next step"
 fi
   echo
 WHITETXT "============================================================================="
@@ -642,8 +643,8 @@ END
    dnf -y -q install nginx nginx-module-perl nginx-module-image-filter
    rpm  --quiet -q nginx
   else
-   apt-get update
-   apt-get -y install nginx nginx-module-perl nginx-module-image-filter nginx-module-geoip
+   apt update
+   apt -y install nginx nginx-module-perl nginx-module-image-filter nginx-module-geoip
   fi
   if [ "$?" = 0 ]; then
     echo
@@ -662,7 +663,7 @@ END
   fi
    else
     echo
-    YELLOWTXT "Nginx repository installation was skipped by the user. Next step"
+    YELLOWTXT "Nginx repository installation was skipped. Next step"
 fi
 echo
 WHITETXT "============================================================================="
@@ -701,8 +702,8 @@ if [ "${repo_install}" == "y" ]; then
    dnf -y install php ${PHP_PACKAGES_RPM[@]/#/php-} ${PHP_PECL_PACKAGES_RPM[@]/#/php-}
    rpm  --quiet -q php
   else
-   apt-get update
-   apt-get -y install php${PHP_VERSION} ${PHP_PACKAGES_DEB[@]/#/php${PHP_VERSION}-} php-pear
+   apt update
+   apt -y install php${PHP_VERSION} ${PHP_PACKAGES_DEB[@]/#/php${PHP_VERSION}-} php-pear
   fi
   if [ "$?" = 0 ]; then
     echo
@@ -725,7 +726,7 @@ if [ "${repo_install}" == "y" ]; then
   fi
    else
     echo
-    YELLOWTXT "Remi repository installation was skipped by the user. Next step"
+    YELLOWTXT "Remi repository installation was skipped. Next step"
 fi
 echo
 echo
@@ -743,8 +744,8 @@ if [ "${redis_install}" == "y" ]; then
  else
   curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
   echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list
-  apt-get update
-  apt-get -y install redis
+  apt update
+  apt -y install redis
  fi
  if [ "$?" = 0 ]; then
      echo
@@ -835,7 +836,7 @@ systemctl restart redis@6379 redis@6380
  fi
   else
    echo
-   YELLOWTXT "Redis installation was skipped by the user. Next step"
+   YELLOWTXT "Redis installation was skipped. Next step"
 fi
 echo
 WHITETXT "============================================================================="
@@ -914,7 +915,7 @@ END
   fi
   else
    echo
-   YELLOWTXT "RabbitMQ installation was skipped by the user. Next step"
+   YELLOWTXT "RabbitMQ installation was skipped. Next step"
 fi
 echo
 WHITETXT "============================================================================="
@@ -932,8 +933,8 @@ if [ "${varnish_install}" == "y" ];then
    rpm  --quiet -q varnish
   else
   curl -s https://packagecloud.io/install/repositories/varnishcache/varnish65/script.deb.sh | bash
-  apt-get update
-  apt-get -y install varnish
+  apt update
+  apt -y install varnish
  fi
  if [ "$?" = 0 ]; then
    echo
@@ -955,7 +956,7 @@ if [ "${varnish_install}" == "y" ];then
   fi
   else
    echo
-   YELLOWTXT "Varnish installation was skipped by the user. Next step"
+   YELLOWTXT "Varnish installation was skipped. Next step"
 fi
 echo
 WHITETXT "============================================================================="
@@ -984,8 +985,8 @@ echo
   else
    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
    echo "deb https://artifacts.elastic.co/packages/${ELK_VERSION}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELK_VERSION}.list
-   apt-get update
-   apt-get -y install elasticsearch kibana
+   apt update
+   apt -y install elasticsearch kibana
   fi
   if [ "$?" = 0 ]; then
           echo
@@ -1036,7 +1037,7 @@ exit 1
 fi
 else
 echo
-YELLOWTXT "ElasticSearch installation was skipped by the user. Next step"
+YELLOWTXT "ElasticSearch installation was skipped. Next step"
 fi
 echo
 echo 
@@ -1065,7 +1066,7 @@ echo
      MAGENTO_WEB_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
 	 
      echo
-       _echo "[!] MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WILL BE DOWNLOADED TO ${MAGENTO_WEB_ROOT_PATH}"
+     _echo "[!] MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WILL BE DOWNLOADED TO ${MAGENTO_WEB_ROOT_PATH}"
      echo
 
           mkdir -p ${MAGENTO_WEB_ROOT_PATH} && cd $_
@@ -1076,11 +1077,11 @@ echo
           useradd -M -s /sbin/nologin -d ${MAGENTO_WEB_ROOT_PATH%/*} ${MAGENTO_PHP_USER}
           usermod -g ${MAGENTO_PHP_USER} ${MAGENTO_OWNER}
           chmod 711 ${MAGENTO_WEB_ROOT_PATH%/*}
-	      mkdir -p ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	      chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+	  mkdir -p ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+	  chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
           chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
           chmod 2770 ${MAGENTO_WEB_ROOT_PATH}
-	      setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:r-X,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:r-X,d:o::- ${MAGENTO_WEB_ROOT_PATH}
+	  setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:r-X,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:r-X,d:o::- ${MAGENTO_WEB_ROOT_PATH}
 	  
 echo
 MAGENTO_MINIMAL_OPT="MINIMAL SET OF MODULES"
@@ -1156,8 +1157,8 @@ MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
 
 systemctl restart mariadb
-mysqladmin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL SERVER DOWN \n"; exit 1; }
-mysql --connect-expired-password  <<EOMYSQL
+mariadb-admin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL SERVER DOWN \n"; exit 1; }
+mariadb --connect-expired-password  <<EOMYSQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASSWORD}";
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
@@ -1195,7 +1196,7 @@ MAGENTO_DB_NAME="m${MAGENTO_VERSION}_${MAGENTO_DOMAIN//[-.]/}_${MAGENTO_DB_HASH}
 MAGENTO_DB_USER="m${MAGENTO_VERSION}_${MAGENTO_DOMAIN//[-.]/}_${MAGENTO_DB_HASH}"
 GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
 echo
-mysql <<EOMYSQL
+mariadb <<EOMYSQL
 CREATE USER '${MAGENTO_DB_USER}'@'${MAGENTO_DB_HOST}' IDENTIFIED BY '${MAGENTO_DB_PASSWORD}';
 CREATE DATABASE ${MAGENTO_DB_NAME};
 GRANT ALL PRIVILEGES ON ${MAGENTO_DB_NAME}.* TO '${MAGENTO_DB_USER}'@'${MAGENTO_DB_HOST}' WITH GRANT OPTION;
@@ -1488,7 +1489,7 @@ if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
 cat <<EOF | tee /etc/yum.repos.d/proxysql.repo
    [proxysql_repo]
    name= ProxySQL YUM repository
-   baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.2.x/centos/$releasever
+   baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/$releasever
    gpgcheck=1
    gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
 EOF
@@ -1497,16 +1498,16 @@ EOF
 cat <<EOF | tee /etc/yum.repos.d/proxysql.repo
    [proxysql_repo]
    name=ProxySQL YUM repository
-   baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.2.x/centos/latest
+   baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/latest
    gpgcheck=1
    gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
 EOF
-   dnf -y install proxysql
+   dnf -y install proxysql*
  else
    wget -O - 'https://repo.proxysql.com/ProxySQL/repo_pub_key' | apt-key add - 
-   echo deb https://repo.proxysql.com/ProxySQL/proxysql-2.2.x/$(lsb_release -sc)/ ./ | tee /etc/apt/sources.list.d/proxysql.list
-   apt-get update
-   apt -y install proxysql
+   echo deb https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/$(lsb_release -sc)/ ./ | tee /etc/apt/sources.list.d/proxysql.list
+   apt update
+   apt -y install proxysql*
 fi
 
 systemctl disable proxysql
@@ -1571,11 +1572,11 @@ PMA_CONFIG_FOLDER="/etc/phpMyAdmin/config.inc.php"
         dnf -y -q install phpMyAdmin
   else
        add-apt-repository -y ppa:phpmyadmin/ppa
-       apt-get -y update
+       apt update
        debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
        debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect"
        debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
-       apt-get -y install phpmyadmin
+       apt -y install phpmyadmin
        PMA_CONFIG_FOLDER="${PMA_CONFIG_FOLDER,,}"
        sed -i 's!/usr/share/phpMyAdmin!/usr/share/phpmyadmin!g' "/etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf"
        cp /usr/share/phpmyadmin/config.sample.inc.php ${PMA_CONFIG_FOLDER}
@@ -1957,7 +1958,7 @@ END
  fi
   else
    echo
-   YELLOWTXT "Firewall installation was skipped by the user. Next step"
+   YELLOWTXT "Firewall installation was skipped. Next step"
   exit 1
 fi
 echo
@@ -1998,8 +1999,8 @@ else
  echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
  wget https://download.webmin.com/jcameron-key.asc
  apt-key add jcameron-key.asc
- apt-get update
- apt-get -y install webmin
+ apt update
+ apt -y install webmin
 fi
 if [ "$?" = 0 ]; then
  WEBMIN_PORT=$(shuf -i 17556-17728 -n 1)
@@ -2043,7 +2044,7 @@ END
   fi
   else
    echo
-   YELLOWTXT "Webmin installation was skipped by the user. Next step"
+   YELLOWTXT "Webmin installation was skipped. Next step"
 fi
 echo
 echo
