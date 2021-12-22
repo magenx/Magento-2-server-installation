@@ -120,6 +120,8 @@ _echo () {
   echo -en "  $@"
 }
 
+PKG_INSTALLED="  \033[32;40mInstalled:\033[0m "
+
 ###################################################################################
 ###                            ARROW KEYS UP/DOWN MENU                          ###
 ###################################################################################
@@ -582,9 +584,9 @@ if [ "${repo_mariadb_install}" == "y" ]; then
      systemctl enable mariadb
      echo
     if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-     rpm -qa 'mariadb*' | awk '{print "  Installed: ",$1}'
+     rpm -qa 'mariadb*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
     else
-     apt -qq list --installed mariadb*
+     apt -qq list --installed mariadb* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
     fi
      echo
      WHITETXT "Downloading my.cnf file from MagenX Github repository"
@@ -652,9 +654,9 @@ END
     echo
     systemctl enable nginx >/dev/null 2>&1
    if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-    rpm -qa 'nginx*' | awk '{print "  Installed: ",$1}'
+    rpm -qa 'nginx*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
    else
-    apt -qq list --installed nginx*
+    apt -qq list --installed nginx* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
    fi
    else
     echo
@@ -710,9 +712,9 @@ if [ "${repo_install}" == "y" ]; then
     GREENTXT "PHP ${PHP_VERSION} INSTALLED  -  OK"
     echo
    if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-    rpm -qa 'php*' | awk '{print "  Installed: ",$1}'
+    rpm -qa 'php*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
    else
-    apt -qq list --installed php*
+    apt -qq list --installed php${PHP_VERSION}* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
    fi
    else
     echo
@@ -753,10 +755,10 @@ if [ "${redis_install}" == "y" ]; then
      systemctl disable redis
      echo
     if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-     rpm -qa 'redis*' | awk '{print "  Installed: ",$1}'
+     rpm -qa 'redis*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
      redis_conf="/etc/redis.conf"
         else
-     apt -qq list --installed redis-server*
+     apt -qq list --installed redis-server* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
      redis_conf="/etc/redis/redis.conf"
     fi
 echo
@@ -904,9 +906,9 @@ END
    GREENTXT "RabbitMQ INSTALLED  -  OK"
    echo
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   rpm -qa 'rabbitmq*' | awk '{print "  Installed: ",$1}'
+   rpm -qa 'rabbitmq*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
   else
-   apt -qq list --installed rabbitmq*
+   apt -qq list --installed rabbitmq* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
   fi
   else
    echo
@@ -945,9 +947,9 @@ if [ "${varnish_install}" == "y" ];then
    GREENTXT "VARNISH INSTALLED  -  OK"
    echo
   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   rpm -qa 'varnish*' | awk '{print "  Installed: ",$1}'
+   rpm -qa 'varnish*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
   else
-   apt -qq list --installed varnish*
+   apt -qq list --installed varnish* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
   fi
   else
    echo
@@ -1026,9 +1028,9 @@ echo
 GREENTXT "ELASTCSEARCH ${ELKVER} INSTALLED  -  OK"
 echo
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  rpm -qa 'elasticsearch*' | awk '{print "  Installed: ",$1}'
+  rpm -qa 'elasticsearch*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
  else
-  apt -qq list --installed elasticsearch*
+  apt -qq list --installed elasticsearch* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
  fi
  else
 echo
