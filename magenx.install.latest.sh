@@ -1023,6 +1023,8 @@ REMOTE_MONITORING_USER_PASSWORD="$(awk '/PASSWORD remote_monitoring_user/ { prin
 ELASTIC_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
 END
 
+rm -rf /tmp/elasticsearch
+
 echo
 echo
 GREENTXT "ELASTCSEARCH ${ELKVER} INSTALLED  -  OK"
