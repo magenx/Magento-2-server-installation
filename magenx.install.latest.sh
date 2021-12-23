@@ -892,6 +892,7 @@ Group=epmd
 [Install]
 Also=epmd.socket
 WantedBy=multi-user.target
+END
 
 cat > /etc/systemd/system/epmd.socket <<END
 [Unit]
