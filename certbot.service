@@ -1,8 +1,0 @@
-[Unit]
-Description=Certbot
-Documentation=https://certbot.eff.org/docs
-
-[Service]
-Type=oneshot
-ExecStart=certbot -q renew
-PrivateTmp=true
