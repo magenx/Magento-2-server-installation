@@ -875,23 +875,39 @@ END
 
 sysctl -q -p
 
-cat > /usr/local/bin/rabbitmq_restart <<END
-#!/bin/bash
+cat > /etc/systemd/system/epmd.service <<END
+[Unit]
+Description=Erlang Port Mapper Daemon
+After=network.target
+Requires=epmd.socket
 
-service rabbitmq-server stop
-epmd -kill
-epmd -address 127.0.0.1 -daemon
-sleep 5
-service rabbitmq-server start
-rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
+[Service]
+ExecStart=/usr/bin/epmd -address 127.0.0.1 -daemon
+Type=simple
+StandardOutput=journal
+StandardError=journal
+User=epmd
+Group=epmd
+
+[Install]
+Also=epmd.socket
+WantedBy=multi-user.target
+
+cat > /etc/systemd/system/epmd.socket <<END
+[Unit]
+Description=Erlang Port Mapper Daemon Activation Socket
+
+[Socket]
+ListenStream=4369
+BindIPv6Only=both
+Accept=no
+
+[Install]
+WantedBy=sockets.target
 END
 
-if [ "${OS_DISTRO_KEY}" == "debian" ]; then
-  rm -rf /usr/lib/systemd/system/epmd.s*
-  systemctl daemon-reload
-fi
-
-bash /usr/local/bin/rabbitmq_restart
+systemctl daemon-reload
+systemctl rabbitmq-server restart
 sleep 5
 
 ## delete guest and create magento user
