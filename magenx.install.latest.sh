@@ -1619,7 +1619,6 @@ echo
 echo
 if [ -f /etc/systemd/system/varnish.service ]; then
 GREENTXT "VARNISH CACHE CONFIGURATION"
-    sed -i "s/MAGENTO_OWNER/${MAGENTO_OWNER}/g"  /etc/systemd/system/varnish.service
     systemctl enable varnish.service
     chmod u+x ${MAGENTO_WEB_ROOT_PATH}/bin/magento
     su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_WEB_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
