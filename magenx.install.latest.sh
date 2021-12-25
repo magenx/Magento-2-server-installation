@@ -1103,6 +1103,7 @@ echo
           chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
           chmod 2770 ${MAGENTO_WEB_ROOT_PATH}
 	  setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:r-X,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:r-X,d:o::- ${MAGENTO_WEB_ROOT_PATH}
+	  setfacl -R -m u:nginx:r-X,g:nginx:r-X,d:u:nginx:r-X ${MAGENTO_WEB_ROOT_PATH}
 	  
 echo
 MAGENTO_MINIMAL_OPT="MINIMAL SET OF MODULES"
@@ -1571,7 +1572,6 @@ ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.c
 mkdir -p /etc/nginx/conf_m${MAGENTO_VERSION} && cd /etc/nginx/conf_m${MAGENTO_VERSION}/
 curl -s ${MAGENX_NGINX_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
 
-sed -i "s/user  nginx;/user  ${MAGENTO_OWNER};/" /etc/nginx/nginx.conf
 sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf
 sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/nginx.conf
 sed -i "s,/var/www/html,${MAGENTO_WEB_ROOT_PATH},g" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
