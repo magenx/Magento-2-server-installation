@@ -1,4 +1,4 @@
-bin/magento setup:store-config:set --base-url="https://${MAGE_DOMAIN}/"
-bin/magento setup:store-config:set --base-url-secure="https://${MAGE_DOMAIN}/"
+bin/magento setup:store-config:set --base-url="https://${MAGENTO_DOMAIN}/"
+bin/magento setup:store-config:set --base-url-secure="https://${MAGENTO_DOMAIN}/"
 bin/magento setup:store-config:set --use-secure-admin=1
 bin/magento setup:store-config:set --use-secure=1
