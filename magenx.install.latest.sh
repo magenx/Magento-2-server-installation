@@ -318,9 +318,9 @@ fi
 # check if webstack is clean
 if ! grep -q "webstack_is_clean" ${MAGENX_CONFIG_PATH}/webstack >/dev/null 2>&1 ; then
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-    installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|firewalld|Percona*|maria*|php-?|nginx*|*ftp*|varnish*|certbot*|redis*|webmin')"
+    installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|firewalld|rabbitmq*|elasticsearch|Percona*|maria*|php-?|nginx*|*ftp*|varnish*|certbot*|redis*|webmin')"
     else
-    installed_packages="$(apt -qq list --installed mysqld? percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
+    installed_packages="$(apt -qq list --installed mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
   fi
   if [ ! -z "$installed_packages" ]; then
     REDTXT  "[!] WEBSTACK PACKAGES ALREADY INSTALLED"
