@@ -1101,6 +1101,7 @@ echo
           usermod -g ${MAGENTO_PHP_USER} ${MAGENTO_OWNER}
           chmod 711 ${MAGENTO_WEB_ROOT_PATH%/*}
 	  mkdir -p ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+	  chmod 2770 ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
 	  chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
           chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
           chmod 2770 ${MAGENTO_WEB_ROOT_PATH}
