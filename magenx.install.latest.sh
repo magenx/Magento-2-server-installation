@@ -908,7 +908,9 @@ WantedBy=sockets.target
 END
 
 systemctl daemon-reload
-systemctl restart rabbitmq-server
+systemctl stop rabbitmq-server
+epmd -kill
+systemctl start rabbitmq-server
 sleep 5
 
 ## delete guest and create magento user
