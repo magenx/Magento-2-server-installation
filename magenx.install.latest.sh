@@ -1857,7 +1857,6 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 
 [n98-magerun2]: /usr/local/bin/magerun2
 [cache cleaner]: /usr/local/bin/cacheflush
-[rabbitmq restart] /usr/local/bin/rabbitmq_restart
 
 [audit log]: ausearch -k auditmgnx | aureport -f -i
 
