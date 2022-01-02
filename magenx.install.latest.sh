@@ -530,6 +530,8 @@ WHITETXT "----------------------------------------------------------------------
   dnf -y upgrade --nobest
   echo
  else
+  debconf-set-selections <<< "postfix postfix/mailname string localhost"
+  debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Local only'"
   apt -y install software-properties-common
   apt-add-repository contrib
   apt update
