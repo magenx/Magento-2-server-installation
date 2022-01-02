@@ -2041,7 +2041,7 @@ if [ "$?" = 0 ]; then
   
   echo "${MAGENTO_OWNER}_webmin:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
   sed -i "s/root:/${MAGENTO_OWNER}_webmin:/" /etc/webmin/webmin.acl
-  WEBMIN_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@#%^?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+  WEBMIN_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@#%^?=+_[]{}()' | fold -w 15 | head -n 1)
   /usr/${WEBMINEXEC}/webmin/changepass.pl /etc/webmin/ ${MAGENTO_OWNER}_webmin "${WEBMIN_PASS}"
   
   systemctl enable webmin
