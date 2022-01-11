@@ -862,6 +862,10 @@ if [ "${rabbit_install}" == "y" ];then
   apt-mark hold rabbitmq-server
  fi
  if [ "$?" = 0 ]; then
+ 
+systemctl stop rabbitmq-server
+epmd -kill
+
 cat > /etc/rabbitmq/rabbitmq-env.conf <<END
 NODENAME=rabbit@localhost
 NODE_IP_ADDRESS=127.0.0.1
@@ -910,8 +914,6 @@ WantedBy=sockets.target
 END
 
 systemctl daemon-reload
-systemctl stop rabbitmq-server
-epmd -kill
 systemctl start rabbitmq-server
 sleep 5
 
