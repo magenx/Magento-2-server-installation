@@ -1641,13 +1641,12 @@ GREENTXT "DOWNLOADING n98-MAGERUN2"
 curl -s -o /usr/local/bin/magerun2 https://files.magerun.net/n98-magerun2.phar
 echo
 GREENTXT "CACHE CLEANER SCRIPT"
-echo "${MAGENTO_OWNER} ALL=(ALL) NOPASSWD: /usr/bin/redis-cli -p 6380 flushall, /usr/bin/systemctl reload php*fpm.service, /usr/bin/systemctl reload nginx.service" >>  /etc/sudoers
+echo "${MAGENTO_OWNER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart php*fpm.service, /usr/bin/systemctl restart nginx.service" >>  /etc/sudoers
 cat > /usr/local/bin/cacheflush <<END
 #!/bin/bash
 magerun2 cache:flush
-sudo /usr/bin/redis-cli -p 6380 flushall
-sudo /usr/bin/systemctl reload php*fpm.service
-sudo /usr/bin/systemctl reload nginx.service
+sudo /usr/bin/systemctl restart php*fpm.service
+sudo /usr/bin/systemctl restart nginx.service
 END
 echo
 GREENTXT "SYSTEM AUTO UPDATE WITH DNF AUTOMATIC"
