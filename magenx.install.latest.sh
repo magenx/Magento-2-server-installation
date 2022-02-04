@@ -864,6 +864,7 @@ if [ "${rabbit_install}" == "y" ];then
  if [ "$?" = 0 ]; then
  
 systemctl stop rabbitmq-server
+systemctl stop epmd*
 epmd -kill
 
 cat > /etc/rabbitmq/rabbitmq-env.conf <<END
@@ -915,6 +916,7 @@ END
 
 systemctl daemon-reload
 systemctl start rabbitmq-server
+rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
 sleep 5
 
 ## delete guest and create magento user
