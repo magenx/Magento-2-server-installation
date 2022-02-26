@@ -1890,7 +1890,7 @@ rsync -a ${MAGENTO_WEB_ROOT_PATH} /home/staging/
 chown -R staging:php-staging /home/staging/public_html
 chmod 711 /home/staging
 chmod 2750 /home/staging/public_html
-setfacl -R -m u:staging:rwx,g:php-staging:r-x,o::-,d:u:staging:rwx,d:g:php-staging:r-x,d:o::- /home/staging/public_html
+setfacl -R -m m:rx,u:staging:rwx,g:php-staging:r-x,o::-,d:u:staging:rwx,d:g:php-staging:r-x,d:o::- /home/staging/public_html
 cd /home/staging/public_html
 setfacl -R -m u:staging:rwx,g:php-staging:rwx,o::-,d:u:staging:rwx,d:g:php-staging:rwx,d:o::- generated var pub/media pub/static
 setfacl -R -m u:nginx:r-x,d:u:nginx:r-x /home/staging/public_html
