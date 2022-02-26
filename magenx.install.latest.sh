@@ -1146,6 +1146,7 @@ N
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
 
 su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
+su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir var/tmp"
 setfacl -R -m u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:rwx,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:rwx,d:o::- var pub/media
 
 ## make magento great again
@@ -1566,6 +1567,7 @@ php_admin_value[error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/php-fpm-error.log
 php_admin_value[default_charset] = UTF-8
 php_admin_value[memory_limit] = 1024M
 php_admin_value[date.timezone] = ${MAGENTO_TIMEZONE}
+php_admin_value[upload_tmp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
 END
 
 systemctl daemon-reload
