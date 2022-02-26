@@ -1107,12 +1107,12 @@ echo
           usermod -g ${MAGENTO_PHP_USER} ${MAGENTO_OWNER}
           chmod 711 ${MAGENTO_WEB_ROOT_PATH%/*}
 	  mkdir -p ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	  chmod 2770 ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+	  chmod 2750 ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
 	  chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
           chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
-          chmod 2770 ${MAGENTO_WEB_ROOT_PATH}
-	  setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:r-X,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:r-X,d:o::- ${MAGENTO_WEB_ROOT_PATH}
-	  setfacl -R -m u:nginx:r-X,g:nginx:r-X,d:u:nginx:r-X ${MAGENTO_WEB_ROOT_PATH}
+          chmod 2750 ${MAGENTO_WEB_ROOT_PATH}
+	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_WEB_ROOT_PATH}
+	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_WEB_ROOT_PATH}
 	  
 echo
 MAGENTO_MINIMAL_OPT="MINIMAL SET OF MODULES"
@@ -1146,7 +1146,7 @@ N
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
 
 su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:rwX,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:rwX,d:o::- generated var pub/media pub/static
+setfacl -R -m u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:rwx,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:rwx,d:o::- var pub/media
 
 ## make magento great again
 sed -i "s/2-4/2-5/" app/etc/di.xml
@@ -1750,9 +1750,8 @@ chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
 echo
 GREENTXT "CLEAN MAGENTO CACHE AND ENABLE DEVELOPER MODE"
 rm -rf var/*
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set developer"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
-#setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:r-X,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:r-X,d:o::- generated pub/static
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
 echo
@@ -1883,10 +1882,18 @@ su ${MAGENTO_OWNER} -s /bin/bash
 or run commands from root as user:
 su ${MAGENTO_OWNER} -s /bin/bash -c 'bin/magento'
 
-to copy folders for development or build use:
-rsync -Aa public_html/ ./staging_html
-setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:rwX,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:rwX,d:o::- staging_html/generated staging_html/pub/static
-
+to copy folders for development use:
+useradd -d /home/staging -s /bin/bash staging
+useradd -M -s /sbin/nologin -d /home/staging php-staging
+usermod -g php-staging staging
+rsync -a ${MAGENTO_WEB_ROOT_PATH} /home/staging/
+chown -R staging:php-staging /home/staging/public_html
+chmod 711 /home/staging
+chmod 2750 /home/staging/public_html
+setfacl -R -m u:staging:rwx,g:php-staging:r-x,o::-,d:u:staging:rwx,d:g:php-staging:r-x,d:o::- /home/staging/public_html
+cd /home/staging/public_html
+setfacl -R -m u:staging:rwx,g:php-staging:rwx,o::-,d:u:staging:rwx,d:g:php-staging:rwx,d:o::- generated var pub/media pub/static
+setfacl -R -m u:nginx:r-x,d:u:nginx:r-x /home/staging/public_html
 
 ===========================  INSTALLATION LOG  ======================================" | tee ${MAGENX_CONFIG_PATH}/install.log
 echo
