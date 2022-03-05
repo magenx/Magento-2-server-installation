@@ -859,7 +859,6 @@ if [ "${rabbit_install}" == "y" ];then
   echo "deb https://packages.erlang-solutions.com/${OS_DISTRO_KEY} $(lsb_release -cs) contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
   apt -y install rabbitmq-server=${RABBITMQ_VERSION}
-  apt-mark hold rabbitmq-server
  fi
  if [ "$?" = 0 ]; then
  
@@ -1069,7 +1068,15 @@ echo
 YELLOWTXT "ElasticSearch installation was skipped. Next step"
 fi
 echo
-echo 
+echo
+## keep versions for critical services to avoid disruption
+ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
+   dnf versionlock add elasticsearch kibana erlang rabbitmq-server mariadb*
+  else
+   apt-mark hold elasticsearch kibana erlang rabbitmq-server mariadb*
+ fi
+echo
+echo
 GREENTXT "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
