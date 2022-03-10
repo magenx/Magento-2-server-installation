@@ -1758,8 +1758,17 @@ systemctl restart php*fpm.service
 
 chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
 echo
-GREENTXT "CLEAN MAGENTO CACHE AND ENABLE DEVELOPER MODE"
+GREENTXT "CLEAN MAGENTO CACHE ADD OPTIMIZATIONS AND ENABLE PRODUCTION MODE"
 rm -rf var/*
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${MAGENTO_ADMIN_EMAIL}"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/url/catalog_media_url_format image_optimization_parameters"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/css/minify_files 1"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/js/minify_files 1"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/js/move_script_to_bottom 1"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_hsts 1"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
+
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
@@ -1811,9 +1820,6 @@ END
 
 echo
 cd ${MAGENTO_WEB_ROOT_PATH}
-
-## correct general contact email address
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${MAGENTO_ADMIN_EMAIL}"
 
 GREENTXT "CONFIGURE GOOGLE AUTH CODE FOR ADMIN ACCESS"
 echo
