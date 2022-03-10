@@ -1346,6 +1346,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE
 --elasticsearch-username=elastic \
 --elasticsearch-password='${ELASTIC_PASSWORD}'"
 
+
 if [ "$?" != 0 ]; then
   echo
   REDTXT "[!] SETUP ERROR"
@@ -1809,10 +1810,13 @@ PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[
 END
 
 echo
+cd ${MAGENTO_WEB_ROOT_PATH}
+
+## correct general contact email address
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${MAGENTO_ADMIN_EMAIL}"
 
 GREENTXT "CONFIGURE GOOGLE AUTH CODE FOR ADMIN ACCESS"
 echo
-cd ${MAGENTO_WEB_ROOT_PATH}
 GOOGLE_TFA_CODE="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&' | fold -w 15 | head -n 1 | base32)"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${MAGENTO_ADMIN_LOGIN} ${GOOGLE_TFA_CODE}"
 echo "Google Authenticator mobile app configuration:"
