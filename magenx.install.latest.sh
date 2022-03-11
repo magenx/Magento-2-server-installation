@@ -1576,6 +1576,7 @@ php_admin_value[default_charset] = UTF-8
 php_admin_value[memory_limit] = 1024M
 php_admin_value[date.timezone] = ${MAGENTO_TIMEZONE}
 php_admin_value[upload_tmp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
+php_admin_value[sys_temp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
 END
 
 systemctl daemon-reload
