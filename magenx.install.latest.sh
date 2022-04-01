@@ -1294,7 +1294,7 @@ read -e -p "  [?] Admin email: " -i "admin@${MAGENTO_DOMAIN}"  MAGENTO_ADMIN_EMA
 read -e -p "  [?] Admin login name: " -i "admin"  MAGENTO_ADMIN_LOGIN
 MAGENTO_ADMIN_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 10 | head -n 1)
 read -e -p "  [?] Admin password: " -i "${MAGENTO_ADMIN_PASSWORD_GEN}${RANDOM}"  MAGENTO_ADMIN_PASSWORD
-read -e -p "  [?] Shop base url: " -i "http://${MAGENTO_DOMAIN}/"  MAGENTO_SITE_URL
+read -e -p "  [?] Shop base url: " -i "http://${MAGENTO_DOMAIN}/"  MAGENTO_BASE_URL
 echo
 WHITETXT "Language, Currency and Timezone settings"
 updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_LOCALE
@@ -1306,7 +1306,7 @@ GREENTXT "SETUP MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WITHOUT SAM
 echo
 pause '[] Press [Enter] key to run setup'
 echo
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGENTO_SITE_URL} \
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGENTO_BASE_URL} \
 --db-host=${MAGENTO_DB_HOST} \
 --db-name=${MAGENTO_DB_NAME} \
 --db-user=${MAGENTO_DB_USER} \
@@ -1342,6 +1342,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE
 --search-engine=elasticsearch7 \
 --elasticsearch-host=127.0.0.1 \
 --elasticsearch-port=9200 \
+--elasticsearch-index-prefix=${MAGENTO_DOMAIN//[-.]/} \
 --elasticsearch-enable-auth=1 \
 --elasticsearch-username=elastic \
 --elasticsearch-password='${ELASTIC_PASSWORD}'"
