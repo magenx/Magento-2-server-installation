@@ -28,6 +28,7 @@ RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5.12"
 ELK_VERSION="7.x"
 PROXYSQL_VERSION="2.3.x"
+VARNISH="70"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
@@ -678,7 +679,7 @@ if [ "${repo_install}" == "y" ]; then
   echo
   GREENTXT "PHP repository installation:"
   echo
-  read -e -p "  [?] Enter required PHP version: " -i "7.4" PHP_VERSION
+  read -e -p "  [?] Enter required PHP version: " -i "8.1" PHP_VERSION
   echo
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
   dnf install -y ${REMI_RPM_REPO}
@@ -951,14 +952,14 @@ _echo "[?] Install Varnish Cache ? [y/n][n]:"
 read varnish_install
 if [ "${varnish_install}" == "y" ];then
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-   curl -s https://packagecloud.io/install/repositories/varnishcache/varnish65/script.rpm.sh | bash
+   curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${VARNISH_VERSION}/script.rpm.sh | bash
   elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
-   curl -s https://packagecloud.io/install/repositories/varnishcache/varnish65/script.rpm.sh | bash os=el dist=7
+   curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${VARNISH_VERSION}/script.rpm.sh | bash os=el dist=7
    echo
    dnf -y install varnish
    rpm  --quiet -q varnish
   else
-  curl -s https://packagecloud.io/install/repositories/varnishcache/varnish65/script.deb.sh | bash
+  curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${VARNISH_VERSION}/script.deb.sh | bash
   apt update
   apt -y install varnish
  fi
