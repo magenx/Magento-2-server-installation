@@ -28,7 +28,7 @@ RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5.12"
 ELK_VERSION="7.x"
 PROXYSQL_VERSION="2.3.x"
-VARNISH="70"
+VARNISH_VERSION="70"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
