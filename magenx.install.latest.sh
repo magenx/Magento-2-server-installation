@@ -39,7 +39,7 @@ EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions 
 perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools clamav mlocate vim wget sudo bc apache2-utils \
 logrotate git python3-pip python3-dateutil python3-dev netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof xinetd jpegoptim sysstat acl attr iotop expect webp imagemagick snmp"
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
-PHP_PACKAGES_DEB=(cli fpm json common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
+PHP_PACKAGES_DEB=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 
 # WebStack Packages .rpm
 EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap libwebp gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
