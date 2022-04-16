@@ -1,9 +1,0 @@
-composer require \
-fooman/sameorderinvoicenumber-m2 \
-fooman/emailattachments-m2 \
-fooman/printorderpdf-m2 \
-mageplaza/module-smtp \
-magefan/module-blog \
-dhl/shipping-m2 \
-stripe/stripe-payments \
-smile/elasticsuite
