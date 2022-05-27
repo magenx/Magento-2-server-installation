@@ -1072,9 +1072,9 @@ echo
 echo
 ## keep versions for critical services to avoid disruption
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   dnf versionlock add elasticsearch kibana erlang rabbitmq-server mariadb*
+   dnf versionlock add elasticsearch kibana erlang rabbitmq-server
   else
-   apt-mark hold elasticsearch kibana erlang rabbitmq-server mariadb*
+   apt-mark hold elasticsearch kibana erlang rabbitmq-server
  fi
 echo
 echo
@@ -1604,28 +1604,22 @@ sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGE
 sed -i "s/ADMIN_PLACEHOLDER/${MAGENTO_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/extra_protect.conf
 ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
 htpasswd -b -c /etc/nginx/.admin ${MAGENTO_ADMIN_LOGIN} ${ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
+
 echo
 GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
 PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
 PMA_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
-BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold -w 64 | head -n 1)
-PMA_CONFIG_FOLDER="/etc/phpMyAdmin/config.inc.php"
+BLOWFISH_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
-  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-        dnf -y -q install phpMyAdmin
-  else
-       add-apt-repository -y ppa:phpmyadmin/ppa
-       apt update
-       debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
-       debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect"
-       debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
-       apt -y install phpmyadmin
-       PMA_CONFIG_FOLDER="${PMA_CONFIG_FOLDER,,}"
-       sed -i 's!/usr/share/phpMyAdmin!/usr/share/phpmyadmin!g' "/etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf"
-       cp /usr/share/phpmyadmin/config.sample.inc.php ${PMA_CONFIG_FOLDER}
-  fi
-       sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" ${PMA_CONFIG_FOLDER}
-       sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
+mkdir -p /usr/share/phpMyAdmin && cd $_
+composer create-project phpmyadmin/phpmyadmin .
+cp config.sample.inc.php config.inc.php
+sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISH_SECRET}';/" config.inc.php
+sed -i "s,.*\$cfg['UploadDir'].*,\$cfg['UploadDir'] = '/tmp/';,"  config.inc.php
+sed -i "s,.*\$cfg['SaveDir'].*,\$cfg['SaveDir'] = '/tmp/';,"  config.inc.php
+sed -i "s,.*\$cfg['TempDir'].*,\$cfg['TempDir'] = '/tmp/';,"  config.inc.php
+
+sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
      sed -i "5i \\
            auth_basic  \"please login\"; \\
            auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
