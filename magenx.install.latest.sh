@@ -25,7 +25,7 @@ MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.c
 
 ## Version lock
 RABBITMQ_VERSION="3.8*"
-MARIADB_VERSION="10.5.12"
+MARIADB_VERSION="10.5.16"
 ELK_VERSION="7.x"
 PROXYSQL_VERSION="2.3.x"
 VARNISH_VERSION="70"
