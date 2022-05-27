@@ -1615,9 +1615,10 @@ mkdir -p /usr/share/phpMyAdmin && cd $_
 composer create-project phpmyadmin/phpmyadmin .
 cp config.sample.inc.php config.inc.php
 sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISH_SECRET}';/" config.inc.php
-sed -i "s,.*\$cfg['UploadDir'].*,\$cfg['UploadDir'] = '/tmp/';,"  config.inc.php
-sed -i "s,.*\$cfg['SaveDir'].*,\$cfg['SaveDir'] = '/tmp/';,"  config.inc.php
-sed -i "s,.*\$cfg['TempDir'].*,\$cfg['TempDir'] = '/tmp/';,"  config.inc.php
+sed -i "s|.*UploadDir.*|\$cfg['UploadDir'] = '/tmp/';|"  config.inc.php
+sed -i "s|.*SaveDir.*|\$cfg['SaveDir'] = '/tmp/';|"  config.inc.php
+sed -i "/SaveDir/a\
+\$cfg['TempDir'] = '\/tmp\/';"  config.inc.php
 
 sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
      sed -i "5i \\
