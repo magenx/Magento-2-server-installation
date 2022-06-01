@@ -1416,11 +1416,13 @@ include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   php_ini="/etc/php.ini"
   php_fpm_pool="/etc/php-fpm.d/www.conf"
+  php_fpm_development_pool="/etc/php-fpm.d/development.conf"
   php_opcache_ini="/etc/php.d/*opcache.ini"
  else
   PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
   php_ini="/etc/php/${PHP_VERSION}/fpm/php.ini"
   php_fpm_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
+  php_fpm_development_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/development.conf"
   php_opcache_ini="/etc/php/${PHP_VERSION}/fpm/conf.d/*opcache.ini"
 fi
 
