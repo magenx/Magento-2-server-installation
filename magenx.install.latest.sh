@@ -953,6 +953,8 @@ read varnish_install
 if [ "${varnish_install}" == "y" ];then
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
    curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${VARNISH_VERSION}/script.rpm.sh | bash
+   dnf -y install varnish
+   rpm  --quiet -q varnish
   elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
    curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${VARNISH_VERSION}/script.rpm.sh | bash os=el dist=7
    echo
