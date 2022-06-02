@@ -1009,7 +1009,7 @@ autorefresh=1
 type=rpm-md
 EOF
 echo
-   dnf -y -q install --enablerepo=elasticsearch-${ELK_VERSION} elasticsearch kibana
+   dnf -y install --enablerepo=elasticsearch-${ELK_VERSION} elasticsearch kibana
    rpm  --quiet -q elasticsearch
   else
    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
