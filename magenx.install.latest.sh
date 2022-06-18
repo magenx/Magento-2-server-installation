@@ -1660,7 +1660,7 @@ PMA_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-'
 BLOWFISH_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
 mkdir -p /usr/share/phpMyAdmin && cd $_
-composer create-project phpmyadmin/phpmyadmin .
+composer -n create-project phpmyadmin/phpmyadmin .
 cp config.sample.inc.php config.inc.php
 sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISH_SECRET}';/" config.inc.php
 sed -i "s|.*UploadDir.*|\$cfg['UploadDir'] = '/tmp/';|"  config.inc.php
