@@ -1539,9 +1539,7 @@ opcache.log_verbosity_level = 1
 opcache.preferred_memory_model = ""
 opcache.protect_memory = 0
 ;opcache.mmap_base = ""
-END
 
-cat >> ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini <<END
 max_execution_time = 7200
 max_input_time = 7200
 memory_limit = 2048M
@@ -1560,20 +1558,26 @@ END
 
 echo
 GREENTXT "PHP-FPM SETTINGS"
-sed -i "s/\[www\]/\[${MAGENTO_OWNER}\]/" ${php_fpm_pool}
-sed -i "s/^user =.*/user = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
-sed -i "s/^group =.*/group = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
-sed -i 's/pm = dynamic/pm = ondemand/' ${php_fpm_pool}
-sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' ${php_fpm_pool}
-sed -i 's/^\(pm.max_children = \)[0-9]*/\1100/' ${php_fpm_pool}
-sed -i "s/^listen =.*/listen = 127.0.0.1:9000/" ${php_fpm_pool}
-sed -ri "s/;?listen.owner =.*/listen.owner = ${MAGENTO_OWNER}/" ${php_fpm_pool}
-sed -ri "s/;?listen.group =.*/listen.group = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
-sed -ri "s/;?listen.mode = 0660/listen.mode = 0660/" ${php_fpm_pool}
-sed -ri "s/;?listen.allowed_clients =.*/listen.allowed_clients = 127.0.0.1/" ${php_fpm_pool}
-sed -i '/sendmail_path/,$d' ${php_fpm_pool}
 
-cat >> ${php_fpm_pool} <<END
+cat > ${php_fpm_pool} <<END
+[${MAGENTO_OWNER}]
+
+user = ${MAGENTO_PHP_USER}
+group = ${MAGENTO_PHP_USER}
+
+listen = 127.0.0.1:9000
+listen.owner = ${MAGENTO_OWNER}
+listen.group = ${MAGENTO_PHP_USER}
+listen.mode = 0660
+listen.allowed_clients = 127.0.0.1
+
+pm = ondemand
+pm.max_children = 100
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 3
+pm.max_requests = 10000
+
 ;;
 ;; [php ini] settings
 php_admin_flag[expose_php] = Off
@@ -1596,6 +1600,7 @@ php_admin_value[error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/php-fpm-error.log
 php_admin_value[date.timezone] = "${MAGENTO_TIMEZONE}"
 php_admin_value[upload_tmp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
 php_admin_value[sys_temp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
+
 ;;
 ;; [opcache] settings
 php_admin_flag[opcache.enable] = On
@@ -1622,7 +1627,6 @@ php_admin_value[opcache.force_restart_timeout] = 60
 php_admin_value[opcache.error_log] = "/var/log/php-fpm/opcache.log"
 php_admin_value[opcache.log_verbosity_level] = 1
 php_admin_value[opcache.preferred_memory_model] = ""
-
 END
 
 systemctl daemon-reload
