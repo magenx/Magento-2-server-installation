@@ -1553,8 +1553,8 @@ realpath_cache_ttl = 86400
 short_open_tag = On
 max_input_vars = 50000
 session.gc_maxlifetime = 28800
-mysql.allow_persistent = Off
-mysqli.allow_persistent = Off
+mysql.allow_persistent = On
+mysqli.allow_persistent = On
 date.timezone = "${MAGENTO_TIMEZONE}"
 END
 
@@ -1580,8 +1580,8 @@ php_admin_flag[expose_php] = Off
 php_admin_flag[short_open_tag] = On
 php_admin_flag[display_errors] = Off
 php_admin_flag[log_errors] = On
-php_admin_flag[mysql.allow_persistent] = Off
-php_admin_flag[mysqli.allow_persistent] = Off
+php_admin_flag[mysql.allow_persistent] = On
+php_admin_flag[mysqli.allow_persistent] = On
 php_admin_value[default_charset] = "UTF-8"
 php_admin_value[memory_limit] = 1024M
 php_admin_value[max_execution_time] = 7200
