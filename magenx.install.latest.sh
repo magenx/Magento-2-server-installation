@@ -1425,7 +1425,7 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   php_ini="/etc/php/${PHP_VERSION}/fpm/php.ini"
   php_fpm_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
   php_fpm_development_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/development.conf"
-  php_ini_path_overrides="/etc/php/${PHP_VERSION}/fpm/conf.d/"
+  php_ini_path_overrides="/etc/php/${PHP_VERSION}/cli/conf.d/"
 fi
 
 echo
@@ -1512,7 +1512,6 @@ echo
 GREENTXT "PHP SETTINGS"
 
 cat > ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini <<END
-zend_extension=opcache.so
 opcache.enable_cli = 1
 opcache.memory_consumption = 512
 opcache.interned_strings_buffer = 4
