@@ -1419,13 +1419,13 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   php_ini="/etc/php.ini"
   php_fpm_pool="/etc/php-fpm.d/www.conf"
   php_fpm_development_pool="/etc/php-fpm.d/development.conf"
-  php_opcache_ini="/etc/php.d/*opcache.ini"
+  php_ini_path_overrides="/etc/php.d/"
  else
   PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
   php_ini="/etc/php/${PHP_VERSION}/fpm/php.ini"
   php_fpm_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
   php_fpm_development_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/development.conf"
-  php_opcache_ini="/etc/php/${PHP_VERSION}/fpm/conf.d/*opcache.ini"
+  php_ini_path_overrides="/etc/php/${PHP_VERSION}/fpm/conf.d/"
 fi
 
 echo
@@ -1471,56 +1471,6 @@ END
 
 sysctl -q -p
 
-cat > ${php_opcache_ini} <<END
-zend_extension=opcache.so
-opcache.enable = 1
-opcache.enable_cli = 1
-opcache.memory_consumption = 512
-opcache.interned_strings_buffer = 4
-opcache.max_accelerated_files = 60000
-opcache.max_wasted_percentage = 5
-opcache.use_cwd = 1
-opcache.validate_timestamps = 0
-;opcache.revalidate_freq = 2
-;opcache.validate_permission= 1
-opcache.validate_root= 1
-opcache.file_update_protection = 2
-opcache.revalidate_path = 0
-opcache.save_comments = 1
-opcache.load_comments = 1
-opcache.fast_shutdown = 1
-opcache.enable_file_override = 0
-opcache.optimization_level = 0xffffffff
-opcache.inherited_hack = 1
-opcache.blacklist_filename=/etc/opcache-default.blacklist
-opcache.max_file_size = 0
-opcache.consistency_checks = 0
-opcache.force_restart_timeout = 60
-opcache.error_log = "/var/log/php-fpm/opcache.log"
-opcache.log_verbosity_level = 1
-opcache.preferred_memory_model = ""
-opcache.protect_memory = 0
-;opcache.mmap_base = ""
-END
-
-cp ${php_ini} ${php_ini}.BACK
-sed -i 's/^\(max_execution_time = \)[0-9]*/\17200/' ${php_ini}
-sed -i 's/^\(max_input_time = \)[0-9]*/\17200/' ${php_ini}
-sed -i 's/^\(memory_limit = \)[0-9]*M/\12048M/' ${php_ini}
-sed -i 's/^\(post_max_size = \)[0-9]*M/\164M/' ${php_ini}
-sed -i 's/^\(upload_max_filesize = \)[0-9]*M/\164M/' ${php_ini}
-sed -i 's/expose_php = On/expose_php = Off/' ${php_ini}
-sed -i 's/;realpath_cache_size =.*/realpath_cache_size = 4096k/' ${php_ini}
-sed -i 's/;realpath_cache_ttl =.*/realpath_cache_ttl = 86400/' ${php_ini}
-sed -i 's/short_open_tag = Off/short_open_tag = On/' ${php_ini}
-sed -i 's/;max_input_vars =.*/max_input_vars = 50000/' ${php_ini}
-sed -i 's/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 28800/' ${php_ini}
-sed -i 's/mysql.allow_persistent = On/mysql.allow_persistent = Off/' ${php_ini}
-sed -i 's/mysqli.allow_persistent = On/mysqli.allow_persistent = Off/' ${php_ini}
-sed -i 's/pm = dynamic/pm = ondemand/' ${php_fpm_pool}
-sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' ${php_fpm_pool}
-sed -i 's/^\(pm.max_children = \)[0-9]*/\1100/' ${php_fpm_pool}
-
 GREENTXT "SERVER HOSTNAME SETTINGS"
 hostnamectl set-hostname server.${MAGENTO_DOMAIN} --static
 echo
@@ -1559,30 +1509,121 @@ fi
 systemctl disable proxysql
 
 echo
+GREENTXT "PHP SETTINGS"
+
+cat > ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini <<END
+zend_extension=opcache.so
+opcache.enable_cli = 1
+opcache.memory_consumption = 512
+opcache.interned_strings_buffer = 4
+opcache.max_accelerated_files = 60000
+opcache.max_wasted_percentage = 5
+opcache.use_cwd = 1
+opcache.validate_timestamps = 0
+;opcache.revalidate_freq = 2
+;opcache.validate_permission= 1
+opcache.validate_root= 1
+opcache.file_update_protection = 2
+opcache.revalidate_path = 0
+opcache.save_comments = 1
+opcache.load_comments = 1
+opcache.fast_shutdown = 1
+opcache.enable_file_override = 0
+opcache.optimization_level = 0xffffffff
+opcache.inherited_hack = 1
+opcache.blacklist_filename=/etc/opcache-default.blacklist
+opcache.max_file_size = 0
+opcache.consistency_checks = 0
+opcache.force_restart_timeout = 60
+opcache.error_log = "/var/log/php-fpm/opcache.log"
+opcache.log_verbosity_level = 1
+opcache.preferred_memory_model = ""
+opcache.protect_memory = 0
+;opcache.mmap_base = ""
+END
+
+cat >> ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini <<END
+max_execution_time = 7200
+max_input_time = 7200
+memory_limit = 2048M
+post_max_size = 64M
+upload_max_filesize = 64M
+expose_php = Off
+realpath_cache_size = 4096k
+realpath_cache_ttl = 86400
+short_open_tag = On
+max_input_vars = 50000
+session.gc_maxlifetime = 28800
+mysql.allow_persistent = Off
+mysqli.allow_persistent = Off
+date.timezone = "${MAGENTO_TIMEZONE}"
+END
+
+echo
 GREENTXT "PHP-FPM SETTINGS"
 sed -i "s/\[www\]/\[${MAGENTO_OWNER}\]/" ${php_fpm_pool}
 sed -i "s/^user =.*/user = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
 sed -i "s/^group =.*/group = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
+sed -i 's/pm = dynamic/pm = ondemand/' ${php_fpm_pool}
+sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' ${php_fpm_pool}
+sed -i 's/^\(pm.max_children = \)[0-9]*/\1100/' ${php_fpm_pool}
 sed -i "s/^listen =.*/listen = 127.0.0.1:9000/" ${php_fpm_pool}
 sed -ri "s/;?listen.owner =.*/listen.owner = ${MAGENTO_OWNER}/" ${php_fpm_pool}
 sed -ri "s/;?listen.group =.*/listen.group = ${MAGENTO_PHP_USER}/" ${php_fpm_pool}
 sed -ri "s/;?listen.mode = 0660/listen.mode = 0660/" ${php_fpm_pool}
 sed -ri "s/;?listen.allowed_clients =.*/listen.allowed_clients = 127.0.0.1/" ${php_fpm_pool}
 sed -i '/sendmail_path/,$d' ${php_fpm_pool}
-sed -i '/PHPSESSID/d' ${php_ini}
-sed -i "s,.*date.timezone.*,date.timezone = ${MAGENTO_TIMEZONE}," ${php_ini}
 
 cat >> ${php_fpm_pool} <<END
 ;;
-;; Custom pool settings
-php_flag[display_errors] = off
-php_admin_flag[log_errors] = on
-php_admin_value[error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/php-fpm-error.log"
-php_admin_value[default_charset] = UTF-8
+;; [php ini] settings
+php_admin_flag[expose_php] = Off
+php_admin_flag[short_open_tag] = On
+php_admin_flag[display_errors] = Off
+php_admin_flag[log_errors] = On
+php_admin_flag[mysql.allow_persistent] = Off
+php_admin_flag[mysqli.allow_persistent] = Off
+php_admin_value[default_charset] = "UTF-8"
 php_admin_value[memory_limit] = 1024M
-php_admin_value[date.timezone] = ${MAGENTO_TIMEZONE}
+php_admin_value[max_execution_time] = 7200
+php_admin_value[max_input_time] = 7200
+php_admin_value[max_input_vars] = 50000
+php_admin_value[post_max_size] = 64M
+php_admin_value[upload_max_filesize] = 64M
+php_admin_value[realpath_cache_size] = 4096k
+php_admin_value[realpath_cache_ttl] = 86400
+php_admin_value[session.gc_maxlifetime] = 28800
+php_admin_value[error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/php-fpm-error.log"
+php_admin_value[date.timezone] = "${MAGENTO_TIMEZONE}"
 php_admin_value[upload_tmp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
 php_admin_value[sys_temp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
+;;
+;; [opcache] settings
+php_admin_flag[opcache.enable] = 1
+php_admin_flag[opcache.use_cwd] = 1
+php_admin_flag[opcache.validate_root] = 1
+php_admin_flag[opcache.revalidate_path] = 0
+php_admin_flag[opcache.validate_timestamps] = 0
+php_admin_flag[opcache.save_comments] = 1
+php_admin_flag[opcache.load_comments] = 1
+php_admin_flag[opcache.fast_shutdown] = 1
+php_admin_flag[opcache.enable_file_override] = 0
+php_admin_flag[opcache.inherited_hack] = 1
+php_admin_flag[opcache.consistency_checks] = 0
+php_admin_flag[opcache.protect_memory] = 0
+php_admin_value[opcache.memory_consumption] = 512
+php_admin_value[opcache.interned_strings_buffer] = 4
+php_admin_value[opcache.max_accelerated_files] = 60000
+php_admin_value[opcache.max_wasted_percentage] = 5
+php_admin_value[opcache.file_update_protection] = 2
+php_admin_value[opcache.optimization_level] = 0xffffffff
+php_admin_value[opcache.blacklist_filename] = "/etc/opcache-default.blacklist"
+php_admin_value[opcache.max_file_size] = 0
+php_admin_value[opcache.force_restart_timeout] = 60
+php_admin_value[opcache.error_log] = "/var/log/php-fpm/opcache.log"
+php_admin_value[opcache.log_verbosity_level] = 1
+php_admin_value[opcache.preferred_memory_model] = ""
+
 END
 
 systemctl daemon-reload
