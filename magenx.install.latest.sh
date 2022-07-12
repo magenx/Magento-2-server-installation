@@ -1029,9 +1029,9 @@ sed -i "s/.*-Xms.*/-Xms512m/" /etc/elasticsearch/jvm.options
 sed -i "s/.*-Xmx.*/-Xmx2048m/" /etc/elasticsearch/jvm.options
 ## use builtin java
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  sed -i "s,#JAVA_HOME=,JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/sysconfig/elasticsearch
+  sed -i "s,#ES_JAVA_HOME=,ES_JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/sysconfig/elasticsearch
  else
-  sed -i "s,#JAVA_HOME=,JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/default/elasticsearch
+  sed -i "s,#ES_JAVA_HOME=,ES_JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/default/elasticsearch
  fi
 
 chown -R :elasticsearch /etc/elasticsearch/*
