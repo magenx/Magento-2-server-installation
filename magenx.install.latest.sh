@@ -1765,16 +1765,6 @@ echo -e "${MAGENTO_WEB_ROOT_PATH%/*}" > /usr/local/maldetect/monitor_paths
 
 maldet --monitor /usr/local/maldetect/monitor_paths
 echo
-GREENTXT "MAGENTO MALWARE SCANNER"
-YELLOWTXT "Hourly cronjob created"
-pip3 -q install --no-cache-dir --upgrade mwscan
-cat > /etc/cron.hourly/mwscan <<END
-#!/bin/sh
-## MAGENTO MALWARE SCANNER
-mwscan --newonly --quiet ${MAGENTO_WEB_ROOT_PATH} | ts | tee -a /var/log/mwscan.log | ifne mailx -s "Malware found at $(hostname)" ${MAGENTO_ADMIN_EMAIL}
-END
-chmod +x /etc/cron.hourly/mwscan
-echo
 GREENTXT "AUDIT MAGENTO FILES AND FOLDERS"
 cat >> /etc/audit/rules.d/audit.rules <<END
 
