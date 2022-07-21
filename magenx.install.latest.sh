@@ -1670,7 +1670,7 @@ sed -i "/SaveDir/a\
 
 sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
      sed -i "5i \\
-           auth_basic  \"please login\"; \\
+           auth_basic \$authentication; \\
            auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
 	 	   
 htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWORD}  >/dev/null 2>&1
