@@ -1805,6 +1805,8 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_hs
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
 
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth"
+
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
