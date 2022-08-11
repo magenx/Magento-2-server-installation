@@ -546,7 +546,7 @@ WHITETXT "----------------------------------------------------------------------
   exit 1
   echo
  fi
-  curl -o /etc/motd -s ${MAGENX_REPO}motd
+  curl -o /etc/motd -s ${MAGENX_MSI_REPO}motd
   sed -i "s/MAGENTO_VERSION_FULL/${MAGENTO_VERSION_FULL}/" /etc/motd
   sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
   echo "yes" > ${MAGENX_CONFIG_PATH}/sysupdate
