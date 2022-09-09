@@ -1139,7 +1139,7 @@ echo
 
 ## composer version 2 latest
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php --install-dir=/usr/bin --filename=composer
+php composer-setup.php --2.2 --install-dir=/usr/bin --filename=composer
 php -r "unlink('composer-setup.php');"
 
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com 8c681734f22763b50ea0c29dff9e7af2 02dfee497e669b5db1fe1c8d481d6974"
