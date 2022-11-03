@@ -1153,6 +1153,7 @@ N
 }' composer.json
 ##replace?
 
+rm composer_replace
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
 
 su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
