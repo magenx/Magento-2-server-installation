@@ -20,7 +20,7 @@ MAGENX_MSI_REPO="https://raw.githubusercontent.com/magenx/Magento-2-server-insta
 
 # Magento
 MAGENTO_VERSION="2"
-MAGENTO_VERSION_LATEST=$(curl -s https://api.github.com/repos/magento/magento${MAGENTO_VERSION}/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
+MAGENTO_VERSION_LATEST=$(curl -s https://api.github.com/repos/magento/magento${MAGENTO_VERSION}/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
 MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
 
 ## Version lock
