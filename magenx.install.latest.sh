@@ -1268,7 +1268,7 @@ printf "\033c"
 "install")
 printf "\033c"
 echo
-BLUEBG   "[~]    MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_INSTALLED}) SETUP    [~]"
+BLUEBG   "[~]    MAGENTO ${MAGENTO_VERSION_INSTALLED} SETUP    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
 include_config ${MAGENX_CONFIG_PATH}/distro
@@ -1367,7 +1367,7 @@ echo
 echo
     WHITETXT "============================================================================="
     echo
-    GREENTXT "INSTALLED MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_INSTALLED}) WITHOUT SAMPLE DATA"
+    GREENTXT "INSTALLED MAGENTO ${MAGENTO_VERSION_INSTALLED} WITHOUT SAMPLE DATA"
     echo
     WHITETXT "============================================================================="
 echo
