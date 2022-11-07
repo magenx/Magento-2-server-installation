@@ -1097,14 +1097,16 @@ BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGENTO_VERSION}    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
 echo
-     read -e -p "  [?] ENTER MAGENTO VERSION REQUIRED: " -i "${MAGENTO_VERSION_LATEST}" MAGENTO_VERSION_INSTALLED
+     _echo "[?] GET YOUR MAGENTO VERSION: "
+     updown_menu "$(curl -s https://api.github.com/repos/magento/magento2/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)" MAGENTO_VERSION_INSTALLED
+     echo
      read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGENTO_DOMAIN
      read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGENTO_OWNER
 	 
      MAGENTO_WEB_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
 	 
      echo
-     _echo "[!] MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_INSTALLED}) WILL BE DOWNLOADED TO ${MAGENTO_WEB_ROOT_PATH}"
+     _echo "[!] MAGENTO ${MAGENTO_VERSION_INSTALLED} WILL BE DOWNLOADED TO ${MAGENTO_WEB_ROOT_PATH}"
      echo
 
           mkdir -p ${MAGENTO_WEB_ROOT_PATH} && cd $_
