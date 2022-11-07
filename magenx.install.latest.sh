@@ -1100,6 +1100,7 @@ echo
      _echo "[?] GET YOUR MAGENTO VERSION: "
      updown_menu "$(curl -s https://api.github.com/repos/magento/magento2/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)" MAGENTO_VERSION_INSTALLED
      echo
+     echo
      read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGENTO_DOMAIN
      read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGENTO_OWNER
 	 
@@ -1158,7 +1159,7 @@ rm composer_replace
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
 
 su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir var/tmp"
+su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
 setfacl -R -m u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:rwx,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:rwx,d:o::- var pub/media
 
 ## make magento great again
@@ -1815,7 +1816,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_up
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
 
 #su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth"
-su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir var/tmp"
+su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
