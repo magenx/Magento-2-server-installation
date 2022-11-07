@@ -20,10 +20,11 @@ MAGENX_MSI_REPO="https://raw.githubusercontent.com/magenx/Magento-2-server-insta
 
 # Magento
 MAGENTO_VERSION="2"
-MAGENTO_VERSION_FULL=$(curl -s https://api.github.com/repos/magento/magento${MAGENTO_VERSION}/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
+MAGENTO_VERSION_LATEST=$(curl -s https://api.github.com/repos/magento/magento${MAGENTO_VERSION}/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
 MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
 
 ## Version lock
+COMPOSER_VERSION="2.2"
 RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5.16"
 ELK_VERSION="7.x"
@@ -546,9 +547,6 @@ WHITETXT "----------------------------------------------------------------------
   exit 1
   echo
  fi
-  curl -o /etc/motd -s ${MAGENX_MSI_REPO}motd
-  sed -i "s/MAGENTO_VERSION_FULL/${MAGENTO_VERSION_FULL}/" /etc/motd
-  sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
   echo "yes" > ${MAGENX_CONFIG_PATH}/sysupdate
   echo
 fi
@@ -1095,17 +1093,21 @@ printf "\033c"
 "magento")
 echo
 echo
-BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL})    [~]"
+BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGENTO_VERSION}    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
 echo
+     _echo "[?] GET YOUR MAGENTO VERSION: "
+     updown_menu "$(curl -s https://api.github.com/repos/magento/magento2/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)" MAGENTO_VERSION_INSTALLED
+     echo
+     echo
      read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGENTO_DOMAIN
      read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGENTO_OWNER
 	 
      MAGENTO_WEB_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
 	 
      echo
-     _echo "[!] MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WILL BE DOWNLOADED TO ${MAGENTO_WEB_ROOT_PATH}"
+     _echo "[!] MAGENTO ${MAGENTO_VERSION_INSTALLED} WILL BE DOWNLOADED TO ${MAGENTO_WEB_ROOT_PATH}"
      echo
 
           mkdir -p ${MAGENTO_WEB_ROOT_PATH} && cd $_
@@ -1139,11 +1141,11 @@ echo
 
 ## composer version 2 latest
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php --2.2 --install-dir=/usr/bin --filename=composer
+php composer-setup.php --${COMPOSER_VERSION} --install-dir=/usr/bin --filename=composer
 php -r "unlink('composer-setup.php');"
 
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com 8c681734f22763b50ea0c29dff9e7af2 02dfee497e669b5db1fe1c8d481d6974"
-su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT} . --no-install"
+su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
 curl -sO ${MAGENX_MSI_REPO}composer_replace
 
 ##replace?
@@ -1157,7 +1159,7 @@ rm composer_replace
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
 
 su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir var/tmp"
+su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
 setfacl -R -m u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:rwx,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:rwx,d:o::- var pub/media
 
 ## make magento great again
@@ -1172,7 +1174,7 @@ mkdir -p ${MAGENX_CONFIG_PATH}
 cat > ${MAGENX_CONFIG_PATH}/magento <<END
 # ${MAGENTO_MINIMAL_OPT}
 MAGENTO_VERSION="2"
-MAGENTO_VERSION_FULL="${MAGENTO_VERSION_FULL}"
+MAGENTO_VERSION_INSTALLED="${MAGENTO_VERSION_INSTALLED}"
 MAGENTO_DOMAIN="${MAGENTO_DOMAIN}"
 MAGENTO_OWNER="${MAGENTO_OWNER}"
 MAGENTO_PHP_USER="${MAGENTO_PHP_USER}"
@@ -1269,7 +1271,7 @@ printf "\033c"
 "install")
 printf "\033c"
 echo
-BLUEBG   "[~]    MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) SETUP    [~]"
+BLUEBG   "[~]    MAGENTO ${MAGENTO_VERSION_INSTALLED} SETUP    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
 include_config ${MAGENX_CONFIG_PATH}/distro
@@ -1306,7 +1308,7 @@ updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {
 updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_TIMEZONE
 echo
 echo
-GREENTXT "SETUP MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WITHOUT SAMPLE DATA"
+GREENTXT "SETUP MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_INSTALLED}) WITHOUT SAMPLE DATA"
 echo
 pause '[] Press [Enter] key to run setup'
 echo
@@ -1368,7 +1370,7 @@ echo
 echo
     WHITETXT "============================================================================="
     echo
-    GREENTXT "INSTALLED MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_FULL}) WITHOUT SAMPLE DATA"
+    GREENTXT "INSTALLED MAGENTO ${MAGENTO_VERSION_INSTALLED} WITHOUT SAMPLE DATA"
     echo
     WHITETXT "============================================================================="
 echo
@@ -1474,6 +1476,11 @@ sysctl -q -p
 
 GREENTXT "SERVER HOSTNAME SETTINGS"
 hostnamectl set-hostname server.${MAGENTO_DOMAIN} --static
+echo
+GREENTXT "CREATE MOTD"
+curl -o /etc/motd -s ${MAGENX_MSI_REPO}motd
+sed -i "s/MAGENTO_VERSION_INSTALLED/${MAGENTO_VERSION_INSTALLED}/" /etc/motd
+sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
 echo
 GREENTXT "SERVER TIMEZONE SETTINGS"
 timedatectl set-timezone ${MAGENTO_TIMEZONE}
@@ -1809,7 +1816,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_up
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
 
 #su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth"
-su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir var/tmp"
+su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
