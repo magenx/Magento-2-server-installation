@@ -1680,7 +1680,7 @@ sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGEN
      sed -i "5i \\
            auth_basic \$authentication; \\
            auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
-	 	   
+
 htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWORD}  >/dev/null 2>&1
 echo
 systemctl restart nginx.service
