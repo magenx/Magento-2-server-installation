@@ -1655,7 +1655,7 @@ sed -i "s,/var/www/html,${MAGENTO_WEB_ROOT_PATH}," /etc/nginx/conf_m${MAGENTO_VE
 
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
-sed -i "s|127.0.0.1:9000|unix:/var/run/${MAGENTO_OWNER}.sock" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+sed -i "s|127.0.0.1:9000|unix:/var/run/${MAGENTO_OWNER}.sock|" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 
 sed -i "s/ADMIN_PLACEHOLDER/${MAGENTO_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/extra_protect.conf
 ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
