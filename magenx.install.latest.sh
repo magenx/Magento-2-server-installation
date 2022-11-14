@@ -1420,14 +1420,12 @@ include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   php_ini="/etc/php.ini"
-  php_fpm_pool="/etc/php-fpm.d/www.conf"
-  php_fpm_development_pool="/etc/php-fpm.d/development.conf"
+  php_fpm_pool_path="/etc/php-fpm.d/"
   php_ini_path_overrides="/etc/php.d/"
  else
   PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
   php_ini="/etc/php/${PHP_VERSION}/fpm/php.ini"
-  php_fpm_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
-  php_fpm_development_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/development.conf"
+  php_fpm_pool_path="/etc/php/${PHP_VERSION}/fpm/pool.d/"
   php_ini_path_overrides="/etc/php/${PHP_VERSION}/cli/conf.d/"
 fi
 
@@ -1567,17 +1565,16 @@ END
 echo
 GREENTXT "PHP-FPM SETTINGS"
 
-cat > ${php_fpm_pool} <<END
+cat > ${php_fpm_pool_path}/${MAGENTO_OWNER}.conf <<END
 [${MAGENTO_OWNER}]
 
 user = ${MAGENTO_PHP_USER}
 group = ${MAGENTO_PHP_USER}
 
-listen = 127.0.0.1:9000
+listen = /var/run/${MAGENTO_OWNER}.sock
 listen.owner = ${MAGENTO_OWNER}
 listen.group = ${MAGENTO_PHP_USER}
 listen.mode = 0660
-listen.allowed_clients = 127.0.0.1
 
 pm = ondemand
 pm.max_children = 100
@@ -1629,10 +1626,10 @@ php_admin_value[opcache.max_accelerated_files] = 60000
 php_admin_value[opcache.max_wasted_percentage] = 5
 php_admin_value[opcache.file_update_protection] = 2
 php_admin_value[opcache.optimization_level] = 0xffffffff
-php_admin_value[opcache.blacklist_filename] = "/etc/opcache-default.blacklist"
+php_admin_value[opcache.blacklist_filename] = "${MAGENTO_WEB_ROOT_PATH%/*}/opcache.blacklist"
 php_admin_value[opcache.max_file_size] = 0
 php_admin_value[opcache.force_restart_timeout] = 60
-php_admin_value[opcache.error_log] = "/var/log/php-fpm/opcache.log"
+php_admin_value[opcache.error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/opcache.log"
 php_admin_value[opcache.log_verbosity_level] = 1
 php_admin_value[opcache.preferred_memory_model] = ""
 php_admin_value[opcache.jit_buffer_size] = 536870912
@@ -1658,6 +1655,7 @@ sed -i "s,/var/www/html,${MAGENTO_WEB_ROOT_PATH}," /etc/nginx/conf_m${MAGENTO_VE
 
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+sed -i "s|127.0.0.1:9000|unix:/var/run/${MAGENTO_OWNER}.sock" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 
 sed -i "s/ADMIN_PLACEHOLDER/${MAGENTO_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/extra_protect.conf
 ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
