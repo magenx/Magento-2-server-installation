@@ -1572,7 +1572,7 @@ user = ${MAGENTO_PHP_USER}
 group = ${MAGENTO_PHP_USER}
 
 listen = /var/run/${MAGENTO_OWNER}.sock
-listen.owner = ${MAGENTO_OWNER}
+listen.owner = nginx
 listen.group = ${MAGENTO_PHP_USER}
 listen.mode = 0660
 
