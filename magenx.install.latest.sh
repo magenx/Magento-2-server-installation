@@ -1681,9 +1681,10 @@ sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGEN
            auth_basic \$authentication; \\
            auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
 	 	   
-PHP_FPM_LISTEN=$(grep -m 1 "^listen" ${php_fpm_pool_path}/www.conf | cut -d'=' -f2)
+PHP_FPM_LISTEN="php${PHP_VERSION}-fpm.sock"
+sed -i "s|^listen.*|listen = /var/run/${PHP_FPM_LISTEN}|" ${php_fpm_pool_path}/www.conf
 sed -i "s/^listen.owner.*/listen.owner = nginx/" ${php_fpm_pool_path}/www.conf
-sed -i "s|127.0.0.1:9000|${PHP_FPM_LISTEN}|"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
+sed -i "s|127.0.0.1:9000|unix:${PHP_FPM_LISTEN}|"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
 
 htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWORD}  >/dev/null 2>&1
 echo
