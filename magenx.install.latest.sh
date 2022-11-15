@@ -1818,18 +1818,26 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_hs
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
 
-#su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth Magento_AdobeIms Magento_AdobeImsApi Magento_AdminAdobeIms"
 su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
+su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:upgrade"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
+
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
 echo
-GREENTXT "SAVING composer.json AND env.php"
+GREENTXT "SAVING composer.json , env.php , config.php"
 cp composer.json ${MAGENX_CONFIG_PATH}/composer.json.saved
 cp composer.lock ${MAGENX_CONFIG_PATH}/composer.lock.saved
 cp app/etc/env.php ${MAGENX_CONFIG_PATH}/env.php.saved
+cp app/etc/config.php ${MAGENX_CONFIG_PATH}/config.php.saved
 echo
+echo
+GREENTXT "DEPLOYMENT CONFIGURATION"
+mkdir -p ${MAGENX_CONFIG_PATH}/deployment
+wget -qO ${MAGENX_CONFIG_PATH}/deployment/index.php ${MAGENX_MSI_REPO}webhook.php
 echo
 GREENTXT "FIXING PERMISSIONS"
 chmod +x /usr/local/bin/*
