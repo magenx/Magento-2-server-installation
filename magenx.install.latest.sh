@@ -1568,12 +1568,12 @@ GREENTXT "PHP-FPM SETTINGS"
 cat > ${php_fpm_pool_path}/${MAGENTO_OWNER}.conf <<END
 [${MAGENTO_OWNER}]
 
-user = ${MAGENTO_PHP_USER}
-group = ${MAGENTO_PHP_USER}
+user = php-\$pool
+group = php-\$pool
 
-listen = /var/run/${MAGENTO_OWNER}.sock
+listen = /var/run/\$pool.sock
 listen.owner = nginx
-listen.group = ${MAGENTO_PHP_USER}
+listen.group = php-\$pool
 listen.mode = 0660
 
 pm = ondemand
@@ -1601,10 +1601,10 @@ php_admin_value[upload_max_filesize] = 64M
 php_admin_value[realpath_cache_size] = 4096k
 php_admin_value[realpath_cache_ttl] = 86400
 php_admin_value[session.gc_maxlifetime] = 28800
-php_admin_value[error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/php-fpm-error.log"
+php_admin_value[error_log] = "/home/\$pool/public_html/var/log/php-fpm-error.log"
 php_admin_value[date.timezone] = "${MAGENTO_TIMEZONE}"
-php_admin_value[upload_tmp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
-php_admin_value[sys_temp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
+php_admin_value[upload_tmp_dir] = "/home/\$pool/public_html/var/tmp"
+php_admin_value[sys_temp_dir] = "/home/\$pool/public_html/var/tmp"
 
 ;;
 ;; [opcache] settings
@@ -1626,10 +1626,10 @@ php_admin_value[opcache.max_accelerated_files] = 60000
 php_admin_value[opcache.max_wasted_percentage] = 5
 php_admin_value[opcache.file_update_protection] = 2
 php_admin_value[opcache.optimization_level] = 0xffffffff
-php_admin_value[opcache.blacklist_filename] = "${MAGENTO_WEB_ROOT_PATH%/*}/opcache.blacklist"
+php_admin_value[opcache.blacklist_filename] = "/home/\$pool/opcache.blacklist"
 php_admin_value[opcache.max_file_size] = 0
 php_admin_value[opcache.force_restart_timeout] = 60
-php_admin_value[opcache.error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/opcache.log"
+php_admin_value[opcache.error_log] = "/home/\$pool/public_html/var/log/opcache.log"
 php_admin_value[opcache.log_verbosity_level] = 1
 php_admin_value[opcache.preferred_memory_model] = ""
 php_admin_value[opcache.jit_buffer_size] = 536870912
@@ -1681,6 +1681,10 @@ sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGEN
            auth_basic \$authentication; \\
            auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
 	 	   
+PHP_FPM_LISTEN=$(grep -m 1 "^listen" ${php_fpm_pool_path}/www.conf | cut -d'=' -f2)
+sed -i "s/^listen.owner.*/listen.owner = nginx/" ${php_fpm_pool_path}/www.conf
+sed -i "s|127.0.0.1:9000|${PHP_FPM_LISTEN}|"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
+
 htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWORD}  >/dev/null 2>&1
 echo
 systemctl restart nginx.service
