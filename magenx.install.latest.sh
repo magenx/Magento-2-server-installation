@@ -1818,7 +1818,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_hs
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
 
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth Magento_AdobeIms Magento_AdobeImsApi Magento_AdminAdobeIms"
+#su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth Magento_AdobeIms Magento_AdobeImsApi Magento_AdminAdobeIms"
 su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:upgrade"
