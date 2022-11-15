@@ -1420,14 +1420,12 @@ include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   php_ini="/etc/php.ini"
-  php_fpm_pool="/etc/php-fpm.d/www.conf"
-  php_fpm_development_pool="/etc/php-fpm.d/development.conf"
+  php_fpm_pool_path="/etc/php-fpm.d/"
   php_ini_path_overrides="/etc/php.d/"
  else
   PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
   php_ini="/etc/php/${PHP_VERSION}/fpm/php.ini"
-  php_fpm_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
-  php_fpm_development_pool="/etc/php/${PHP_VERSION}/fpm/pool.d/development.conf"
+  php_fpm_pool_path="/etc/php/${PHP_VERSION}/fpm/pool.d/"
   php_ini_path_overrides="/etc/php/${PHP_VERSION}/cli/conf.d/"
 fi
 
@@ -1567,17 +1565,16 @@ END
 echo
 GREENTXT "PHP-FPM SETTINGS"
 
-cat > ${php_fpm_pool} <<END
+cat > ${php_fpm_pool_path}/${MAGENTO_OWNER}.conf <<END
 [${MAGENTO_OWNER}]
 
-user = ${MAGENTO_PHP_USER}
-group = ${MAGENTO_PHP_USER}
+user = php-\$pool
+group = php-\$pool
 
-listen = 127.0.0.1:9000
-listen.owner = ${MAGENTO_OWNER}
-listen.group = ${MAGENTO_PHP_USER}
+listen = /var/run/\$pool.sock
+listen.owner = nginx
+listen.group = php-\$pool
 listen.mode = 0660
-listen.allowed_clients = 127.0.0.1
 
 pm = ondemand
 pm.max_children = 100
@@ -1604,10 +1601,10 @@ php_admin_value[upload_max_filesize] = 64M
 php_admin_value[realpath_cache_size] = 4096k
 php_admin_value[realpath_cache_ttl] = 86400
 php_admin_value[session.gc_maxlifetime] = 28800
-php_admin_value[error_log] = "${MAGENTO_WEB_ROOT_PATH}/var/log/php-fpm-error.log"
+php_admin_value[error_log] = "/home/\$pool/public_html/var/log/php-fpm-error.log"
 php_admin_value[date.timezone] = "${MAGENTO_TIMEZONE}"
-php_admin_value[upload_tmp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
-php_admin_value[sys_temp_dir] = "${MAGENTO_WEB_ROOT_PATH}/var/tmp"
+php_admin_value[upload_tmp_dir] = "/home/\$pool/public_html/var/tmp"
+php_admin_value[sys_temp_dir] = "/home/\$pool/public_html/var/tmp"
 
 ;;
 ;; [opcache] settings
@@ -1629,10 +1626,10 @@ php_admin_value[opcache.max_accelerated_files] = 60000
 php_admin_value[opcache.max_wasted_percentage] = 5
 php_admin_value[opcache.file_update_protection] = 2
 php_admin_value[opcache.optimization_level] = 0xffffffff
-php_admin_value[opcache.blacklist_filename] = "/etc/opcache-default.blacklist"
+php_admin_value[opcache.blacklist_filename] = "/home/\$pool/opcache.blacklist"
 php_admin_value[opcache.max_file_size] = 0
 php_admin_value[opcache.force_restart_timeout] = 60
-php_admin_value[opcache.error_log] = "/var/log/php-fpm/opcache.log"
+php_admin_value[opcache.error_log] = "/home/\$pool/public_html/var/log/opcache.log"
 php_admin_value[opcache.log_verbosity_level] = 1
 php_admin_value[opcache.preferred_memory_model] = ""
 php_admin_value[opcache.jit_buffer_size] = 536870912
@@ -1658,6 +1655,7 @@ sed -i "s,/var/www/html,${MAGENTO_WEB_ROOT_PATH}," /etc/nginx/conf_m${MAGENTO_VE
 
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+sed -i "s|127.0.0.1:9000|unix:/var/run/${MAGENTO_OWNER}.sock|" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 
 sed -i "s/ADMIN_PLACEHOLDER/${MAGENTO_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/extra_protect.conf
 ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
@@ -1683,6 +1681,11 @@ sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGEN
            auth_basic \$authentication; \\
            auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
 	 	   
+PHP_FPM_LISTEN="php${PHP_VERSION}-fpm.sock"
+sed -i "s|^listen =.*|listen = /var/run/${PHP_FPM_LISTEN}|" ${php_fpm_pool_path}/www.conf
+sed -i "s/^listen.owner.*/listen.owner = nginx/" ${php_fpm_pool_path}/www.conf
+sed -i "s|127.0.0.1:9000|unix:/var/run/${PHP_FPM_LISTEN}|"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
+
 htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWORD}  >/dev/null 2>&1
 echo
 systemctl restart nginx.service
@@ -1815,18 +1818,26 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_hs
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
 
-#su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth"
+#su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth Magento_AdobeIms Magento_AdobeImsApi Magento_AdminAdobeIms"
 su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
+su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches"
+su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:upgrade"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
+
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
 echo
-GREENTXT "SAVING composer.json AND env.php"
+GREENTXT "SAVING composer.json , env.php , config.php"
 cp composer.json ${MAGENX_CONFIG_PATH}/composer.json.saved
 cp composer.lock ${MAGENX_CONFIG_PATH}/composer.lock.saved
 cp app/etc/env.php ${MAGENX_CONFIG_PATH}/env.php.saved
+cp app/etc/config.php ${MAGENX_CONFIG_PATH}/config.php.saved
 echo
+echo
+GREENTXT "DEPLOYMENT CONFIGURATION"
+mkdir -p ${MAGENX_CONFIG_PATH}/deployment
+wget -qO ${MAGENX_CONFIG_PATH}/deployment/index.php ${MAGENX_MSI_REPO}webhook.php
 echo
 GREENTXT "FIXING PERMISSIONS"
 chmod +x /usr/local/bin/*
