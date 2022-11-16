@@ -1854,7 +1854,7 @@ echo "" >> ${MAGENX_CONFIG_PATH}/magento
 
 GITHUB_ACTIONS_SSHKEY="github_actions_sshkey"
 ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY} -C "github actions ${MAGENTO_DOMAIN}" -q -N ""
-cat ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY}.pub > .ssh/authorized_keys
+cat ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY}.pub >> .ssh/authorized_keys
 echo "GITHUB_ACTIONS_SSHKEY" >> ${MAGENX_CONFIG_PATH}/magento
 echo "${GITHUB_ACTIONS_SSHKEY}" >> ${MAGENX_CONFIG_PATH}/magento
 
