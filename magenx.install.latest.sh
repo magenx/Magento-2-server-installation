@@ -1783,7 +1783,7 @@ cat >> /etc/audit/rules.d/audit.rules <<END
 
 ## audit magento files
 -a never,exit -F dir=${MAGENTO_WEB_ROOT_PATH}/var/ -k exclude
--w ${MAGENTO_WEB_ROOT_PATH} -p wa -k auditmgnx
+-w ${MAGENTO_WEB_ROOT_PATH} -p wa -k ${MAGENTO_OWNER}
 END
 service auditd reload
 service auditd restart
@@ -1793,7 +1793,6 @@ echo
 GREENTXT "ROOT CRONJOBS"
 echo 'MAILTO=""' > rootcron
 echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -s \"MYSQLTUNER WEEKLY REPORT at ${MAGENTO_DOMAIN}\" ${MAGENTO_ADMIN_EMAIL}" >> rootcron
-echo '@weekly /usr/local/bin/certbot renew --deploy-hook "systemctl reload nginx" >> /var/log/letsencrypt-renew.log' >> rootcron
 crontab rootcron
 rm rootcron
 echo
@@ -1835,30 +1834,32 @@ cp app/etc/env.php ${MAGENX_CONFIG_PATH}/env.php.saved
 cp app/etc/config.php ${MAGENX_CONFIG_PATH}/config.php.saved
 echo
 echo
-GREENTXT "DEPLOYMENT CONFIGURATION"
-mkdir -p ${MAGENX_CONFIG_PATH}/deployment
-wget -qO ${MAGENX_CONFIG_PATH}/deployment/index.php ${MAGENX_MSI_REPO}webhook.php
-echo
-GREENTXT "FIXING PERMISSIONS"
-chmod +x /usr/local/bin/*
-chmod -R 600 ${MAGENX_CONFIG_PATH}
-
+GREENTXT "MAGENTO CRONJOBS"
 cd ${MAGENTO_WEB_ROOT_PATH}
 chmod ug+x bin/magento
-echo
-echo
-GREENTXT "MAGENTO CRONJOBS"
 su ${MAGENTO_PHP_USER} -s /bin/bash -c "bin/magento cron:install"
 echo
 
 cd ${MAGENTO_WEB_ROOT_PATH%/*}
 
-GREENTXT "GENERATE SSH KEY"
+GREENTXT "GENERATE SSH KEYS"
 mkdir .ssh
 MAGENTO_OWNER_SSHKEY="${MAGENTO_OWNER}_sshkey"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY} -C "${MAGENTO_DOMAIN}" -q -N ""
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY} -C "magento ${MAGENTO_DOMAIN}" -q -N ""
 cat ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY}.pub > .ssh/authorized_keys
-echo "MAGENTO_OWNER_SSHKEY=\"${MAGENTO_OWNER_SSHKEY}\"" >> ${MAGENX_CONFIG_PATH}/magento
+echo "MAGENTO_OWNER_SSHKEY" >> ${MAGENX_CONFIG_PATH}/magento
+echo "${MAGENTO_OWNER_SSHKEY}" >> ${MAGENX_CONFIG_PATH}/magento
+
+echo "" >> ${MAGENX_CONFIG_PATH}/magento
+
+GITHUB_ACTIONS_SSHKEY="github_actions_sshkey"
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY} -C "github actions ${MAGENTO_DOMAIN}" -q -N ""
+cat ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY}.pub > .ssh/authorized_keys
+echo "GITHUB_ACTIONS_SSHKEY" >> ${MAGENX_CONFIG_PATH}/magento
+echo "${GITHUB_ACTIONS_SSHKEY}" >> ${MAGENX_CONFIG_PATH}/magento
+
+chmod +x /usr/local/bin/*
+chmod -R 600 ${MAGENX_CONFIG_PATH}
 
 cat > .bash_profile <<END
 # .bash_profile
@@ -1918,6 +1919,7 @@ htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 
 [files owner]: ${MAGENTO_OWNER}
 [${MAGENTO_OWNER} ssh key]: ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY}
+[Github Actions ssh key]: ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY}
 
 [phpmyadmin url]: ${MAGENTO_DOMAIN}/mysql_${PMA_FOLDER}/
 [phpmyadmin http auth name]: mysql
@@ -1935,13 +1937,13 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [elk password]: "${ELASTIC_PASSWORD}"
 
 [percona toolkit]: https://www.percona.com/doc/percona-toolkit/LATEST/index.html
-[database monitor]: mytop
-[mysql tuner]: mysqltuner
 
+[database monitor]: /usr/local/bin/mytop
+[mysqltuner]: /usr/local/bin/mysqltuner
 [n98-magerun2]: /usr/local/bin/magerun2
 [cache cleaner]: /usr/local/bin/cacheflush
 
-[audit log]: ausearch -k auditmgnx | aureport -f -i
+[audit log]: ausearch -k ${MAGENTO_OWNER} | aureport -f -i
 
 [redis on port 6379]: systemctl restart redis@6379
 [redis on port 6380]: systemctl restart redis@6380
@@ -1949,6 +1951,7 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [installed db dump]: ${MAGENX_CONFIG_PATH}/${MAGENTO_DB_NAME}.sql.gz
 [composer.json copy]: ${MAGENX_CONFIG_PATH}/composer.json.saved
 [env.php copy]: ${MAGENX_CONFIG_PATH}/env.php.saved
+[config.php copy]: ${MAGENX_CONFIG_PATH}/config.php.saved
 [env.php default copy]: ${MAGENX_CONFIG_PATH}/env.php.default
 
 [ACL map]: /home/${MAGENTO_OWNER}/public_html.acl
