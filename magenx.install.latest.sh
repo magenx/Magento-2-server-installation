@@ -28,6 +28,7 @@ COMPOSER_VERSION="2.2"
 RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5.16"
 ELK_VERSION="7.x"
+ELK_STACK="elasticsearch kibana logstash"
 PROXYSQL_VERSION="2.3.x"
 VARNISH_VERSION="70"
 
@@ -1007,13 +1008,13 @@ autorefresh=1
 type=rpm-md
 EOF
 echo
-   dnf -y install --enablerepo=elasticsearch-${ELK_VERSION} elasticsearch kibana
-   rpm  --quiet -q elasticsearch
+   dnf -y install --enablerepo=elasticsearch-${ELK_VERSION} ${ELK_STACK}
+   rpm  --quiet -q ${ELK_STACK}
   else
    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
    echo "deb https://artifacts.elastic.co/packages/${ELK_VERSION}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELK_VERSION}.list
    apt update
-   apt -y install elasticsearch kibana
+   apt -y install ${ELK_STACK}
   fi
   if [ "$?" = 0 ]; then
           echo
@@ -1055,9 +1056,9 @@ echo
 GREENTXT "ELASTCSEARCH ${ELKVER} INSTALLED  -  OK"
 echo
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  rpm -qa 'elasticsearch*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
+  rpm -qa '${ELK_STACK}' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
  else
-  apt -qq list --installed elasticsearch* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
+  apt -qq list --installed ${ELK_STACK} 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
  fi
  else
 echo
@@ -1072,9 +1073,9 @@ echo
 echo
 ## keep versions for critical services to avoid disruption
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   dnf versionlock add elasticsearch kibana erlang rabbitmq-server
+   dnf versionlock add ${ELK_STACK} erlang rabbitmq-server
   else
-   apt-mark hold elasticsearch kibana erlang rabbitmq-server
+   apt-mark hold ${ELK_STACK} erlang rabbitmq-server
  fi
 echo
 echo
