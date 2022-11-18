@@ -1819,7 +1819,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_us
 
 #su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth Magento_AdobeIms Magento_AdobeImsApi Magento_AdminAdobeIms"
 su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
-su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches"
+su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches -n"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:upgrade"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
