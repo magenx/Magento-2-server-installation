@@ -1053,7 +1053,7 @@ rm -rf /tmp/elasticsearch
 
 echo
 echo
-GREENTXT "ELASTCSEARCH ${ELKVER} INSTALLED  -  OK"
+GREENTXT "ELASTICSEARCH ${ELK_VERSION} INSTALLED  -  OK"
 echo
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   rpm -qa '${ELK_STACK}' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
@@ -1062,7 +1062,7 @@ echo
  fi
  else
 echo
-REDTXT "ELASTCSEARCH INSTALLATION ERROR"
+REDTXT "ELASTICSEARCH INSTALLATION ERROR"
 exit 1
 fi
 else
