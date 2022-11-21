@@ -39,12 +39,12 @@ REMI_RPM_REPO="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 # WebStack Packages .deb
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools clamav mlocate vim wget sudo bc apache2-utils \
-logrotate git python3-pip python3-dateutil python3-dev netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof xinetd jpegoptim sysstat acl attr iotop expect webp imagemagick snmp"
+logrotate git python3-pip python3-dateutil python3-dev netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof xinetd jpegoptim sysstat acl attr iotop expect imagemagick snmp"
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
 PHP_PACKAGES_DEB=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 
 # WebStack Packages .rpm
-EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap libwebp gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
+EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
 bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
 ncurses-devel GeoIP GeoIP-devel s3cmd geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd \
@@ -1017,7 +1017,8 @@ echo
    apt -y install ${ELK_STACK}
   fi
   if [ "$?" = 0 ]; then
-          echo
+echo
+## elasticsearch settings
 echo "discovery.type: single-node" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*cluster.name.*/cluster.name: magento/" /etc/elasticsearch/elasticsearch.yml
@@ -1048,6 +1049,69 @@ BEATS_SYSTEM_PASSWORD="$(awk '/PASSWORD beats_system/ { print $4 }' /tmp/elastic
 REMOTE_MONITORING_USER_PASSWORD="$(awk '/PASSWORD remote_monitoring_user/ { print $4 }' /tmp/elasticsearch)"
 ELASTIC_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
 END
+
+include_config ${MAGENX_CONFIG_PATH}/elasticsearch
+
+## kibana settings
+KIBANA_PORT=$(shuf -i 15741-15997 -n 1)
+sed -i "s/#server.port:/server.port: ${KIBANA_PORT}/" /etc/kibana/kibana.yml
+sed -i "s/#server.host:/server.host: "0.0.0.0"/" /etc/kibana/kibana.yml
+sed -i "s/#elasticsearch.username:/elasticsearch.username: "kibana_system"/" /etc/kibana/kibana.yml
+sed -i "s/#elasticsearch.password:/elasticsearch.password: "${KIBANA_SYSTEM_PASSWORD}"/" /etc/kibana/kibana.yml
+
+echo
+GREENTXT "CREATE ELK USERS FOR LOGGING AND INDEXER:"
+for elk_user in logstash indexer
+do
+
+curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
+  "indices": [
+    {
+      "names": [ "${MAGENTO_DOMAIN//[-.]/}*"],
+      "privileges": ["all"]
+    }
+  ]
+}
+EOF
+)"
+
+USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)
+curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" --header 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "password" : "${USER_PASSWORD}",
+  "roles" : [ "magento_${elk_user}"],
+  "full_name" : "ELK User for Magento 2 ${elk_user}"
+}
+EOF
+)"
+
+echo MAGENTO_${elk_user^^}_PASSWORD=\"${USER_PASSWORD}\" >> ${MAGENX_CONFIG_PATH}/elasticsearch
+
+done
+
+curl -X PUT -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_ilm/policy/magento_logstash" -H 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "policy": {
+    "_meta": {
+      "description": "polcy used to delete magento logstash index after 7 days",
+      "project": {
+        "name": "${MAGENTO_DOMAIN}",
+        "department": "error logs monitoring"
+      }
+    },
+    "delete": {
+       "min_age": "7d",
+       "actions": {
+         "delete": {}
+        }
+      }
+    }
+  }
+}
+EOF
+)"
 
 rm -rf /tmp/elasticsearch
 
@@ -1126,6 +1190,7 @@ echo
           chmod 2750 ${MAGENTO_WEB_ROOT_PATH}
 	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_WEB_ROOT_PATH}
 	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_WEB_ROOT_PATH}
+	  setfacl -m u:logstash:r-x,d:u:logstash:r-x {${MAGENTO_WEB_ROOT_PATH},${MAGENTO_WEB_ROOT_PATH}/var,${MAGENTO_WEB_ROOT_PATH}/var/log}
 	  
 echo
 MAGENTO_MINIMAL_OPT="MINIMAL SET OF MODULES"
@@ -1351,8 +1416,8 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE
 --elasticsearch-port=9200 \
 --elasticsearch-index-prefix=${MAGENTO_DOMAIN//[-.]/} \
 --elasticsearch-enable-auth=1 \
---elasticsearch-username=elastic \
---elasticsearch-password='${ELASTIC_PASSWORD}'"
+--elasticsearch-username=magento_indexer \
+--elasticsearch-password='${MAGENTO_INDEXER_PASSWORD}'"
 
 
 if [ "$?" != 0 ]; then
@@ -1433,6 +1498,16 @@ fi
 echo
 BLUEBG "[~]    POST-INSTALLATION CONFIGURATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
+echo
+## logstash settings
+curl -o /etc/logstash/conf.d/magento.conf -s ${MAGENX_MSI_REPO}logstash.conf
+sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/logstash/conf.d/magento.conf
+sed -i "s/MAGENTO_WEB_ROOT_PATH/${MAGENTO_WEB_ROOT_PATH}/" /etc/logstash/conf.d/magento.conf
+sed -i "s/MAGENTO_LOGSTASH_POLICY/magento_logstash/" /etc/logstash/conf.d/magento.conf
+sed -i "s/MAGENTO_LOGSTASH_PASSWORD/${MAGENTO_LOGSTASH_PASSWORD}/" /etc/logstash/conf.d/magento.conf
+
+systemctl restart logstash
+
 echo
 cat >> /etc/sysctl.conf <<END
 fs.file-max = 1000000
