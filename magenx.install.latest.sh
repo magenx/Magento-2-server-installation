@@ -1054,10 +1054,10 @@ include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
 ## kibana settings
 KIBANA_PORT=$(shuf -i 15741-15997 -n 1)
-sed -i "s/#server.port:/server.port: ${KIBANA_PORT}/" /etc/kibana/kibana.yml
-sed -i "s/#server.host:/server.host: "0.0.0.0"/" /etc/kibana/kibana.yml
-sed -i "s/#elasticsearch.username:/elasticsearch.username: "kibana_system"/" /etc/kibana/kibana.yml
-sed -i "s/#elasticsearch.password:/elasticsearch.password: "${KIBANA_SYSTEM_PASSWORD}"/" /etc/kibana/kibana.yml
+sed -i "s/.*#server.port:.*/server.port: ${KIBANA_PORT}/" /etc/kibana/kibana.yml
+sed -i "s/.*#server.host:.*/server.host: \"0.0.0.0\"/" /etc/kibana/kibana.yml
+sed -i "s/.*#elasticsearch.username:.*/elasticsearch.username: \"kibana_system\"/" /etc/kibana/kibana.yml
+sed -i "s/.*#elasticsearch.password:.*/elasticsearch.password: \"${KIBANA_SYSTEM_PASSWORD}\"/" /etc/kibana/kibana.yml
 echo
 YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
 
