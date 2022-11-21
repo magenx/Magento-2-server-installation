@@ -1495,7 +1495,7 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
   php_ini="/etc/php/${PHP_VERSION}/fpm/php.ini"
   php_fpm_pool_path="/etc/php/${PHP_VERSION}/fpm/pool.d/"
-  php_ini_path_overrides="/etc/php/${PHP_VERSION}/cli/conf.d/"
+  php_ini_path_overrides="/etc/php/${PHP_VERSION}/{cli,fpm}/conf.d/"
 fi
 
 echo
@@ -1567,22 +1567,22 @@ wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
 wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
 
 if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-cat <<EOF | tee /etc/yum.repos.d/proxysql.repo
+cat > /etc/yum.repos.d/proxysql.repo <<END
    [proxysql_repo]
    name= ProxySQL YUM repository
    baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/$releasever
    gpgcheck=1
    gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
-EOF
+END
    dnf -y install proxysql
  elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
-cat <<EOF | tee /etc/yum.repos.d/proxysql.repo
+cat > /etc/yum.repos.d/proxysql.repo <<END
    [proxysql_repo]
    name=ProxySQL YUM repository
    baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/latest
    gpgcheck=1
    gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
-EOF
+END
    dnf -y install proxysql*
  else
    wget -O - 'https://repo.proxysql.com/ProxySQL/repo_pub_key' | apt-key add - 
@@ -1596,7 +1596,7 @@ systemctl disable proxysql
 echo
 GREENTXT "PHP SETTINGS"
 
-cat > ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini <<END
+cat <<END | eval tee ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini 
 opcache.enable_cli = 1
 opcache.memory_consumption = 512
 opcache.interned_strings_buffer = 4
