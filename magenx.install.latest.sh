@@ -1114,6 +1114,7 @@ EOF
 )"
 
 rm -rf /tmp/elasticsearch
+rm /etc/logstash/logstash-sample.conf
 
 echo
 echo
