@@ -1080,7 +1080,7 @@ EOF
 )"
 echo
 USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" --header 'Content-Type: application/json' -d "$(cat <<EOF
+curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
 {
   "password" : "${USER_PASSWORD}",
   "roles" : [ "magento_${elk_user}"],
@@ -1093,28 +1093,6 @@ echo MAGENTO_${elk_user^^}_PASSWORD=\"${USER_PASSWORD}\" >> ${MAGENX_CONFIG_PATH
 
 done
 echo
-curl -X PUT -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_ilm/policy/magento_logstash" -H 'Content-Type: application/json' -d "$(cat <<EOF
-{
-  "policy": {
-    "_meta": {
-      "description": "polcy used to delete magento logstash index after 7 days",
-      "project": {
-        "name": "${MAGENTO_DOMAIN}",
-        "department": "error logs monitoring"
-      }
-    },
-    "phases": {
-      "delete": {
-         "min_age": "7d",
-         "actions": {
-           "delete": {}
-        }
-      }
-    }
-  }
-}
-EOF
-)"
 
 rm -rf /tmp/elasticsearch
 rm /etc/logstash/logstash-sample.conf
