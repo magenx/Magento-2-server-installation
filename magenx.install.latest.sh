@@ -1059,6 +1059,8 @@ sed -i "s/#server.host:/server.host: "0.0.0.0"/" /etc/kibana/kibana.yml
 sed -i "s/#elasticsearch.username:/elasticsearch.username: "kibana_system"/" /etc/kibana/kibana.yml
 sed -i "s/#elasticsearch.password:/elasticsearch.password: "${KIBANA_SYSTEM_PASSWORD}"/" /etc/kibana/kibana.yml
 
+YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
+
 echo
 GREENTXT "CREATE ELK USERS FOR LOGGING AND INDEXER:"
 for elk_user in logstash indexer
@@ -1076,8 +1078,8 @@ curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/rol
 }
 EOF
 )"
-
-USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)
+echo
+USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" --header 'Content-Type: application/json' -d "$(cat <<EOF
 {
   "password" : "${USER_PASSWORD}",
@@ -1090,7 +1092,7 @@ EOF
 echo MAGENTO_${elk_user^^}_PASSWORD=\"${USER_PASSWORD}\" >> ${MAGENX_CONFIG_PATH}/elasticsearch
 
 done
-
+echo
 curl -X PUT -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_ilm/policy/magento_logstash" -H 'Content-Type: application/json' -d "$(cat <<EOF
 {
   "policy": {
@@ -1101,10 +1103,11 @@ curl -X PUT -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_ilm/policy/ma
         "department": "error logs monitoring"
       }
     },
-    "delete": {
-       "min_age": "7d",
-       "actions": {
-         "delete": {}
+    "phases": {
+      "delete": {
+         "min_age": "7d",
+         "actions": {
+           "delete": {}
         }
       }
     }
@@ -1191,7 +1194,6 @@ echo
           chmod 2750 ${MAGENTO_WEB_ROOT_PATH}
 	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_WEB_ROOT_PATH}
 	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_WEB_ROOT_PATH}
-	  setfacl -m u:logstash:r-x,d:u:logstash:r-x {${MAGENTO_WEB_ROOT_PATH},${MAGENTO_WEB_ROOT_PATH}/var,${MAGENTO_WEB_ROOT_PATH}/var/log}
 	  
 echo
 MAGENTO_MINIMAL_OPT="MINIMAL SET OF MODULES"
@@ -1502,12 +1504,12 @@ WHITETXT "----------------------------------------------------------------------
 echo
 ## logstash settings
 curl -o /etc/logstash/conf.d/magento.conf -s ${MAGENX_MSI_REPO}logstash.conf
-sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/logstash/conf.d/magento.conf
 sed -i "s/MAGENTO_WEB_ROOT_PATH/${MAGENTO_WEB_ROOT_PATH}/" /etc/logstash/conf.d/magento.conf
-sed -i "s/MAGENTO_LOGSTASH_POLICY/magento_logstash/" /etc/logstash/conf.d/magento.conf
+sed -i "s/MAGENTO_TIMEZONE/${MAGENTO_TIMEZONE}/" /etc/logstash/conf.d/magento.conf
+sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/logstash/conf.d/magento.conf
 sed -i "s/MAGENTO_LOGSTASH_PASSWORD/${MAGENTO_LOGSTASH_PASSWORD}/" /etc/logstash/conf.d/magento.conf
 
-systemctl restart logstash
+systemctl restart logstash kibana
 
 echo
 cat >> /etc/sysctl.conf <<END
@@ -1901,6 +1903,9 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cw
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:upgrade"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
+
+rm -rf ${MAGENTO_WEB_ROOT_PATH}/var/log/*.log
+setfacl -m u:logstash:r-x,d:u:logstash:r-x {${MAGENTO_WEB_ROOT_PATH},${MAGENTO_WEB_ROOT_PATH}/var,${MAGENTO_WEB_ROOT_PATH}/var/log}
 
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
