@@ -1058,7 +1058,7 @@ sed -i "s/#server.port:/server.port: ${KIBANA_PORT}/" /etc/kibana/kibana.yml
 sed -i "s/#server.host:/server.host: "0.0.0.0"/" /etc/kibana/kibana.yml
 sed -i "s/#elasticsearch.username:/elasticsearch.username: "kibana_system"/" /etc/kibana/kibana.yml
 sed -i "s/#elasticsearch.password:/elasticsearch.password: "${KIBANA_SYSTEM_PASSWORD}"/" /etc/kibana/kibana.yml
-
+echo
 YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
 
 echo
@@ -1504,8 +1504,8 @@ WHITETXT "----------------------------------------------------------------------
 echo
 ## logstash settings
 curl -o /etc/logstash/conf.d/magento.conf -s ${MAGENX_MSI_REPO}logstash.conf
-sed -i "s/MAGENTO_WEB_ROOT_PATH/${MAGENTO_WEB_ROOT_PATH}/" /etc/logstash/conf.d/magento.conf
-sed -i "s/MAGENTO_TIMEZONE/${MAGENTO_TIMEZONE}/" /etc/logstash/conf.d/magento.conf
+sed -i "s|MAGENTO_WEB_ROOT_PATH|${MAGENTO_WEB_ROOT_PATH}|" /etc/logstash/conf.d/magento.conf
+sed -i "s|MAGENTO_TIMEZONE|${MAGENTO_TIMEZONE}|" /etc/logstash/conf.d/magento.conf
 sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/logstash/conf.d/magento.conf
 sed -i "s/MAGENTO_LOGSTASH_PASSWORD/${MAGENTO_LOGSTASH_PASSWORD}/" /etc/logstash/conf.d/magento.conf
 
