@@ -28,6 +28,7 @@ COMPOSER_VERSION="2.2"
 RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5.16"
 ELK_VERSION="7.x"
+ELK_STACK="elasticsearch kibana logstash"
 PROXYSQL_VERSION="2.3.x"
 VARNISH_VERSION="70"
 
@@ -38,12 +39,12 @@ REMI_RPM_REPO="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 # WebStack Packages .deb
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools clamav mlocate vim wget sudo bc apache2-utils \
-logrotate git python3-pip python3-dateutil python3-dev netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof xinetd jpegoptim sysstat acl attr iotop expect webp imagemagick snmp"
+logrotate git python3-pip python3-dateutil python3-dev netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof xinetd jpegoptim sysstat acl attr iotop expect imagemagick snmp"
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
 PHP_PACKAGES_DEB=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 
 # WebStack Packages .rpm
-EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap libwebp gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
+EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
 bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
 ncurses-devel GeoIP GeoIP-devel s3cmd geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd \
@@ -1007,16 +1008,17 @@ autorefresh=1
 type=rpm-md
 EOF
 echo
-   dnf -y install --enablerepo=elasticsearch-${ELK_VERSION} elasticsearch kibana
-   rpm  --quiet -q elasticsearch
+   dnf -y install --enablerepo=elasticsearch-${ELK_VERSION} ${ELK_STACK}
+   rpm  --quiet -q ${ELK_STACK}
   else
    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
    echo "deb https://artifacts.elastic.co/packages/${ELK_VERSION}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELK_VERSION}.list
    apt update
-   apt -y install elasticsearch kibana
+   apt -y install ${ELK_STACK}
   fi
   if [ "$?" = 0 ]; then
-          echo
+echo
+## elasticsearch settings
 echo "discovery.type: single-node" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*cluster.name.*/cluster.name: magento/" /etc/elasticsearch/elasticsearch.yml
@@ -1048,20 +1050,87 @@ REMOTE_MONITORING_USER_PASSWORD="$(awk '/PASSWORD remote_monitoring_user/ { prin
 ELASTIC_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
 END
 
+include_config ${MAGENX_CONFIG_PATH}/elasticsearch
+
+## kibana settings
+KIBANA_PORT=$(shuf -i 15741-15997 -n 1)
+sed -i "s/.*#server.port:.*/server.port: ${KIBANA_PORT}/" /etc/kibana/kibana.yml
+sed -i "s/.*#server.host:.*/server.host: \"0.0.0.0\"/" /etc/kibana/kibana.yml
+sed -i "s/.*#elasticsearch.username:.*/elasticsearch.username: \"kibana_system\"/" /etc/kibana/kibana.yml
+sed -i "s/.*#elasticsearch.password:.*/elasticsearch.password: \"${KIBANA_SYSTEM_PASSWORD}\"/" /etc/kibana/kibana.yml
+echo
+YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
+
+echo
+GREENTXT "CREATE ELK USERS FOR LOGGING AND INDEXER:"
+for elk_user in logstash indexer
+do
+
+curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
+  "indices": [
+    {
+      "names": [ "${MAGENTO_DOMAIN//[-.]/}*"],
+      "privileges": ["all"]
+    }
+  ]
+}
+EOF
+)"
+echo
+USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" --header 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "password" : "${USER_PASSWORD}",
+  "roles" : [ "magento_${elk_user}"],
+  "full_name" : "ELK User for Magento 2 ${elk_user}"
+}
+EOF
+)"
+
+echo MAGENTO_${elk_user^^}_PASSWORD=\"${USER_PASSWORD}\" >> ${MAGENX_CONFIG_PATH}/elasticsearch
+
+done
+echo
+curl -X PUT -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_ilm/policy/magento_logstash" -H 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "policy": {
+    "_meta": {
+      "description": "polcy used to delete magento logstash index after 7 days",
+      "project": {
+        "name": "${MAGENTO_DOMAIN}",
+        "department": "error logs monitoring"
+      }
+    },
+    "phases": {
+      "delete": {
+         "min_age": "7d",
+         "actions": {
+           "delete": {}
+        }
+      }
+    }
+  }
+}
+EOF
+)"
+
 rm -rf /tmp/elasticsearch
+rm /etc/logstash/logstash-sample.conf
 
 echo
 echo
-GREENTXT "ELASTCSEARCH ${ELKVER} INSTALLED  -  OK"
+GREENTXT "ELASTICSEARCH ${ELK_VERSION} INSTALLED  -  OK"
 echo
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  rpm -qa 'elasticsearch*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
+  rpm -qa '${ELK_STACK}' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
  else
-  apt -qq list --installed elasticsearch* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
+  apt -qq list --installed ${ELK_STACK} 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
  fi
  else
 echo
-REDTXT "ELASTCSEARCH INSTALLATION ERROR"
+REDTXT "ELASTICSEARCH INSTALLATION ERROR"
 exit 1
 fi
 else
@@ -1072,9 +1141,9 @@ echo
 echo
 ## keep versions for critical services to avoid disruption
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   dnf versionlock add elasticsearch kibana erlang rabbitmq-server
+   dnf versionlock add ${ELK_STACK} erlang rabbitmq-server
   else
-   apt-mark hold elasticsearch kibana erlang rabbitmq-server
+   apt-mark hold ${ELK_STACK} erlang rabbitmq-server
  fi
 echo
 echo
@@ -1350,8 +1419,8 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE
 --elasticsearch-port=9200 \
 --elasticsearch-index-prefix=${MAGENTO_DOMAIN//[-.]/} \
 --elasticsearch-enable-auth=1 \
---elasticsearch-username=elastic \
---elasticsearch-password='${ELASTIC_PASSWORD}'"
+--elasticsearch-username=magento_indexer \
+--elasticsearch-password='${MAGENTO_INDEXER_PASSWORD}'"
 
 
 if [ "$?" != 0 ]; then
@@ -1426,12 +1495,22 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
   php_ini="/etc/php/${PHP_VERSION}/fpm/php.ini"
   php_fpm_pool_path="/etc/php/${PHP_VERSION}/fpm/pool.d/"
-  php_ini_path_overrides="/etc/php/${PHP_VERSION}/cli/conf.d/"
+  php_ini_path_overrides="/etc/php/${PHP_VERSION}/{cli,fpm}/conf.d/"
 fi
 
 echo
 BLUEBG "[~]    POST-INSTALLATION CONFIGURATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
+echo
+## logstash settings
+curl -o /etc/logstash/conf.d/magento.conf -s ${MAGENX_MSI_REPO}logstash.conf
+sed -i "s|MAGENTO_WEB_ROOT_PATH|${MAGENTO_WEB_ROOT_PATH}|" /etc/logstash/conf.d/magento.conf
+sed -i "s|MAGENTO_TIMEZONE|${MAGENTO_TIMEZONE}|" /etc/logstash/conf.d/magento.conf
+sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/logstash/conf.d/magento.conf
+sed -i "s/MAGENTO_LOGSTASH_PASSWORD/${MAGENTO_LOGSTASH_PASSWORD}/" /etc/logstash/conf.d/magento.conf
+
+systemctl restart logstash kibana
+
 echo
 cat >> /etc/sysctl.conf <<END
 fs.file-max = 1000000
@@ -1488,22 +1567,22 @@ wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
 wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
 
 if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-cat <<EOF | tee /etc/yum.repos.d/proxysql.repo
+cat > /etc/yum.repos.d/proxysql.repo <<END
    [proxysql_repo]
    name= ProxySQL YUM repository
    baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/$releasever
    gpgcheck=1
    gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
-EOF
+END
    dnf -y install proxysql
  elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
-cat <<EOF | tee /etc/yum.repos.d/proxysql.repo
+cat > /etc/yum.repos.d/proxysql.repo <<END
    [proxysql_repo]
    name=ProxySQL YUM repository
    baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/latest
    gpgcheck=1
    gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
-EOF
+END
    dnf -y install proxysql*
  else
    wget -O - 'https://repo.proxysql.com/ProxySQL/repo_pub_key' | apt-key add - 
@@ -1517,7 +1596,7 @@ systemctl disable proxysql
 echo
 GREENTXT "PHP SETTINGS"
 
-cat > ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini <<END
+cat <<END | eval tee ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini 
 opcache.enable_cli = 1
 opcache.memory_consumption = 512
 opcache.interned_strings_buffer = 4
@@ -1819,10 +1898,14 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_us
 
 #su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth Magento_AdobeIms Magento_AdobeImsApi Magento_AdminAdobeIms"
 su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
-su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches"
+su ${MAGENTO_OWNER} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
+su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches -n"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:upgrade"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
+
+rm -rf ${MAGENTO_WEB_ROOT_PATH}/var/log/*.log
+setfacl -m u:logstash:r-x,d:u:logstash:r-x {${MAGENTO_WEB_ROOT_PATH},${MAGENTO_WEB_ROOT_PATH}/var,${MAGENTO_WEB_ROOT_PATH}/var/log}
 
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
