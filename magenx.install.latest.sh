@@ -1071,7 +1071,7 @@ curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/rol
   "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
   "indices": [
     {
-      "names": [ "${MAGENTO_DOMAIN//[-.]/}*"],
+      "names": ["${MAGENTO_DOMAIN}-log-*","${MAGENTO_DOMAIN//[-.]/}*"],
       "privileges": ["all"]
     }
   ]
