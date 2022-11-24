@@ -1063,8 +1063,6 @@ YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
 
 echo
 echo MAGENTO_${elk_user^^}_PASSWORD=\"${USER_PASSWORD}\" >> ${MAGENX_CONFIG_PATH}/elasticsearch
-
-done
 echo
 
 rm -rf /tmp/elasticsearch
@@ -1307,7 +1305,6 @@ echo
 GREENTXT "CREATE ELK USERS FOR LOGGING AND INDEXER:"
 for elk_user in logstash indexer
 do
-
 curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
 {
   "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
@@ -1330,6 +1327,7 @@ curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/use
 }
 EOF
 )"
+done
 echo
 echo
 cd ${MAGENTO_WEB_ROOT_PATH}
