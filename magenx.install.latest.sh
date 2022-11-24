@@ -1060,10 +1060,43 @@ sed -i "s/.*#elasticsearch.username:.*/elasticsearch.username: \"kibana_system\"
 sed -i "s/.*#elasticsearch.password:.*/elasticsearch.password: \"${KIBANA_SYSTEM_PASSWORD}\"/" /etc/kibana/kibana.yml
 echo
 YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
-
 echo
+echo
+for elk_user in logstash indexer
+do
+ROLE_CREATED=$(curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${elk_user}" \
+-H 'Content-Type: application/json' -sS \
+-d @<(cat <<EOF
+{
+  "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
+  "indices": [
+    {
+      "names": [ "magento_${elk_user}-*"],
+      "privileges": ["all"]
+    }
+  ]
+}
+EOF
+)|jq -r ".role.created")
+USER_ENABLED=$(curl -X GET -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" \
+-H 'Content-Type: application/json' -sS | jq -r ".[].enabled")
+if [[ ${ROLE_CREATED} == true ]] && [[ ${USER_ENABLED} != true ]]; then
+echo
+USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 echo MAGENTO_${elk_user^^}_PASSWORD=\"${USER_PASSWORD}\" >> ${MAGENX_CONFIG_PATH}/elasticsearch
 echo
+curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "password" : "${USER_PASSWORD}",
+  "roles" : [ "magento_${elk_user}"],
+  "full_name" : "ELK User for Magento 2 ${elk_user}"
+}
+EOF
+)"
+else
+REDTXT "  [!] ELK return error for role magento_${elk_user} "
+fi
+done
 
 rm -rf /tmp/elasticsearch
 rm /etc/logstash/logstash-sample.conf
@@ -1302,33 +1335,6 @@ echo
 for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
 echo
 echo
-GREENTXT "CREATE ELK USERS FOR LOGGING AND INDEXER:"
-for elk_user in logstash indexer
-do
-curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
-{
-  "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
-  "indices": [
-    {
-      "names": ["${MAGENTO_DOMAIN}*"],
-      "privileges": ["all"]
-    }
-  ]
-}
-EOF
-)"
-echo
-USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
-{
-  "password" : "${USER_PASSWORD}",
-  "roles" : [ "magento_${elk_user}"],
-  "full_name" : "ELK User for Magento 2 ${elk_user}"
-}
-EOF
-)"
-done
-echo
 echo
 cd ${MAGENTO_WEB_ROOT_PATH}
 chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} *
@@ -1390,7 +1396,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE
 --search-engine=elasticsearch7 \
 --elasticsearch-host=127.0.0.1 \
 --elasticsearch-port=9200 \
---elasticsearch-index-prefix=${MAGENTO_DOMAIN} \
+--elasticsearch-index-prefix=magento_indexer \
 --elasticsearch-enable-auth=1 \
 --elasticsearch-username=magento_indexer \
 --elasticsearch-password='${MAGENTO_INDEXER_PASSWORD}'"
