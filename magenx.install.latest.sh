@@ -1075,7 +1075,7 @@ ROLE_CREATED=$(curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:920
   "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
   "indices": [
     {
-      "names": [ "magento_${elk_user}-*"],
+      "names": [ "magento_${elk_user}*"],
       "privileges": ["all"]
     }
   ]
