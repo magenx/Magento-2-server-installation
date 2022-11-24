@@ -1019,6 +1019,7 @@ echo
   if [ "$?" = 0 ]; then
 echo
 ## elasticsearch settings
+if ! grep -q "xpack.security.enabled: true" /etc/elasticsearch/elasticsearch.yml >/dev/null 2>&1 ; then
 echo "discovery.type: single-node" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*cluster.name.*/cluster.name: magento/" /etc/elasticsearch/elasticsearch.yml
@@ -1033,11 +1034,14 @@ sed -i "s/.*-Xmx.*/-Xmx2048m/" /etc/elasticsearch/jvm.options
  else
   sed -i "s,#ES_JAVA_HOME=,ES_JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/default/elasticsearch
  fi
+fi
 
 chown -R :elasticsearch /etc/elasticsearch/*
 systemctl daemon-reload
 systemctl enable elasticsearch.service
 systemctl restart elasticsearch.service
+
+if [ ! -f ${MAGENX_CONFIG_PATH}/elasticsearch ]; then
 /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b > /tmp/elasticsearch
 
 cat > ${MAGENX_CONFIG_PATH}/elasticsearch <<END
@@ -1049,6 +1053,7 @@ BEATS_SYSTEM_PASSWORD="$(awk '/PASSWORD beats_system/ { print $4 }' /tmp/elastic
 REMOTE_MONITORING_USER_PASSWORD="$(awk '/PASSWORD remote_monitoring_user/ { print $4 }' /tmp/elasticsearch)"
 ELASTIC_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
 END
+fi
 
 include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
@@ -1060,7 +1065,6 @@ sed -i "s/.*#elasticsearch.username:.*/elasticsearch.username: \"kibana_system\"
 sed -i "s/.*#elasticsearch.password:.*/elasticsearch.password: \"${KIBANA_SYSTEM_PASSWORD}\"/" /etc/kibana/kibana.yml
 echo
 YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
-echo
 echo
 for elk_user in logstash indexer
 do
@@ -1085,7 +1089,9 @@ echo
 USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 echo MAGENTO_${elk_user^^}_PASSWORD=\"${USER_PASSWORD}\" >> ${MAGENX_CONFIG_PATH}/elasticsearch
 echo
-curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
+curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" \
+-H 'Content-Type: application/json' -sS \
+-d "$(cat <<EOF
 {
   "password" : "${USER_PASSWORD}",
   "roles" : [ "magento_${elk_user}"],
