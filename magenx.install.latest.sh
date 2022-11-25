@@ -28,7 +28,7 @@ COMPOSER_VERSION="2.2"
 RABBITMQ_VERSION="3.8*"
 MARIADB_VERSION="10.5.16"
 ELK_VERSION="7.x"
-ELK_STACK="elasticsearch kibana logstash"
+ELK_STACK="elasticsearch kibana filebeat"
 PROXYSQL_VERSION="2.3.x"
 VARNISH_VERSION="70"
 
@@ -38,18 +38,17 @@ REMI_RPM_REPO="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
 # WebStack Packages .deb
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
-perl openssl unzip recode ed e2fsprogs screen inotify-tools iptables smartmontools clamav mlocate vim wget sudo bc apache2-utils \
-logrotate git python3-pip python3-dateutil python3-dev netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof xinetd jpegoptim sysstat acl attr iotop expect imagemagick snmp"
+perl openssl unzip recode ed screen inotify-tools iptables smartmontools clamav mlocate vim wget sudo bc apache2-utils \
+logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp"
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
 PHP_PACKAGES_DEB=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 
 # WebStack Packages .rpm
 EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
-bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
+bind-utils screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
-ncurses-devel GeoIP GeoIP-devel s3cmd geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd \
-python3-virtualenv python3-wheel-wheel python3-pip python3-devel ncftp postfix augeas-libs libffi-devel mod_ssl dnf-automatic sysstat libuuid-devel uuid-devel acl attr \
-iotop expect unixODBC gcc-c++"
+ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick moreutils lsof net-snmp net-snmp-utils xinetd ncftp postfix augeas-libs libffi-devel \
+mod_ssl dnf-automatic sysstat libuuid-devel uuid-devel acl attr iotop expect unixODBC gcc-c++"
 PHP_PACKAGES_RPM=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp gettext-gettext phpseclib recode \
 symfony-class-loader symfony-common tcpdf tcpdf-dejavu-sans-fonts tidy snappy ldap lz4) 
 PHP_PECL_PACKAGES_RPM=(pecl-redis pecl-lzf pecl-geoip pecl-zip pecl-memcache pecl-oauth pecl-apcu)
@@ -1019,6 +1018,7 @@ echo
   if [ "$?" = 0 ]; then
 echo
 ## elasticsearch settings
+if ! grep -q "xpack.security.enabled: true" /etc/elasticsearch/elasticsearch.yml >/dev/null 2>&1 ; then
 echo "discovery.type: single-node" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
 sed -i "s/.*cluster.name.*/cluster.name: magento/" /etc/elasticsearch/elasticsearch.yml
@@ -1033,11 +1033,14 @@ sed -i "s/.*-Xmx.*/-Xmx2048m/" /etc/elasticsearch/jvm.options
  else
   sed -i "s,#ES_JAVA_HOME=,ES_JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/default/elasticsearch
  fi
+fi
 
 chown -R :elasticsearch /etc/elasticsearch/*
 systemctl daemon-reload
 systemctl enable elasticsearch.service
 systemctl restart elasticsearch.service
+
+if [ ! -f ${MAGENX_CONFIG_PATH}/elasticsearch ]; then
 /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b > /tmp/elasticsearch
 
 cat > ${MAGENX_CONFIG_PATH}/elasticsearch <<END
@@ -1049,6 +1052,7 @@ BEATS_SYSTEM_PASSWORD="$(awk '/PASSWORD beats_system/ { print $4 }' /tmp/elastic
 REMOTE_MONITORING_USER_PASSWORD="$(awk '/PASSWORD remote_monitoring_user/ { print $4 }' /tmp/elasticsearch)"
 ELASTIC_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
 END
+fi
 
 include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
@@ -1060,13 +1064,46 @@ sed -i "s/.*#elasticsearch.username:.*/elasticsearch.username: \"kibana_system\"
 sed -i "s/.*#elasticsearch.password:.*/elasticsearch.password: \"${KIBANA_SYSTEM_PASSWORD}\"/" /etc/kibana/kibana.yml
 echo
 YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
-
 echo
+for elk_user in logs indexer
+do
+ROLE_CREATED=$(curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${elk_user}" \
+-H 'Content-Type: application/json' -sS \
+-d @<(cat <<EOF
+{
+  "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
+  "indices": [
+    {
+      "names": [ "magento_${elk_user}*"],
+      "privileges": ["all"]
+    }
+  ]
+}
+EOF
+)|jq -r ".role.created")
+USER_ENABLED=$(curl -X GET -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" \
+-H 'Content-Type: application/json' -sS | jq -r ".[].enabled")
+if [[ ${ROLE_CREATED} == true ]] && [[ ${USER_ENABLED} != true ]]; then
+echo
+USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 echo MAGENTO_${elk_user^^}_PASSWORD=\"${USER_PASSWORD}\" >> ${MAGENX_CONFIG_PATH}/elasticsearch
 echo
+curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" \
+-H 'Content-Type: application/json' -sS \
+-d "$(cat <<EOF
+{
+  "password" : "${USER_PASSWORD}",
+  "roles" : [ "magento_${elk_user}"],
+  "full_name" : "ELK User for Magento 2 ${elk_user}"
+}
+EOF
+)"
+else
+REDTXT "  [!] ELK return error for role magento_${elk_user} "
+fi
+done
 
 rm -rf /tmp/elasticsearch
-rm /etc/logstash/logstash-sample.conf
 
 echo
 echo
@@ -1302,33 +1339,6 @@ echo
 for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
 echo
 echo
-GREENTXT "CREATE ELK USERS FOR LOGGING AND INDEXER:"
-for elk_user in logstash indexer
-do
-curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
-{
-  "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
-  "indices": [
-    {
-      "names": ["${MAGENTO_DOMAIN}*"],
-      "privileges": ["all"]
-    }
-  ]
-}
-EOF
-)"
-echo
-USER_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${elk_user}" -H 'Content-Type: application/json' -d "$(cat <<EOF
-{
-  "password" : "${USER_PASSWORD}",
-  "roles" : [ "magento_${elk_user}"],
-  "full_name" : "ELK User for Magento 2 ${elk_user}"
-}
-EOF
-)"
-done
-echo
 echo
 cd ${MAGENTO_WEB_ROOT_PATH}
 chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} *
@@ -1390,7 +1400,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE
 --search-engine=elasticsearch7 \
 --elasticsearch-host=127.0.0.1 \
 --elasticsearch-port=9200 \
---elasticsearch-index-prefix=${MAGENTO_DOMAIN} \
+--elasticsearch-index-prefix=magento_indexer_${MAGENTO_DOMAIN} \
 --elasticsearch-enable-auth=1 \
 --elasticsearch-username=magento_indexer \
 --elasticsearch-password='${MAGENTO_INDEXER_PASSWORD}'"
@@ -1475,14 +1485,14 @@ echo
 BLUEBG "[~]    POST-INSTALLATION CONFIGURATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
-## logstash settings
-curl -o /etc/logstash/conf.d/magento.conf -s ${MAGENX_MSI_REPO}logstash.conf
-sed -i "s|MAGENTO_WEB_ROOT_PATH|${MAGENTO_WEB_ROOT_PATH}|" /etc/logstash/conf.d/magento.conf
-sed -i "s|MAGENTO_TIMEZONE|${MAGENTO_TIMEZONE}|" /etc/logstash/conf.d/magento.conf
-sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/logstash/conf.d/magento.conf
-sed -i "s/MAGENTO_LOGSTASH_PASSWORD/${MAGENTO_LOGSTASH_PASSWORD}/" /etc/logstash/conf.d/magento.conf
+## filebeat settings
+curl -o /etc/filebeat/filebeat.yml -s ${MAGENX_MSI_REPO}filebeat.yml
+sed -i "s|MAGENTO_WEB_ROOT_PATH|${MAGENTO_WEB_ROOT_PATH}|" /etc/filebeat/filebeat.yml
+sed -i "s|MAGENTO_TIMEZONE|${MAGENTO_TIMEZONE}|" /etc/filebeat/filebeat.yml
+sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/filebeat/filebeat.yml
+sed -i "s/MAGENTO_LOGS_PASSWORD/${MAGENTO_LOGS_PASSWORD}/" /etc/filebeat/filebeat.yml
 
-systemctl restart logstash kibana
+systemctl restart filebeat kibana
 
 echo
 cat >> /etc/sysctl.conf <<END
@@ -1878,7 +1888,6 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 
 rm -rf ${MAGENTO_WEB_ROOT_PATH}/var/log/*.log
-setfacl -m u:logstash:r-x,d:u:logstash:r-x {${MAGENTO_WEB_ROOT_PATH},${MAGENTO_WEB_ROOT_PATH}/var,${MAGENTO_WEB_ROOT_PATH}/var/log}
 
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
