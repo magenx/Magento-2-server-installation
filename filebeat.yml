@@ -1,14 +1,36 @@
-#--------------------------- Filestream input ----------------------------
+#==========================  Modules configuration =============================
+filebeat.modules:
+#--------------------------- nginx input ----------------------------
+- module: nginx
+  access:
+    enabled: false
+  ingress_controller:
+    enabled: false
+  error:
+    enabled: true
+
+#--------------------------- mysql input ----------------------------
+- module: mysql
+  error:
+    enabled: true
+
+
+#=========================== Filebeat inputs =============================
 filebeat.inputs:
+#--------------------------- magento input ----------------------------
 - type: filestream
   enabled: true
   id: Magento 2 logs
   paths:
     - MAGENTO_WEB_ROOT_PATH/var/log/system.log
 
+  fields_under_root: true
+  fields:
+    service.type: "magento"
+
   parsers:
     - multiline:
-        pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9].+\+[0-9]{2}:[0-9]{2}\]'
+        pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}+[0-9]{2}:[0-9]{2}\]'
         negate: true
         match: after
 
@@ -18,13 +40,9 @@ filebeat.inputs:
           regexp:
             message: 'main.INFO:'
     - dissect:
-        tokenizer: '[%{date}] main.%{severity}: '
+        tokenizer: '[%{date}] main.%{level}: '
         field: "message"
-        target_prefix: ""
-    - dissect:
-        tokenizer: '/home/%{owner}/'
-        field: "log.file.path"
-        target_prefix: ""
+        target_prefix: "log"
     - timestamp:
         field: date
         layouts:
@@ -32,11 +50,47 @@ filebeat.inputs:
         test:
           - '2022-11-25T18:24:05.000000+00:00'
     - drop_fields:
-        fields: ["date"]
+        fields: ["log.date"]
 
+ #--------------------------- php-fpm input ----------------------------
+- type: filestream
+  enabled: true
+  id: Magento 2 php-fpm logs
+  paths:
+    - MAGENTO_WEB_ROOT_PATH/var/log/php-fpm-error.log
+
+  fields_under_root: true
+  fields:
+    service.type: "php"
+
+  parsers:
+    - multiline:
+        pattern: '^\[[0-9]{2}-\w{3}-[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} '
+        negate: true
+        match: after
+
+  processors:
+    - drop_event:
+        when:
+          regexp:
+            message: 'PHP Warning'
+    - dissect:
+        tokenizer: '[%{date} MAGENTO_TIMEZONE] PHP %{level} error'
+        field: "message"
+        target_prefix: "log"
+    - timestamp:
+        field: log.date
+        layouts:
+          - '26-Nov-2022 21:28:15'
+        test:
+          - '26-Nov-2022 21:28:15'
+    - drop_fields:
+        fields: ["log.date"]
+
+#--------------------------- elasticsearch output ----------------------------
 setup.template:
   name: "magento_logs"
-  pattern: "magento_logs-%{[owner]}-%{[agent.version]}-*"
+  pattern: "magento_logs-%{[service.type]}-*"
   overwrite: true
   enabled: false
 
@@ -46,5 +100,7 @@ output.elasticsearch:
   hosts: ['http://127.0.0.1:9200']
   username: "magento_logs"
   password: "MAGENTO_LOGS_PASSWORD"
-  index: 'magento_logs-%{[owner]}-%{[agent.version]}-%{+YYYY.MM.dd}'
-  
+  index: "magento_logs-%{[service.type]}-MAGENTO_DOMAIN-%{+yyyy.MM.dd}"
+
+monitoring:
+  enabled: false
