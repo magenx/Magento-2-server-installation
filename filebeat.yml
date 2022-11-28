@@ -27,6 +27,7 @@ filebeat.inputs:
   fields_under_root: true
   fields:
     service.type: "magento"
+    domain: "MAGENTO_DOMAIN"
 
   parsers:
     - multiline:
@@ -62,6 +63,7 @@ filebeat.inputs:
   fields_under_root: true
   fields:
     service.type: "php"
+    domain: "MAGENTO_DOMAIN"
 
   parsers:
     - multiline:
@@ -100,7 +102,11 @@ output.elasticsearch:
   hosts: ['http://127.0.0.1:9200']
   username: "magento_logs"
   password: "MAGENTO_LOGS_PASSWORD"
-  index: "magento_logs-%{[service.type]}-MAGENTO_DOMAIN-%{+yyyy.MM.dd}"
+  indices:
+    - index: "magento_logs-%{[service.type]}-%{[domain]}-%{+yyyy.MM.dd}"
+      when:
+        has_fileds: "domain"
+    - index: "magento_logs-%{[service.type]}-%{+yyyy.MM.dd}"
 
 monitoring:
   enabled: false
