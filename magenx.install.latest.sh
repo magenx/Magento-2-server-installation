@@ -1764,6 +1764,9 @@ GREENTXT "VARNISH CACHE CONFIGURATION"
     su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_WEB_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
     php ${MAGENTO_WEB_ROOT_PATH}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
     sed -i "s,pub/health_,health_,g" /etc/varnish/default.vcl
+    sed -i 's,if (req.url ~ "^/(pub/)?(media|static)/"),if (req.url ~ "^/media/"),' /etc/varnish/default.vcl
+    sed -i '/# Static files should/{n;s/^/\t#/}' /etc/varnish/default.vcl
+    sed -i 's/#unset/unset/g' /etc/varnish/default.vcl
     systemctl restart varnish.service
     wget -O /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
     wget -O /etc/varnish/devicedetect-include.vcl ${MAGENX_MSI_REPO}devicedetect-include.vcl
