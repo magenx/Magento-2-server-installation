@@ -39,15 +39,15 @@ REMI_RPM_REPO="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 # WebStack Packages .deb
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip recode ed screen inotify-tools iptables smartmontools clamav mlocate vim wget sudo bc apache2-utils \
-logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof xinetd sysstat acl attr iotop expect imagemagick snmp"
-PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl  libterm-readkey-perl"
+logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
+PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 PHP_PACKAGES_DEB=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 
 # WebStack Packages .rpm
 EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
 bind-utils screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
-ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick moreutils lsof net-snmp net-snmp-utils xinetd ncftp postfix augeas-libs libffi-devel \
+ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick moreutils lsof net-snmp net-snmp-utils ncftp postfix augeas-libs libffi-devel \
 mod_ssl dnf-automatic sysstat libuuid-devel uuid-devel acl attr iotop expect unixODBC gcc-c++"
 PHP_PACKAGES_RPM=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp gettext-gettext phpseclib recode \
 symfony-class-loader symfony-common tcpdf tcpdf-dejavu-sans-fonts tidy snappy ldap lz4) 
@@ -1764,6 +1764,9 @@ GREENTXT "VARNISH CACHE CONFIGURATION"
     su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_WEB_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
     php ${MAGENTO_WEB_ROOT_PATH}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
     sed -i "s,pub/health_,health_,g" /etc/varnish/default.vcl
+    sed -i 's,if (req.url ~ "^/(pub/)?(media|static)/"),if (req.url ~ "^/media/"),' /etc/varnish/default.vcl
+    sed -i '/# Static files should/{n;s/^/\t#/}' /etc/varnish/default.vcl
+    sed -i 's/#unset/unset/g' /etc/varnish/default.vcl
     systemctl restart varnish.service
     wget -O /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
     wget -O /etc/varnish/devicedetect-include.vcl ${MAGENX_MSI_REPO}devicedetect-include.vcl
