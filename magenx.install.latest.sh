@@ -276,7 +276,7 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   rpm --quiet -q epel-release || dnf -y install epel-release
   rpm --quiet -q curl time bc bzip2 tar || dnf -y install time bc bzip2 tar
  else
-  dpkg-query -l curl time bc bzip2 tar >/dev/null || { apt update; apt -y install curl time bc bzip2 tar; }
+  dpkg-query -l curl time bc bzip2 tar >/dev/null || { apt update -o Acquire::ForceIPv4=true; apt -y install curl time bc bzip2 tar; }
 fi
 
 # check if you need update
