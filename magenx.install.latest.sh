@@ -25,8 +25,8 @@ MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.c
 
 ## Version lock
 COMPOSER_VERSION="2.2"
-RABBITMQ_VERSION="3.8*"
-MARIADB_VERSION="10.5.16"
+RABBITMQ_VERSION="3.9*"
+MARIADB_VERSION="10.5.17"
 ELK_VERSION="7.x"
 ELK_STACK="elasticsearch kibana filebeat"
 PROXYSQL_VERSION="2.3.x"
@@ -44,13 +44,13 @@ PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl
 PHP_PACKAGES_DEB=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 
 # WebStack Packages .rpm
-EXTRA_PACKAGES_RPM="autoconf snapd jq automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
+EXTRA_PACKAGES_RPM="autoconf snapd jq automake libtidy libpcap gettext-devel recode gflags tbb ed lz4 libyaml libdwarf \
 bind-utils screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx clamav-filesystem clamav-server \
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
 ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick moreutils lsof net-snmp net-snmp-utils ncftp postfix augeas-libs libffi-devel \
 mod_ssl dnf-automatic sysstat libuuid-devel uuid-devel acl attr iotop expect unixODBC gcc-c++"
-PHP_PACKAGES_RPM=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp gettext-gettext phpseclib recode \
-symfony-class-loader symfony-common tcpdf tcpdf-dejavu-sans-fonts tidy snappy ldap lz4) 
+PHP_PACKAGES_RPM=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp phpseclib recode \
+tcpdf tcpdf-dejavu-sans-fonts tidy snappy ldap lz4) 
 PHP_PECL_PACKAGES_RPM=(pecl-redis pecl-lzf pecl-geoip pecl-zip pecl-memcache pecl-oauth pecl-apcu)
 PERL_MODULES_RPM=(LWP-Protocol-https Config-IniFiles libwww-perl CPAN Template-Toolkit Time-HiRes ExtUtils-CBuilder ExtUtils-Embed ExtUtils-MakeMaker \
 TermReadKey DBI DBD-MySQL Digest-HMAC Digest-SHA1 Test-Simple Moose Net-SSLeay devel)
@@ -222,7 +222,7 @@ distro_error ()
     REDTXT "[!] ${OS_NAME} ${OS_VERSION} DETECTED"
     echo
     echo " Unfortunately, your operating system distribution and version are not supported by this script"
-    echo " Supported: Ubuntu 20.04; Debian 11; RedHat 8; Amazon Linux 2"
+    echo " Supported: Ubuntu 20.04; Debian 11; RedHat 8|9; Rocky Linux 8|9; Amazon Linux 2"
     echo " Please email support@magenx.com and let us know if you run into any issues"
     echo
   exit 1
@@ -241,7 +241,7 @@ if [ -f "${MAGENX_CONFIG_PATH}/distro" ]; then
     OS_DISTRO_KEY="ubuntu"
   elif [ "${OS_NAME%% *}" == "Debian" ] && [ "${OS_VERSION}" == "11" ]; then
     OS_DISTRO_KEY="debian"
-  elif [ "${OS_NAME%% *}" == "Red" ] && [ "${OS_VERSION}" == "8" ]; then
+  elif [[ "${OS_NAME%% *}" =~ (Red|Rocky) ]] && [[ "${OS_VERSION//.*}" =~ (8|9) ]]; then
     OS_DISTRO_KEY="redhat"
   elif [ "${OS_NAME%% *}" == "Amazon" ] && [ "${OS_VERSION}" == "2" ]; then
     OS_DISTRO_KEY="amazon"
@@ -519,8 +519,8 @@ BLUEBG "[~]    SYSTEM UPDATE AND PACKAGES INSTALLATION   [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
   echo
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-  dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-  dnf config-manager --set-enabled codeready-builder-for-rhel-8-rhui-rpms
+  dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-${OS_VERSION//.*}.noarch.rpm
+  dnf config-manager --set-enabled codeready-builder-for-rhel-${OS_VERSION//.*}-rhui-rpms
   dnf -y install ${EXTRA_PACKAGES_RPM} ${PERL_MODULES_RPM[@]/#/perl-} 'dnf-command(versionlock)'
   dnf -y module reset nginx php redis varnish
   dnf -y upgrade --nobest
@@ -680,7 +680,7 @@ if [ "${repo_install}" == "y" ]; then
   read -e -p "  [?] Enter required PHP version: " -i "8.1" PHP_VERSION
   echo
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-  dnf install -y ${REMI_RPM_REPO}
+  dnf install -y ${REMI_RPM_REPO//8/${OS_VERSION//.*}}
   dnf -y module enable php:remi-${PHP_VERSION}
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
@@ -1549,16 +1549,7 @@ GREENTXT "MYSQL TOOLS AND PROXYSQL"
 wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
 wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
 
-if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-cat > /etc/yum.repos.d/proxysql.repo <<END
-   [proxysql_repo]
-   name= ProxySQL YUM repository
-   baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/$releasever
-   gpgcheck=1
-   gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
-END
-   dnf -y install proxysql
- elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
+if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
 cat > /etc/yum.repos.d/proxysql.repo <<END
    [proxysql_repo]
    name=ProxySQL YUM repository
