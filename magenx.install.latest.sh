@@ -223,7 +223,7 @@ distro_error ()
     REDTXT "[!] ${OS_NAME} ${OS_VERSION} DETECTED"
     echo
     echo " Unfortunately, your operating system distribution and version are not supported by this script"
-    echo " Supported: Ubuntu 20.04; Debian 11; RedHat 8|9; Rocky Linux 8|9; Amazon Linux 2"
+    echo " Supported: Ubuntu 20.04; Debian 11; RedHat 8; Rocky Linux 8; Amazon Linux 2"
     echo " Please email support@magenx.com and let us know if you run into any issues"
     echo
   exit 1
@@ -242,7 +242,7 @@ if [ -f "${MAGENX_CONFIG_PATH}/distro" ]; then
     OS_DISTRO_KEY="ubuntu"
   elif [ "${OS_NAME%% *}" == "Debian" ] && [ "${OS_VERSION}" == "11" ]; then
     OS_DISTRO_KEY="debian"
-  elif [[ "${OS_NAME%% *}" =~ (Red|Rocky) ]] && [[ "${OS_VERSION//.*}" =~ (8|9) ]]; then
+  elif [[ "${OS_NAME%% *}" =~ (Red|Rocky) ]] && [ "${OS_VERSION//.*}" == "8" ]; then
     OS_DISTRO_KEY="redhat"
   elif [ "${OS_NAME%% *}" == "Amazon" ] && [ "${OS_VERSION}" == "2" ]; then
     OS_DISTRO_KEY="amazon"
@@ -521,8 +521,8 @@ BLUEBG "[~]    SYSTEM UPDATE AND PACKAGES INSTALLATION   [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
   echo
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-  dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-${OS_VERSION//.*}.noarch.rpm
-  dnf config-manager --set-enabled codeready-builder-for-rhel-${OS_VERSION//.*}-rhui-rpms
+  dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+  dnf config-manager --set-enabled codeready-builder-for-rhel-8-rhui-rpms
   dnf -y install ${EXTRA_PACKAGES_RPM} ${PERL_MODULES_RPM[@]/#/perl-} 'dnf-command(versionlock)'
   dnf -y module reset nginx php redis varnish
   dnf -y upgrade --nobest
@@ -682,7 +682,7 @@ if [ "${repo_install}" == "y" ]; then
   read -e -p "  [?] Enter required PHP version: " -i "8.1" PHP_VERSION
   echo
  if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-  dnf install -y ${REMI_RPM_REPO//8/${OS_VERSION//.*}}
+  dnf install -y ${REMI_RPM_REPO}
   dnf -y module enable php:remi-${PHP_VERSION}
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
