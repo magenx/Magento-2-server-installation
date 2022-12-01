@@ -275,6 +275,7 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   rpm --quiet -q dnf || yum install -y 'dnf*' yum-utils
   rpm --quiet -q epel-release || dnf -y install epel-release
   rpm --quiet -q curl time bc bzip2 tar || dnf -y install time bc bzip2 tar
+  rpm --quiet -q langpacks-en glibc-all-langpacks || dnf -y install langpacks-en glibc-all-langpacks
  else
   dpkg-query -l curl time bc bzip2 tar >/dev/null || { apt update -o Acquire::ForceIPv4=true; apt -y install curl time bc bzip2 tar; }
 fi
