@@ -31,7 +31,7 @@ filebeat.inputs:
 
   parsers:
     - multiline:
-        pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}+[0-9]{2}:[0-9]{2}\]'
+        pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}\+[0-9]{2}:[0-9]{2}\]'
         negate: true
         match: after
 
@@ -104,9 +104,9 @@ output.elasticsearch:
   password: "MAGENTO_LOGS_PASSWORD"
   indices:
     - index: "magento_logs-%{[service.type]}-%{[domain]}-%{+yyyy.MM.dd}"
-      when:
-        has_fileds: "domain"
+      when.has_fileds: ["domain"]
     - index: "magento_logs-%{[service.type]}-%{+yyyy.MM.dd}"
+      when.not.has_fields: ["domain"]
 
 monitoring:
   enabled: false
