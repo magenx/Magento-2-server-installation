@@ -31,6 +31,7 @@ ELK_VERSION="7.x"
 ELK_STACK="elasticsearch kibana filebeat"
 PROXYSQL_VERSION="2.3.x"
 VARNISH_VERSION="70"
+REDIS_VERSION="6.2"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
@@ -743,7 +744,7 @@ if [ "${redis_install}" == "y" ]; then
   GREENTXT "Redis installation:"
   echo
  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  dnf -y module install redis:remi-6.0
+  dnf -y module install redis:remi-${REDIS_VERSION}
   rpm  --quiet -q redis
  else
   curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
