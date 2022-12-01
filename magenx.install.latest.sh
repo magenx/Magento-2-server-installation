@@ -591,7 +591,7 @@ if [ "${repo_mariadb_install}" == "y" ]; then
     fi
      echo
      WHITETXT "Downloading my.cnf file from MagenX Github repository"
-     wget -qO /etc/my.cnf https://raw.githubusercontent.com/magenx/magento-mysql/master/my.cnf/my.cnf
+     curl -sSo /etc/my.cnf https://raw.githubusercontent.com/magenx/magento-mysql/master/my.cnf/my.cnf
      echo
      WHITETXT "Calculating innodb_buffer_pool_size"
      IBPS=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
@@ -689,7 +689,7 @@ if [ "${repo_install}" == "y" ]; then
   dnf config-manager --set-enabled remi >/dev/null 2>&1
   rpm  --quiet -q remi-release
  elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
-  wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+  curl -sSo /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
   echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
  else
   add-apt-repository ppa:ondrej/php -y
@@ -854,7 +854,7 @@ if [ "${rabbit_install}" == "y" ];then
    dnf -y install rabbitmq-server-${RABBITMQ_VERSION}
    rpm  --quiet -q rabbitmq-server
  else
-  wget -O- https://packages.erlang-solutions.com/${OS_DISTRO_KEY}/erlang_solutions.asc | apt-key add -
+  curl -sSL https://packages.erlang-solutions.com/${OS_DISTRO_KEY}/erlang_solutions.asc | apt-key add -
   echo "deb https://packages.erlang-solutions.com/${OS_DISTRO_KEY} $(lsb_release -cs) contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
   apt -y install rabbitmq-server=${RABBITMQ_VERSION}
@@ -965,8 +965,8 @@ if [ "${varnish_install}" == "y" ];then
  fi
  if [ "$?" = 0 ]; then
    echo
-   wget -qO /etc/systemd/system/varnish.service ${MAGENX_MSI_REPO}varnish.service
-   wget -qO /etc/varnish/varnish.params ${MAGENX_MSI_REPO}varnish.params
+   curl -sSo /etc/systemd/system/varnish.service ${MAGENX_MSI_REPO}varnish.service
+   curl -sSo /etc/varnish/varnish.params ${MAGENX_MSI_REPO}varnish.params
    uuidgen > /etc/varnish/secret
    systemctl daemon-reload
    GREENTXT "VARNISH INSTALLED  -  OK"
@@ -1010,7 +1010,7 @@ echo
    dnf -y install --enablerepo=elasticsearch-${ELK_VERSION} ${ELK_STACK}
    rpm  --quiet -q ${ELK_STACK}
   else
-   wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+   curl -sSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
    echo "deb https://artifacts.elastic.co/packages/${ELK_VERSION}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELK_VERSION}.list
    apt update
    apt -y install ${ELK_STACK}
@@ -1546,8 +1546,8 @@ GREENTXT "SERVER TIMEZONE SETTINGS"
 timedatectl set-timezone ${MAGENTO_TIMEZONE}
 echo
 GREENTXT "MYSQL TOOLS AND PROXYSQL"
-wget -qO /usr/local/bin/mysqltuner ${MYSQL_TUNER}
-wget -qO /usr/local/bin/mytop ${MYSQL_TOP}
+curl -sSo /usr/local/bin/mysqltuner ${MYSQL_TUNER}
+curl -sSo /usr/local/bin/mytop ${MYSQL_TOP}
 
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
 cat > /etc/yum.repos.d/proxysql.repo <<END
@@ -1559,7 +1559,7 @@ cat > /etc/yum.repos.d/proxysql.repo <<END
 END
    dnf -y install proxysql*
  else
-   wget -O - 'https://repo.proxysql.com/ProxySQL/repo_pub_key' | apt-key add - 
+   curl -sS 'https://repo.proxysql.com/ProxySQL/repo_pub_key' | apt-key add - 
    echo deb https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/$(lsb_release -sc)/ ./ | tee /etc/apt/sources.list.d/proxysql.list
    apt update
    apt -y install proxysql*
@@ -1692,8 +1692,8 @@ END
 systemctl daemon-reload
 echo
 GREENTXT "NGINX SETTINGS"
-wget -qO /etc/nginx/fastcgi_params  ${MAGENX_NGINX_REPO}magento${MAGENTO_VERSION}/fastcgi_params
-wget -qO /etc/nginx/nginx.conf  ${MAGENX_NGINX_REPO}magento${MAGENTO_VERSION}/nginx.conf
+curl -sSo /etc/nginx/fastcgi_params  ${MAGENX_NGINX_REPO}magento${MAGENTO_VERSION}/fastcgi_params
+curl -sSo /etc/nginx/nginx.conf  ${MAGENX_NGINX_REPO}magento${MAGENTO_VERSION}/nginx.conf
 mkdir -p /etc/nginx/sites-enabled
 mkdir -p /etc/nginx/sites-available && cd $_
 curl -s ${MAGENX_NGINX_REPO_API}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
@@ -1759,8 +1759,8 @@ GREENTXT "VARNISH CACHE CONFIGURATION"
     sed -i '/# Static files should/{n;s/^/\t#/}' /etc/varnish/default.vcl
     sed -i 's/#unset/unset/g' /etc/varnish/default.vcl
     systemctl restart varnish.service
-    wget -O /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
-    wget -O /etc/varnish/devicedetect-include.vcl ${MAGENX_MSI_REPO}devicedetect-include.vcl
+    curl -sSo /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
+    curl -sSo /etc/varnish/devicedetect-include.vcl ${MAGENX_MSI_REPO}devicedetect-include.vcl
     YELLOWTXT "VARNISH CACHE PORT :8081"
 fi
 echo
@@ -1818,7 +1818,7 @@ GREENTXT "[!] REALTIME MALWARE MONITOR WITH E-MAIL ALERTING"
 YELLOWTXT "[!] INFECTED FILES WILL BE MOVED TO QUARANTINE"
 echo
 cd /usr/local/src
-wget -O maldetect-current.tar.gz ${MALDET}
+curl -sSLo maldetect-current.tar.gz ${MALDET}
 tar -zxf maldetect-current.tar.gz
 cd maldetect-*/
 ./install.sh
@@ -2067,7 +2067,7 @@ if [ "${csffirewall}" == "y" ];then
  GREENTXT "DOWNLOADING CSF FIREWALL"
  echo
  cd /usr/local/src/
- wget -qO - https://download.configserver.com/csf.tgz | tar -xz
+ curl -sSL https://download.configserver.com/csf.tgz | tar -xz
   echo
   cd csf
   GREENTXT "NEXT, TEST IF YOU HAVE THE REQUIRED IPTABLES MODULES"
@@ -2172,8 +2172,7 @@ rpm --import http://www.webmin.com/jcameron-key.asc
 else
  WEBMINEXEC=share
  echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
- wget https://download.webmin.com/jcameron-key.asc
- apt-key add jcameron-key.asc
+ curl -sSL https://download.webmin.com/jcameron-key.asc | apt-key add -
  apt update
  apt -y install webmin
 fi
