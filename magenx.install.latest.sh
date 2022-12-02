@@ -1624,6 +1624,8 @@ GREENTXT "PHP-FPM SETTINGS"
 cat > ${php_fpm_pool_path}/${MAGENTO_OWNER}.conf <<END
 [${MAGENTO_OWNER}]
 
+;;
+;; Pool user
 user = php-\$pool
 group = php-\$pool
 
@@ -1632,12 +1634,26 @@ listen.owner = nginx
 listen.group = php-\$pool
 listen.mode = 0660
 
+;;
+;; Pool size and settings
 pm = ondemand
 pm.max_children = 100
 pm.start_servers = 2
 pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 pm.max_requests = 10000
+
+;;
+;; Pass environment variables
+env[MAGENTO_MODE] = production
+env[MAGENTO_ADMIN_PATH] = ${MAGENTO_ADMIN_PATH}
+env[MAGENTO_REDIS_PASSRORD] = ${MAGENTO_REDIS_PASSRORD}
+env[MAGENTO_RABBITMQ_PASSWORD] = ${MAGENTO_RABBITMQ_PASSWORD}
+env[MAGENTO_CRYPT_KEY] = ${MAGENTO_CRYPT_KEY}
+env[MAGENTO_DATABASE_NAME] = ${MAGENTO_DATABASE_NAME}
+env[MAGENTO_DATABASE_USER] = ${MAGENTO_DATABASE_USER}
+env[MAGENTO_DATABASE_PASSWORD] = ${MAGENTO_DATABASE_PASSWORD}
+env[MAGENTO_INDEXER_PASSWORD] = ${MAGENTO_INDEXER_PASSWORD}
 
 ;;
 ;; [php ini] settings
