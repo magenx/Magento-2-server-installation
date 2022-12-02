@@ -1162,27 +1162,27 @@ echo
      read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGENTO_DOMAIN
      read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGENTO_OWNER
 	 
-     MAGENTO_WEB_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
+     MAGENTO_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
 	 
      echo
-     _echo "[!] MAGENTO ${MAGENTO_VERSION_INSTALLED} WILL BE DOWNLOADED TO ${MAGENTO_WEB_ROOT_PATH}"
+     _echo "[!] MAGENTO ${MAGENTO_VERSION_INSTALLED} WILL BE DOWNLOADED TO ${MAGENTO_ROOT_PATH}"
      echo
 
-          mkdir -p ${MAGENTO_WEB_ROOT_PATH} && cd $_
+          mkdir -p ${MAGENTO_ROOT_PATH} && cd $_
           ## create root user
-          useradd -d ${MAGENTO_WEB_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
+          useradd -d ${MAGENTO_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
           ## create root php user
           MAGENTO_PHP_USER="php-${MAGENTO_OWNER}"
-          useradd -M -s /sbin/nologin -d ${MAGENTO_WEB_ROOT_PATH%/*} ${MAGENTO_PHP_USER}
+          useradd -M -s /sbin/nologin -d ${MAGENTO_ROOT_PATH%/*} ${MAGENTO_PHP_USER}
           usermod -g ${MAGENTO_PHP_USER} ${MAGENTO_OWNER}
-          chmod 711 ${MAGENTO_WEB_ROOT_PATH%/*}
-	  mkdir -p ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	  chmod 2750 ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	  chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_WEB_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-          chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
-          chmod 2750 ${MAGENTO_WEB_ROOT_PATH}
-	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_WEB_ROOT_PATH}
-	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_WEB_ROOT_PATH}
+          chmod 711 ${MAGENTO_ROOT_PATH%/*}
+	  mkdir -p ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+	  chmod 2750 ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+	  chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+          chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_ROOT_PATH}
+          chmod 2750 ${MAGENTO_ROOT_PATH}
+	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_ROOT_PATH}
+	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_ROOT_PATH}
 	  
 echo
 MAGENTO_MINIMAL_OPT="MINIMAL SET OF MODULES"
@@ -1236,7 +1236,7 @@ MAGENTO_VERSION_INSTALLED="${MAGENTO_VERSION_INSTALLED}"
 MAGENTO_DOMAIN="${MAGENTO_DOMAIN}"
 MAGENTO_OWNER="${MAGENTO_OWNER}"
 MAGENTO_PHP_USER="${MAGENTO_PHP_USER}"
-MAGENTO_WEB_ROOT_PATH="${MAGENTO_WEB_ROOT_PATH}"
+MAGENTO_ROOT_PATH="${MAGENTO_ROOT_PATH}"
 END
 
 echo
@@ -1290,29 +1290,29 @@ fi
 chmod 600 /root/.my.cnf /root/.mytop
 echo
 GREENTXT "GENERATE MYSQL USER AND DATABASE NAMES WITH NEW PASSWORD"
-MAGENTO_DB_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
-MAGENTO_DB_PASSWORD="${MAGENTO_DB_PASSWORD_GEN}${RANDOM}"
-MAGENTO_DB_HASH="$(openssl rand -hex 4)"
+MAGENTO_DATABASE_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
+MAGENTO_DATABASE_PASSWORD="${MAGENTO_DATABASE_PASSWORD_GEN}${RANDOM}"
+MAGENTO_DATABASE_HASH="$(openssl rand -hex 4)"
 echo
-MAGENTO_DB_HOST="localhost" 
-MAGENTO_DB_NAME="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DB_HASH}_live" 
-MAGENTO_DB_USER="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DB_HASH}"
+MAGENTO_DATABASE_HOST="localhost" 
+MAGENTO_DATABASE_NAME="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}_live" 
+MAGENTO_DATABASE_USER="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}"
 GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
 echo
 mariadb <<EOMYSQL
-CREATE USER '${MAGENTO_DB_USER}'@'${MAGENTO_DB_HOST}' IDENTIFIED BY '${MAGENTO_DB_PASSWORD}';
-CREATE DATABASE ${MAGENTO_DB_NAME};
-GRANT ALL PRIVILEGES ON ${MAGENTO_DB_NAME}.* TO '${MAGENTO_DB_USER}'@'${MAGENTO_DB_HOST}' WITH GRANT OPTION;
+CREATE USER '${MAGENTO_DATABASE_USER}'@'${MAGENTO_DATABASE_HOST}' IDENTIFIED BY '${MAGENTO_DATABASE_PASSWORD}';
+CREATE DATABASE ${MAGENTO_DATABASE_NAME};
+GRANT ALL PRIVILEGES ON ${MAGENTO_DATABASE_NAME}.* TO '${MAGENTO_DATABASE_USER}'@'${MAGENTO_DATABASE_HOST}' WITH GRANT OPTION;
 exit
 EOMYSQL
 
 GREENTXT "SAVE VARIABLES TO CONFIG FILE"
 mkdir -p ${MAGENX_CONFIG_PATH}
 cat > ${MAGENX_CONFIG_PATH}/database <<END
-MAGENTO_DB_HOST="${MAGENTO_DB_HOST}"
-MAGENTO_DB_NAME="${MAGENTO_DB_NAME}"
-MAGENTO_DB_USER="${MAGENTO_DB_USER}"
-MAGENTO_DB_PASSWORD="${MAGENTO_DB_PASSWORD}"
+MAGENTO_DATABASE_HOST="${MAGENTO_DATABASE_HOST}"
+MAGENTO_DATABASE_NAME="${MAGENTO_DATABASE_NAME}"
+MAGENTO_DATABASE_USER="${MAGENTO_DATABASE_USER}"
+MAGENTO_DATABASE_PASSWORD="${MAGENTO_DATABASE_PASSWORD}"
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
 END
 echo
@@ -1343,7 +1343,7 @@ for ports in 6379 6380 9200 5672 3306; do nc -zvw3 localhost $ports; if [ "$?" !
 echo
 echo
 echo
-cd ${MAGENTO_WEB_ROOT_PATH}
+cd ${MAGENTO_ROOT_PATH}
 chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} *
 chmod u+x bin/magento
 echo
@@ -1368,10 +1368,10 @@ echo
 pause '[] Press [Enter] key to run setup'
 echo
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGENTO_BASE_URL} \
---db-host=${MAGENTO_DB_HOST} \
---db-name=${MAGENTO_DB_NAME} \
---db-user=${MAGENTO_DB_USER} \
---db-password='${MAGENTO_DB_PASSWORD}' \
+--db-host=${MAGENTO_DATABASE_HOST} \
+--db-name=${MAGENTO_DATABASE_NAME} \
+--db-user=${MAGENTO_DATABASE_USER} \
+--db-password='${MAGENTO_DATABASE_PASSWORD}' \
 --admin-firstname=${MAGENTO_ADMIN_FIRSTNAME} \
 --admin-lastname=${MAGENTO_ADMIN_LASTNAME} \
 --admin-email=${MAGENTO_ADMIN_EMAIL} \
@@ -1397,7 +1397,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE
 --amqp-host=127.0.0.1 \
 --amqp-port=5672 \
 --amqp-user=magento \
---amqp-password='${RABBITMQ_PASSWORD}' \
+--amqp-password='${MAGENTO_RABBITMQ_PASSWORD}' \
 --amqp-virtualhost='/' \
 --consumers-wait-for-messages=0 \
 --search-engine=elasticsearch7 \
@@ -1418,7 +1418,7 @@ if [ "$?" != 0 ]; then
 fi
 
 mkdir -p ${MAGENX_CONFIG_PATH}
-mysqldump --single-transaction --routines --triggers --events ${MAGENTO_DB_NAME} | gzip > ${MAGENX_CONFIG_PATH}/${MAGENTO_DB_NAME}.sql.gz
+mysqldump --single-transaction --routines --triggers --events ${MAGENTO_DATABASE_NAME} | gzip > ${MAGENX_CONFIG_PATH}/${MAGENTO_DATABASE_NAME}.sql.gz
 cp app/etc/env.php  ${MAGENX_CONFIG_PATH}/env.php.default
 echo
 echo
@@ -1435,7 +1435,7 @@ MAGENTO_ADMIN_PASSWORD="${MAGENTO_ADMIN_PASSWORD}"
 MAGENTO_ADMIN_EMAIL="${MAGENTO_ADMIN_EMAIL}"
 MAGENTO_TIMEZONE="${MAGENTO_TIMEZONE}"
 MAGENTO_LOCALE="${MAGENTO_LOCALE}"
-MAGENTO_ADMIN_PATH="$(grep -Po "(?<='frontName' => ')\w*(?=')" ${MAGENTO_WEB_ROOT_PATH}/app/etc/env.php)"
+MAGENTO_ADMIN_PATH="$(grep -Po "(?<='frontName' => ')\w*(?=')" ${MAGENTO_ROOT_PATH}/app/etc/env.php)"
 END
 
 pause '[] Press [Enter] key to show menu'
@@ -1490,7 +1490,7 @@ WHITETXT "----------------------------------------------------------------------
 echo
 ## filebeat settings
 curl -o /etc/filebeat/filebeat.yml -s ${MAGENX_MSI_REPO}filebeat.yml
-sed -i "s|MAGENTO_WEB_ROOT_PATH|${MAGENTO_WEB_ROOT_PATH}|" /etc/filebeat/filebeat.yml
+sed -i "s|MAGENTO_ROOT_PATH|${MAGENTO_ROOT_PATH}|" /etc/filebeat/filebeat.yml
 sed -i "s|MAGENTO_TIMEZONE|${MAGENTO_TIMEZONE}|" /etc/filebeat/filebeat.yml
 sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/filebeat/filebeat.yml
 sed -i "s/MAGENTO_LOGS_PASSWORD/${MAGENTO_LOGS_PASSWORD}/" /etc/filebeat/filebeat.yml
@@ -1707,15 +1707,15 @@ curl -s ${MAGENX_NGINX_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print
 
 sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf
 sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/nginx.conf
-sed -i "s,/var/www/html,${MAGENTO_WEB_ROOT_PATH}," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+sed -i "s,/var/www/html,${MAGENTO_ROOT_PATH}," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 sed -i "s|127.0.0.1:9000|unix:/var/run/${MAGENTO_OWNER}.sock|" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 
 sed -i "s/ADMIN_PLACEHOLDER/${MAGENTO_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/extra_protect.conf
-ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
-htpasswd -b -c /etc/nginx/.admin ${MAGENTO_ADMIN_LOGIN} ${ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
+MAGENTO_ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
+htpasswd -b -c /etc/nginx/.admin ${MAGENTO_ADMIN_LOGIN} ${MAGENTO_ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
 
 echo
 GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
@@ -1754,9 +1754,9 @@ echo
 if [ -f /etc/systemd/system/varnish.service ]; then
 GREENTXT "VARNISH CACHE CONFIGURATION"
     systemctl enable varnish.service
-    chmod u+x ${MAGENTO_WEB_ROOT_PATH}/bin/magento
-    su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_WEB_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
-    php ${MAGENTO_WEB_ROOT_PATH}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
+    chmod u+x ${MAGENTO_ROOT_PATH}/bin/magento
+    su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
+    php ${MAGENTO_ROOT_PATH}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
     sed -i "s,pub/health_,health_,g" /etc/varnish/default.vcl
     sed -i 's,if (req.url ~ "^/(pub/)?(media|static)/"),if (req.url ~ "^/media/"),' /etc/varnish/default.vcl
     sed -i '/# Static files should/{n;s/^/\t#/}' /etc/varnish/default.vcl
@@ -1803,7 +1803,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/certs/default
 echo
 GREENTXT "SIMPLE LOGROTATE SCRIPT FOR MAGENTO LOGS"
 cat > /etc/logrotate.d/magento <<END
-${MAGENTO_WEB_ROOT_PATH}/var/log/*.log
+${MAGENTO_ROOT_PATH}/var/log/*.log
 {
 su ${MAGENTO_OWNER} ${MAGENTO_PHP_USER}
 create 660 ${MAGENTO_OWNER} ${MAGENTO_PHP_USER}
@@ -1833,7 +1833,7 @@ sed -i '/default_monitor_mode="users"/d' /usr/local/maldetect/conf.maldet
 sed -i 's,# default_monitor_mode="/usr/local/maldetect/monitor_paths",default_monitor_mode="/usr/local/maldetect/monitor_paths",' /usr/local/maldetect/conf.maldet
 sed -i 's/inotify_base_watches="16384"/inotify_base_watches="35384"/' /usr/local/maldetect/conf.maldet
 
-echo -e "${MAGENTO_WEB_ROOT_PATH%/*}" > /usr/local/maldetect/monitor_paths
+echo -e "${MAGENTO_ROOT_PATH%/*}" > /usr/local/maldetect/monitor_paths
 
 maldet --monitor /usr/local/maldetect/monitor_paths
 echo
@@ -1841,8 +1841,8 @@ GREENTXT "AUDIT MAGENTO FILES AND FOLDERS"
 cat >> /etc/audit/rules.d/audit.rules <<END
 
 ## audit magento files
--a never,exit -F dir=${MAGENTO_WEB_ROOT_PATH}/var/ -k exclude
--w ${MAGENTO_WEB_ROOT_PATH} -p wa -k ${MAGENTO_OWNER}
+-a never,exit -F dir=${MAGENTO_ROOT_PATH}/var/ -k exclude
+-w ${MAGENTO_ROOT_PATH} -p wa -k ${MAGENTO_OWNER}
 END
 service auditd reload
 service auditd restart
@@ -1855,7 +1855,7 @@ echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -s \"MYSQL
 crontab rootcron
 rm rootcron
 echo
-cd ${MAGENTO_WEB_ROOT_PATH}
+cd ${MAGENTO_ROOT_PATH}
 # varnish cache hosts
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
 echo
@@ -1863,7 +1863,7 @@ systemctl daemon-reload
 systemctl restart nginx.service
 systemctl restart php*fpm.service
 
-chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_WEB_ROOT_PATH}
+chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_ROOT_PATH}
 echo
 GREENTXT "CLEAN MAGENTO CACHE ADD OPTIMIZATIONS AND ENABLE PRODUCTION MODE"
 rm -rf var/*
@@ -1884,7 +1884,7 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:upgrade"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
 su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
 
-rm -rf ${MAGENTO_WEB_ROOT_PATH}/var/log/*.log
+rm -rf ${MAGENTO_ROOT_PATH}/var/log/*.log
 
 getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
 
@@ -1897,12 +1897,12 @@ cp app/etc/config.php ${MAGENX_CONFIG_PATH}/config.php.saved
 echo
 echo
 GREENTXT "MAGENTO CRONJOBS"
-cd ${MAGENTO_WEB_ROOT_PATH}
+cd ${MAGENTO_ROOT_PATH}
 chmod ug+x bin/magento
 su ${MAGENTO_PHP_USER} -s /bin/bash -c "bin/magento cron:install"
 echo
 
-cd ${MAGENTO_WEB_ROOT_PATH%/*}
+cd ${MAGENTO_ROOT_PATH%/*}
 
 GREENTXT "GENERATE SSH KEYS"
 mkdir .ssh
@@ -1936,12 +1936,12 @@ END
 
 cat > .bashrc <<END
 # .bashrc
-cd ${MAGENTO_WEB_ROOT_PATH}
+cd ${MAGENTO_ROOT_PATH}
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
 
 echo
-cd ${MAGENTO_WEB_ROOT_PATH}
+cd ${MAGENTO_ROOT_PATH}
 
 GREENTXT "CONFIGURE GOOGLE AUTH CODE FOR ADMIN ACCESS"
 echo
@@ -1965,13 +1965,13 @@ echo
 echo -e "===========================  INSTALLATION LOG  ======================================
 
 [shop domain]: ${MAGENTO_DOMAIN}
-[webroot path]: ${MAGENTO_WEB_ROOT_PATH}
+[path]: ${MAGENTO_ROOT_PATH}
 
 [admin path]: ${MAGENTO_DOMAIN}/${MAGENTO_ADMIN_PATH}
 [admin name]: ${MAGENTO_ADMIN_LOGIN}
 [admin pass]: ${MAGENTO_ADMIN_PASSWORD}
 [admin http auth name]: ${MAGENTO_ADMIN_LOGIN}
-[admin http auth pass]: ${ADMIN_HTTP_PASSWORD}
+[admin http auth pass]: ${MAGENTO_ADMIN_HTTP_PASSWORD}
 for additional access, please generate new user/password:
 htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 
@@ -1989,10 +1989,10 @@ htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
 for additional access, please generate new user/password:
 htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 
-[mysql host]: ${MAGENTO_DB_HOST}
-[mysql user]: ${MAGENTO_DB_USER}
-[mysql pass]: ${MAGENTO_DB_PASSWORD}
-[mysql database]: ${MAGENTO_DB_NAME}
+[mysql host]: ${MAGENTO_DATABASE_HOST}
+[mysql user]: ${MAGENTO_DATABASE_USER}
+[mysql pass]: ${MAGENTO_DATABASE_PASSWORD}
+[mysql database]: ${MAGENTO_DATABASE_NAME}
 [mysql root pass]: ${MYSQL_ROOT_PASSWORD}
 
 [elk user]: elastic
@@ -2010,7 +2010,7 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [redis on port 6379]: systemctl restart redis@6379
 [redis on port 6380]: systemctl restart redis@6380
 
-[installed db dump]: ${MAGENX_CONFIG_PATH}/${MAGENTO_DB_NAME}.sql.gz
+[installed db dump]: ${MAGENX_CONFIG_PATH}/${MAGENTO_DATABASE_NAME}.sql.gz
 [composer.json copy]: ${MAGENX_CONFIG_PATH}/composer.json.saved
 [env.php copy]: ${MAGENX_CONFIG_PATH}/env.php.saved
 [config.php copy]: ${MAGENX_CONFIG_PATH}/config.php.saved
@@ -2029,7 +2029,7 @@ to copy folders for development use:
 useradd -d /home/staging -s /bin/bash staging
 useradd -M -s /sbin/nologin -d /home/staging php-staging
 usermod -g php-staging staging
-rsync -a ${MAGENTO_WEB_ROOT_PATH} /home/staging/
+rsync -a ${MAGENTO_ROOT_PATH} /home/staging/
 chown -R staging:php-staging /home/staging/public_html
 chmod 711 /home/staging
 chmod 2750 /home/staging/public_html
