@@ -215,7 +215,7 @@ if [[ ${RESULT} == up ]]; then
   exit 1
 fi
 
-## Ubuntu Debian RedHat CentOS Amazon
+## Ubuntu Debian RedHat Rocky Amazon
 ## Distro detect and set installation key
 distro_error ()
 {
@@ -278,8 +278,7 @@ if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   rpm --quiet -q curl time bc bzip2 tar || dnf -y install curl time bc bzip2 tar
   rpm --quiet -q langpacks-en glibc-all-langpacks || dnf -y install langpacks-en glibc-all-langpacks
  else
-  apt update -o Acquire::ForceIPv4=true
-  apt -y install curl time bc bzip2 tar
+  dpkg-query -l curl time bc bzip2 tar >/dev/null || { apt update -o Acquire::ForceIPv4=true; apt -y install curl time bc bzip2 tar; }
 fi
 
 # check if you need update
