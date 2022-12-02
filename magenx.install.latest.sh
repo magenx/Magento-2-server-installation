@@ -921,13 +921,13 @@ rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
 sleep 5
 
 ## delete guest and create magento user
-RABBITMQ_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 7 | head -n 1)
+MAGENTO_RABBITMQ_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 7 | head -n 1)
 rabbitmqctl delete_user guest
-rabbitmqctl add_user magento ${RABBITMQ_PASSWORD}
+rabbitmqctl add_user magento ${MAGENTO_RABBITMQ_PASSWORD}
 rabbitmqctl set_permissions -p / magento ".*" ".*" ".*"
 
 cat > ${MAGENX_CONFIG_PATH}/rabbitmq <<END
-RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+MAGENTO_RABBITMQ_PASSWORD=${MAGENTO_RABBITMQ_PASSWORD}
 END
    GREENTXT "RabbitMQ INSTALLED  -  OK"
    echo
