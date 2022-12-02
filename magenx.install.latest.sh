@@ -271,14 +271,15 @@ if [ -f "${MAGENX_CONFIG_PATH}/distro" ]; then
   fi
 fi
 
-# check if memory is enough
+# install packages to run CPU and HDD test
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
   rpm --quiet -q dnf || yum install -y 'dnf*' yum-utils
   rpm --quiet -q epel-release || dnf -y install epel-release
-  rpm --quiet -q curl time bc bzip2 tar || dnf -y install time bc bzip2 tar
+  rpm --quiet -q curl time bc bzip2 tar || dnf -y install curl time bc bzip2 tar
   rpm --quiet -q langpacks-en glibc-all-langpacks || dnf -y install langpacks-en glibc-all-langpacks
  else
-  dpkg-query -l curl time bc bzip2 tar >/dev/null || { apt update -o Acquire::ForceIPv4=true; apt -y install curl time bc bzip2 tar; }
+  apt update -o Acquire::ForceIPv4=true
+  apt -y install curl time bc bzip2 tar
 fi
 
 # check if you need update
@@ -308,7 +309,8 @@ MD5=$(md5sum ${SELF} | awk '{print $1}')
    echo
   fi
 fi
-    
+
+# check if memory is enough
 TOTALMEM=$(awk '/MemTotal/{print $2}' /proc/meminfo | xargs -I {} echo "scale=4; {}/1024^2" | bc | xargs printf "%1.0f")
 if [ "${TOTALMEM}" -ge "4" ]; then
   GREENTXT "PASS: YOU HAVE ${TOTALMEM} Gb OF RAM"
