@@ -817,6 +817,8 @@ sed -i "s/^logfile.*/logfile \/var\/log\/redis\/redis-${REDISPORT}.log/"  /etc/r
 sed -i "s/^pidfile.*/pidfile \/run\/redis-${REDISPORT}\/redis-${REDISPORT}.pid/"  /etc/redis/redis-${REDISPORT}.conf
 sed -i "s/^port.*/port ${REDISPORT}/" /etc/redis/redis-${REDISPORT}.conf
 sed -i "s/dump.rdb/dump-${REDISPORT}.rdb/" /etc/redis/redis-${REDISPORT}.conf
+sed -i "/save [0-9]0/d" /etc/redis/redis-${REDISPORT}.conf
+sed -i 's/^#.*save ""/save ""/' /etc/redis/redis-${REDISPORT}.conf
 sed -i '/lazyfree/d' /etc/redis/redis-${REDISPORT}.conf
 cat >> /etc/redis/redis-${REDISPORT}.conf<<END
 requirepass ${MAGENTO_REDIS_PASSWORD}
@@ -1450,11 +1452,12 @@ echo
 echo
 cat > ${MAGENX_CONFIG_PATH}/install <<END
 MAGENTO_ADMIN_LOGIN="${MAGENTO_ADMIN_LOGIN}"
-MAGENTO_ADMIN_PASSWORD="${MAGENTO_ADMIN_PASSWORD}"
+MAGENTO_ADMIN_PASSWORD=\'${MAGENTO_ADMIN_PASSWORD}\'
 MAGENTO_ADMIN_EMAIL="${MAGENTO_ADMIN_EMAIL}"
 MAGENTO_TIMEZONE="${MAGENTO_TIMEZONE}"
 MAGENTO_LOCALE="${MAGENTO_LOCALE}"
 MAGENTO_ADMIN_PATH="$(grep -Po "(?<='frontName' => ')\w*(?=')" ${MAGENTO_ROOT_PATH}/app/etc/env.php)"
+MAGENTO_CRYPT_KEY="$(grep -Po "(?<='key' => ')\w*(?=')" ${MAGENTO_ROOT_PATH}/app/etc/env.php)"
 END
 
 pause '[] Press [Enter] key to show menu'
