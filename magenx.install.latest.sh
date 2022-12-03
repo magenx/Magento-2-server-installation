@@ -800,6 +800,8 @@ WantedBy=multi-user.target
 
 END
 
+MAGENTO_REDIS_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?-' | fold -w 32 | head -n 1)"
+
 for REDISPORT in 6379 6380
 do
 mkdir -p /var/lib/redis-${REDISPORT}
@@ -815,8 +817,16 @@ sed -i "s/^logfile.*/logfile \/var\/log\/redis\/redis-${REDISPORT}.log/"  /etc/r
 sed -i "s/^pidfile.*/pidfile \/run\/redis-${REDISPORT}\/redis-${REDISPORT}.pid/"  /etc/redis/redis-${REDISPORT}.conf
 sed -i "s/^port.*/port ${REDISPORT}/" /etc/redis/redis-${REDISPORT}.conf
 sed -i "s/dump.rdb/dump-${REDISPORT}.rdb/" /etc/redis/redis-${REDISPORT}.conf
-sed -i "/save [0-9]0/d" /etc/redis/redis-${REDISPORT}.conf
-sed -i 's/^#.*save ""/save ""/' /etc/redis/redis-${REDISPORT}.conf
+sed -i '/lazyfree/d' /etc/redis/redis-${REDISPORT}.conf
+cat >> /etc/redis/redis-${REDISPORT}.conf<<END
+requirepass ${MAGENTO_REDIS_PASSWORD}
+maxmemory 1024mb
+maxmemory-policy allkeys-lru
+lazyfree-lazy-eviction yes
+lazyfree-lazy-expire yes
+lazyfree-lazy-server-del yes
+lazyfree-lazy-user-del yes
+END
 sed -i '/^# rename-command CONFIG ""/a\
 rename-command SLAVEOF "" \
 rename-command CONFIG "" \
@@ -835,6 +845,12 @@ systemctl enable redis@6380
 systemctl stop redis-server
 systemctl disable redis-server
 systemctl restart redis@6379 redis@6380
+
+cat >> ${MAGENX_CONFIG_PATH}/redis <<END
+MAGENTO_REDIS_PASSWORD=${MAGENTO_REDIS_PASSWORD}
+END
+
+done
  else
   echo
   REDTXT "REDIS INSTALLATION ERROR"
@@ -1336,6 +1352,7 @@ include_config ${MAGENX_CONFIG_PATH}/distro
 include_config ${MAGENX_CONFIG_PATH}/magento
 include_config ${MAGENX_CONFIG_PATH}/database
 include_config ${MAGENX_CONFIG_PATH}/rabbitmq
+include_config ${MAGENX_CONFIG_PATH}/redis
 include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
 echo
@@ -1387,11 +1404,13 @@ su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGE
 --session-save-redis-port=6379 \
 --session-save-redis-log-level=3 \
 --session-save-redis-db=0 \
+--session-save-redis-password='${MAGENTO_REDIS_PASSWORD}' \
 --session-save-redis-compression-lib=lz4 \
 --cache-backend=redis \
 --cache-backend-redis-server=127.0.0.1 \
 --cache-backend-redis-port=6380 \
 --cache-backend-redis-db=0 \
+--cache-backend-redis-password='${MAGENTO_REDIS_PASSWORD}' \
 --cache-backend-redis-compress-data=1 \
 --cache-backend-redis-compression-lib=l4z \
 --amqp-host=127.0.0.1 \
@@ -1469,6 +1488,8 @@ printf "\033c"
 include_config ${MAGENX_CONFIG_PATH}/distro
 include_config ${MAGENX_CONFIG_PATH}/magento
 include_config ${MAGENX_CONFIG_PATH}/database
+include_config ${MAGENX_CONFIG_PATH}/rabbitmq
+include_config ${MAGENX_CONFIG_PATH}/redis
 include_config ${MAGENX_CONFIG_PATH}/install
 include_config ${MAGENX_CONFIG_PATH}/sshport
 include_config ${MAGENX_CONFIG_PATH}/elasticsearch
@@ -1648,8 +1669,11 @@ pm.max_requests = 10000
 env[MAGENTO_MODE] = production
 env[MAGENTO_ADMIN_PATH] = ${MAGENTO_ADMIN_PATH}
 env[MAGENTO_REDIS_PASSWORD] = ${MAGENTO_REDIS_PASSWORD}
+env[MAGENTO_REDIS_SESSION_PERSISTENT_IDENTIFIER] = \$pool
+env[MAGENTO_REDIS_CACHE_PERSISTENT_IDENTIFIER] = \$pool
+env[MAGENTO_REDIS_CACHE_PREFIX] = \$pool
 env[MAGENTO_REDIS_SESSION_DATABASE] = 1
-env[MAGENTO_REDIS_CACHE_DATABASE] = 2
+env[MAGENTO_REDIS_CACHE_DATABASE] = 1
 env[MAGENTO_RABBITMQ_PASSWORD] = ${MAGENTO_RABBITMQ_PASSWORD}
 env[MAGENTO_CRYPT_KEY] = ${MAGENTO_CRYPT_KEY}
 env[MAGENTO_DATABASE_NAME] = ${MAGENTO_DATABASE_NAME}
