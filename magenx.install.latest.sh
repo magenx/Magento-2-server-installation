@@ -838,6 +838,7 @@ rename-command BGSAVE "" \
 rename-command BGREWRITEAOF ""
 '  /etc/redis/redis-${REDISPORT}.conf
 done
+
 echo
 systemctl daemon-reload
 systemctl enable redis@6379
@@ -850,7 +851,6 @@ cat >> ${MAGENX_CONFIG_PATH}/redis <<END
 MAGENTO_REDIS_PASSWORD=${MAGENTO_REDIS_PASSWORD}
 END
 
-done
  else
   echo
   REDTXT "REDIS INSTALLATION ERROR"
