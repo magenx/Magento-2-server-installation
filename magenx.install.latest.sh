@@ -20,8 +20,9 @@ MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-s
 
 # Magento
 MAGENTO_VERSION="2"
-MAGENTO_VERSION_LATEST=$(curl -s https://api.github.com/repos/magento/magento${MAGENTO_VERSION}/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
+MAGENTO_VERSION_LIST=$(curl -s https://api.github.com/repos/magento/magento${MAGENTO_VERSION}/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
 MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
+MAGENTO_MINIMUM="MINIMUM MODULES"
 
 ## Version lock
 COMPOSER_VERSION="2.2"
@@ -37,11 +38,25 @@ REDIS_VERSION="6.2"
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
 REMI_RPM_REPO="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
+# Nginx configuration
+NGINX_VERSION=$(curl -s http://nginx.org/en/download.html | grep -oP '(?<=gz">nginx-).*?(?=</a>)' | head -1)
+MAGENX_NGINX_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-nginx-config/master/"
+MAGENX_NGINX_GITHUB_REPO_API="https://api.github.com/repos/magenx/Magento-nginx-config/contents/magento2"
+
+# Debug Tools
+MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
+MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
+
+# Malware detector
+MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
+
 # WebStack Packages .deb
 EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip recode ed screen inotify-tools iptables smartmontools clamav mlocate vim wget sudo apache2-utils \
 logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
+
 PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
+
 PHP_PACKAGES_DEB=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 
 # WebStack Packages .rpm
@@ -50,23 +65,15 @@ bind-utils screen gcc iptraf inotify-tools iptables smartmontools net-tools mloc
 clamav-update clamav-milter-systemd clamav-data clamav-server-systemd clamav-scanner-systemd clamav clamav-milter clamav-lib logrotate git patch ipset strace rsyslog \
 ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick moreutils lsof net-snmp net-snmp-utils ncftp postfix augeas-libs libffi-devel \
 mod_ssl sysstat libuuid-devel uuid-devel acl attr iotop expect unixODBC gcc-c++"
+
 PHP_PACKAGES_RPM=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp phpseclib recode \
-tcpdf tcpdf-dejavu-sans-fonts tidy snappy ldap lz4) 
+tcpdf tcpdf-dejavu-sans-fonts tidy snappy ldap lz4)
+
 PHP_PECL_PACKAGES_RPM=(pecl-redis pecl-lzf pecl-geoip pecl-zip pecl-memcache pecl-oauth pecl-apcu)
+
 PERL_MODULES_RPM=(LWP-Protocol-https Config-IniFiles libwww-perl CPAN Template-Toolkit Time-HiRes ExtUtils-CBuilder ExtUtils-Embed ExtUtils-MakeMaker \
 TermReadKey DBI DBD-MySQL Digest-HMAC Digest-SHA1 Test-Simple Moose Net-SSLeay devel)
 
-# Nginx configuration
-NGINX_VERSION=$(curl -s http://nginx.org/en/download.html | grep -oP '(?<=gz">nginx-).*?(?=</a>)' | head -1)
-MAGENX_NGINX_REPO="https://raw.githubusercontent.com/magenx/Magento-nginx-config/master/"
-MAGENX_NGINX_REPO_API="https://api.github.com/repos/magenx/Magento-nginx-config/contents/magento2"
-
-# Debug Tools
-MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
-MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
-
-# Malware detector
-MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 
 ###################################################################################
 ###                                    COLORS                                   ###
@@ -1185,11 +1192,11 @@ WHITETXT "----------------------------------------------------------------------
 echo
 echo
      _echo "[?] GET YOUR MAGENTO VERSION: "
-     updown_menu "$(curl -s https://api.github.com/repos/magento/magento2/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)" MAGENTO_VERSION_INSTALLED
+     updown_menu "${MAGENTO_VERSION_LIST}" MAGENTO_VERSION_INSTALLED
      echo
      echo
      read -e -p "  [?] ENTER YOUR DOMAIN OR IP ADDRESS: " -i "storedomain.net" MAGENTO_DOMAIN
-     read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "example" MAGENTO_OWNER
+     read -e -p "  [?] ENTER MAGENTO FILES OWNER NAME: " -i "${MAGENTO_DOMAIN//[.-]*}" MAGENTO_OWNER
 	 
      MAGENTO_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
 	 
@@ -1214,8 +1221,7 @@ echo
 	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_ROOT_PATH}
 	  
 echo
-MAGENTO_MINIMAL_OPT="MINIMAL SET OF MODULES"
-GREENTXT "${MAGENTO_MINIMAL_OPT} INSTALLATION"
+GREENTXT "${MAGENTO_MINIMUM} INSTALLATION"
 echo
 GREENTXT "Benefits of removing bloatware packages:"
 WHITETXT "[!] Better memory allocation!"
@@ -1253,13 +1259,13 @@ setfacl -R -m u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:rwx,o::-,d:u:${MAGENT
 sed -i "s/2-4/2-5/" app/etc/di.xml
 
 echo
-GREENTXT "[~]    MAGENTO ${MAGENTO_MINIMAL_OPT} DOWNLOADED AND READY FOR SETUP    [~]"
+GREENTXT "[~]    MAGENTO ${MAGENTO_MINIMUM} DOWNLOADED AND READY FOR SETUP    [~]"
 WHITETXT "--------------------------------------------------------------------"
 echo
 
 mkdir -p ${MAGENX_CONFIG_PATH}
 cat > ${MAGENX_CONFIG_PATH}/magento <<END
-# ${MAGENTO_MINIMAL_OPT}
+# ${MAGENTO_MINIMUM}
 MAGENTO_VERSION="2"
 MAGENTO_VERSION_INSTALLED="${MAGENTO_VERSION_INSTALLED}"
 MAGENTO_DOMAIN="${MAGENTO_DOMAIN}"
@@ -1767,15 +1773,15 @@ END
 systemctl daemon-reload
 echo
 GREENTXT "NGINX SETTINGS"
-curl -sSo /etc/nginx/fastcgi_params  ${MAGENX_NGINX_REPO}magento${MAGENTO_VERSION}/fastcgi_params
-curl -sSo /etc/nginx/nginx.conf  ${MAGENX_NGINX_REPO}magento${MAGENTO_VERSION}/nginx.conf
+curl -sSo /etc/nginx/fastcgi_params  ${MAGENX_NGINX_GITHUB_REPO}magento${MAGENTO_VERSION}/fastcgi_params
+curl -sSo /etc/nginx/nginx.conf  ${MAGENX_NGINX_GITHUB_REPO}magento${MAGENTO_VERSION}/nginx.conf
 mkdir -p /etc/nginx/sites-enabled
 mkdir -p /etc/nginx/sites-available && cd $_
-curl -s ${MAGENX_NGINX_REPO_API}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
+curl -s ${MAGENX_NGINX_GITHUB_REPO_API}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
 ln -s /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf /etc/nginx/sites-enabled/magento${MAGENTO_VERSION}.conf
 ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
 mkdir -p /etc/nginx/conf_m${MAGENTO_VERSION} && cd /etc/nginx/conf_m${MAGENTO_VERSION}/
-curl -s ${MAGENX_NGINX_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
+curl -s ${MAGENX_NGINX_GITHUB_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
 
 sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf
 sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/nginx.conf
