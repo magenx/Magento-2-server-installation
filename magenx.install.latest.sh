@@ -16,7 +16,7 @@ MAGENX_CONFIG_PATH="/opt/magenx/config"
 ###################################################################################
 
 # Github installation repository raw url
-MAGENX_MSI_REPO="https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/"
+MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/"
 
 # Magento
 MAGENTO_VERSION="2"
@@ -1005,8 +1005,8 @@ if [ "${varnish_install}" == "y" ];then
  fi
  if [ "$?" = 0 ]; then
    echo
-   curl -sSo /etc/systemd/system/varnish.service ${MAGENX_MSI_REPO}varnish.service
-   curl -sSo /etc/varnish/varnish.params ${MAGENX_MSI_REPO}varnish.params
+   curl -sSo /etc/systemd/system/varnish.service ${MAGENX_INSTALL_GITHUB_REPO}varnish.service
+   curl -sSo /etc/varnish/varnish.params ${MAGENX_INSTALL_GITHUB_REPO}varnish.params
    uuidgen > /etc/varnish/secret
    systemctl daemon-reload
    GREENTXT "VARNISH INSTALLED  -  OK"
@@ -1233,7 +1233,7 @@ php -r "unlink('composer-setup.php');"
 
 su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com 8c681734f22763b50ea0c29dff9e7af2 02dfee497e669b5db1fe1c8d481d6974"
 su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
-curl -sO ${MAGENX_MSI_REPO}composer_replace
+curl -sO ${MAGENX_INSTALL_GITHUB_REPO}composer_replace
 
 ##replace?
 sed -i '/"conflict":/ {
@@ -1529,7 +1529,7 @@ hostnamectl set-hostname server.${MAGENTO_DOMAIN} --static
 
 echo
 GREENTXT "CREATE MOTD"
-curl -o /etc/motd -s ${MAGENX_MSI_REPO}motd
+curl -o /etc/motd -s ${MAGENX_INSTALL_GITHUB_REPO}motd
 sed -i "s/MAGENTO_VERSION_INSTALLED/${MAGENTO_VERSION_INSTALLED}/" /etc/motd
 sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
 
@@ -1539,7 +1539,7 @@ timedatectl set-timezone ${MAGENTO_TIMEZONE}
 
 echo
 GREENTXT "FILEBEAT SETTINGS"
-curl -o /etc/filebeat/filebeat.yml -s ${MAGENX_MSI_REPO}filebeat.yml
+curl -o /etc/filebeat/filebeat.yml -s ${MAGENX_INSTALL_GITHUB_REPO}filebeat.yml
 sed -i "s|MAGENTO_ROOT_PATH|${MAGENTO_ROOT_PATH}|" /etc/filebeat/filebeat.yml
 sed -i "s|MAGENTO_TIMEZONE|${MAGENTO_TIMEZONE}|" /etc/filebeat/filebeat.yml
 sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/filebeat/filebeat.yml
@@ -1835,7 +1835,7 @@ GREENTXT "VARNISH CACHE CONFIGURATION"
     sed -i 's/#unset/unset/g' /etc/varnish/default.vcl
     systemctl restart varnish.service
     curl -sSo /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
-    curl -sSo /etc/varnish/devicedetect-include.vcl ${MAGENX_MSI_REPO}devicedetect-include.vcl
+    curl -sSo /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}devicedetect-include.vcl
     YELLOWTXT "VARNISH CACHE PORT :8081"
 fi
 echo
@@ -2193,7 +2193,7 @@ if [ "${csffirewall}" == "y" ];then
   sed -i 's,CUSTOM1_LOG.*,CUSTOM1_LOG = "/var/log/nginx/access.log",' /etc/csf/csf.conf
   sed -i 's,CUSTOM2_LOG.*,CUSTOM2_LOG = "/var/log/nginx/error.log",' /etc/csf/csf.conf
   ### get custom regex template
-  curl -o /usr/local/csf/bin/regex.custom.pm ${MAGENX_MSI_REPO}regex.custom.pm
+  curl -o /usr/local/csf/bin/regex.custom.pm ${MAGENX_INSTALL_GITHUB_REPO}regex.custom.pm
   chmod +x /usr/local/csf/bin/regex.custom.pm
   ### whitelist search bots and legit domains
 cat >> /etc/csf/csf.rignore <<END
