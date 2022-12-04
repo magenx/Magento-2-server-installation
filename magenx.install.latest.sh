@@ -1096,14 +1096,6 @@ fi
 
 include_config ${MAGENX_CONFIG_PATH}/elasticsearch
 
-## kibana settings
-KIBANA_PORT=$(shuf -i 15741-15997 -n 1)
-sed -i "s/.*#server.port:.*/server.port: ${KIBANA_PORT}/" /etc/kibana/kibana.yml
-sed -i "s/.*#server.host:.*/server.host: \"0.0.0.0\"/" /etc/kibana/kibana.yml
-sed -i "s/.*#elasticsearch.username:.*/elasticsearch.username: \"kibana_system\"/" /etc/kibana/kibana.yml
-sed -i "s/.*#elasticsearch.password:.*/elasticsearch.password: \"${KIBANA_SYSTEM_PASSWORD}\"/" /etc/kibana/kibana.yml
-echo
-YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
 echo
 for elk_user in logs indexer
 do
@@ -1531,16 +1523,42 @@ echo
 BLUEBG "[~]    POST-INSTALLATION CONFIGURATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
-## filebeat settings
+echo
+GREENTXT "SERVER HOSTNAME SETTINGS"
+hostnamectl set-hostname server.${MAGENTO_DOMAIN} --static
+
+echo
+GREENTXT "CREATE MOTD"
+curl -o /etc/motd -s ${MAGENX_MSI_REPO}motd
+sed -i "s/MAGENTO_VERSION_INSTALLED/${MAGENTO_VERSION_INSTALLED}/" /etc/motd
+sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
+
+echo
+GREENTXT "SERVER TIMEZONE SETTINGS"
+timedatectl set-timezone ${MAGENTO_TIMEZONE}
+
+echo
+GREENTXT "FILEBEAT SETTINGS"
 curl -o /etc/filebeat/filebeat.yml -s ${MAGENX_MSI_REPO}filebeat.yml
 sed -i "s|MAGENTO_ROOT_PATH|${MAGENTO_ROOT_PATH}|" /etc/filebeat/filebeat.yml
 sed -i "s|MAGENTO_TIMEZONE|${MAGENTO_TIMEZONE}|" /etc/filebeat/filebeat.yml
 sed -i "s/MAGENTO_DOMAIN/${MAGENTO_DOMAIN}/" /etc/filebeat/filebeat.yml
 sed -i "s/MAGENTO_LOGS_PASSWORD/${MAGENTO_LOGS_PASSWORD}/" /etc/filebeat/filebeat.yml
 
+echo
+GREENTXT "KIBANA SETTINGS"
+KIBANA_PORT=$(shuf -i 15741-15997 -n 1)
+YELLOWTXT "KIBANA PORT :${KIBANA_PORT}"
+sed -i "s/.*#server.port:.*/server.port: ${KIBANA_PORT}/" /etc/kibana/kibana.yml
+sed -i "s/.*#server.host:.*/server.host: \"0.0.0.0\"/" /etc/kibana/kibana.yml
+sed -i "s|.*#server.publicBaseUrl:.*|server.publicBaseUrl: \"https://${MAGENTO_DOMAIN}\"|" /etc/kibana/kibana.yml
+sed -i "s/.*#elasticsearch.username:.*/elasticsearch.username: \"kibana_system\"/" /etc/kibana/kibana.yml
+sed -i "s/.*#elasticsearch.password:.*/elasticsearch.password: \"${KIBANA_SYSTEM_PASSWORD}\"/" /etc/kibana/kibana.yml
+
 systemctl restart filebeat kibana
 
 echo
+GREENTXT "SYSCTL SETTINGS"
 cat >> /etc/sysctl.conf <<END
 fs.file-max = 1000000
 fs.inotify.max_user_watches = 1000000
@@ -1580,16 +1598,6 @@ END
 
 sysctl -q -p
 
-GREENTXT "SERVER HOSTNAME SETTINGS"
-hostnamectl set-hostname server.${MAGENTO_DOMAIN} --static
-echo
-GREENTXT "CREATE MOTD"
-curl -o /etc/motd -s ${MAGENX_MSI_REPO}motd
-sed -i "s/MAGENTO_VERSION_INSTALLED/${MAGENTO_VERSION_INSTALLED}/" /etc/motd
-sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
-echo
-GREENTXT "SERVER TIMEZONE SETTINGS"
-timedatectl set-timezone ${MAGENTO_TIMEZONE}
 echo
 GREENTXT "MYSQL TOOLS AND PROXYSQL"
 curl -sSo /usr/local/bin/mysqltuner ${MYSQL_TUNER}
@@ -2060,8 +2068,13 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [mysql database]: ${MAGENTO_DATABASE_NAME}
 [mysql root pass]: ${MYSQL_ROOT_PASSWORD}
 
-[elk user]: elastic
-[elk password]: "${ELASTIC_PASSWORD}"
+[magento index elk user]: magento_indexer
+[magento index elk password]: ${MAGENTO_INDEXER_PASSWORD}
+[magento logs elk user]: magento_logs
+[magento logs elk password]: ${MAGENTO_LOGS_PASSWORD}
+[elk admin user]: elastic
+[elk admin password]: ${ELASTIC_PASSWORD}
+[kibana port]: ${KIBANA_PORT}
 
 [percona toolkit]: https://www.percona.com/doc/percona-toolkit/LATEST/index.html
 
