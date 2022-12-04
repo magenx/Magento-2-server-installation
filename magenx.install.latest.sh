@@ -161,6 +161,25 @@ clear
 
 echo
 echo
+# lock found? copy?
+if [ -f "${MAGENX_CONFIG_PATH}/magenx.lock" ]; then
+  REDTXT "[!] WARNING! LOCK FOUND!"
+  YELLOWTXT "[?] The system has already been configured, or the configuration files are present on the disk"
+  echo
+  _echo "[?] Are you trying to create a copy from a previous configuration?  [y/n][y]:"
+    read lock_found
+    if [ "${lock_found}" == "y" ]; then
+     echo
+     GREENTXT "The script will use the passwords and settings from the old configuration files"
+     sleep 3
+      else
+     echo
+     YELLOWTXT "[?] You probably need to figure out what's going on"
+     exit 1
+    fi
+fi
+echo
+echo
 # root?
 if [[ ${EUID} -ne 0 ]]; then
   echo
@@ -186,7 +205,7 @@ if [ ! -f "${MAGENX_CONFIG_PATH}/selinux" ]; then
     echo
     _echo "[?] Would you like to disable SELinux and reboot now?  [y/n][y]:"
     read selinux_disable
-    if [ "${selinux_disable}" == "y" ];then
+    if [ "${selinux_disable}" == "y" ]; then
       sed -i "s/SELINUX=${SELINUX}/SELINUX=disabled/" /etc/selinux/config
       echo "disabled" > ${MAGENX_CONFIG_PATH}/selinux
       reboot
@@ -1999,6 +2018,7 @@ echo "-> Paste passkey ${GOOGLE_TFA_CODE}"
 echo "-> Choose Time based"
 
 echo
+touch ${MAGENX_CONFIG_PATH}/magenx.lock
 echo
 pause '[] Press [Enter] key to finish and print installation log'
 echo
