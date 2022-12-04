@@ -167,8 +167,8 @@ if [ -f "${MAGENX_CONFIG_PATH}/magenx.lock" ]; then
   YELLOWTXT "[?] The system has already been configured, or the configuration files are present on the disk"
   echo
   _echo "[?] Are you trying to create a copy from a previous configuration?  [y/n][y]:"
-    read lock_found
-    if [ "${lock_found}" == "y" ]; then
+    read create_copy
+    if [ "${create_copy}" == "y" ]; then
      echo
      GREENTXT "The script will use the passwords and settings from the old configuration files"
      sleep 3
