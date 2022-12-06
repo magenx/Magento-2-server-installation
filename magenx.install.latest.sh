@@ -2097,7 +2097,7 @@ if [ "${csffirewall}" == "y" ];then
   sed -i 's/^TESTING = "1"/TESTING = "0"/' /etc/csf/csf.conf
   sed -i 's/^CT_LIMIT =.*/CT_LIMIT = "60"/' /etc/csf/csf.conf
   sed -i 's/^CT_INTERVAL =.*/CT_INTERVAL = "30"/' /etc/csf/csf.conf
-  sed -i 's/^PORTFLOOD =.*/PORTFLOOD = 443;tcp;100;5' /etc/csf/csf.conf
+  sed -i 's/^PORTFLOOD =.*/PORTFLOOD = "443;tcp;100;5"/' /etc/csf/csf.conf
   sed -i 's/^PS_INTERVAL =.*/PS_INTERVAL = "120"/' /etc/csf/csf.conf
   sed -i 's/^PS_LIMIT =.*/PS_LIMIT = "5"/' /etc/csf/csf.conf
   sed -i 's/^PS_PERMANENT =.*/PS_PERMANENT = "1"/' /etc/csf/csf.conf
