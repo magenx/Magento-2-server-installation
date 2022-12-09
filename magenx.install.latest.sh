@@ -1554,11 +1554,11 @@ curl -sSo /usr/local/bin/mytop ${MYSQL_TOP}
 
 if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
 cat > /etc/yum.repos.d/proxysql.repo <<END
-   [proxysql_repo]
-   name=ProxySQL YUM repository
-   baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/latest
-   gpgcheck=1
-   gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
+[proxysql_repo]
+name=ProxySQL YUM repository
+baseurl=https://repo.proxysql.com/ProxySQL/proxysql-${PROXYSQL_VERSION}/centos/latest
+gpgcheck=1
+gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
 END
    dnf -y install proxysql*
  else
