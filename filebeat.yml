@@ -22,7 +22,7 @@ filebeat.inputs:
   enabled: true
   id: Magento 2 logs
   paths:
-    - MAGENTO_WEB_ROOT_PATH/var/log/system.log
+    - MAGENTO_ROOT_PATH/var/log/system.log
 
   fields_under_root: true
   fields:
@@ -58,7 +58,7 @@ filebeat.inputs:
   enabled: true
   id: Magento 2 php-fpm logs
   paths:
-    - MAGENTO_WEB_ROOT_PATH/var/log/php-fpm-error.log
+    - MAGENTO_ROOT_PATH/var/log/php-fpm-error.log
 
   fields_under_root: true
   fields:
