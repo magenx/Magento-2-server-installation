@@ -1184,7 +1184,7 @@ echo
      echo
      YELLOWTXT "[?] ENTER MAGENTO DOMAIN AND SSH USER: "
      read -e -p "  > STORE ROOT DOMAIN NAME: " -i "rootdomain.tld" MAGENTO_DOMAIN
-     read -e -p "  > SSH USER [home folder]: " -i "${MAGENTO_DOMAIN//[.-]*}" MAGENTO_OWNER
+     read -e -p "  > FILES OWNER / SSH USER: " -i "${MAGENTO_DOMAIN//[.-]*}" MAGENTO_OWNER
      echo
      
      MAGENTO_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
