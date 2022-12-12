@@ -1275,6 +1275,7 @@ printf "\033c"
 
 "database")
 printf "\033c"
+include_config ${MAGENX_CONFIG_PATH}/magento
 echo
 BLUEBG "[~]    CREATE MYSQL USER AND DATABASE    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
@@ -1338,6 +1339,14 @@ MAGENTO_DATABASE_USER="${MAGENTO_DATABASE_USER}"
 MAGENTO_DATABASE_PASSWORD="${MAGENTO_DATABASE_PASSWORD}"
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
 END
+
+su ${MAGENTO_OWNER} -s /bin/bash -c "cat > ${MAGENTO_ROOT_PATH%/*}/.mytop <<END
+user=${MAGENTO_DATABASE_USER}
+pass=${MAGENTO_DATABASE_PASSWORD}
+db=${MAGENTO_DATABASE_NAME}
+END
+"
+
 echo
 echo
 echo
