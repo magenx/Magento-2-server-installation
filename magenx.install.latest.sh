@@ -1195,6 +1195,7 @@ echo
 
           ## create magento owner/ssh user
           useradd -d ${MAGENTO_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
+          mkdir -p ${MAGENTO_ROOT_PATH}
           ## create magento php user
           MAGENTO_PHP_USER="php-${MAGENTO_OWNER}"
           useradd -M -s /sbin/nologin -d ${MAGENTO_ROOT_PATH%/*} ${MAGENTO_PHP_USER}
@@ -1203,8 +1204,6 @@ echo
 	  mkdir -p ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
 	  chmod 2750 ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
 	  chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	  # create public_html
-          mkdir -p ${MAGENTO_ROOT_PATH} && cd $_
           chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_ROOT_PATH}
 	  # magento root folder permissions
           chmod 2750 ${MAGENTO_ROOT_PATH}
@@ -1221,6 +1220,8 @@ WHITETXT "- Less dependencies and security risks!"
 echo
 pause '[] Press [Enter] key to start'
 echo
+
+cd ${MAGENTO_ROOT_PATH}
 
 ## composer download
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
@@ -1317,9 +1318,9 @@ GREENTXT "GENERATE MYSQL USER AND DATABASE NAMES WITH NEW PASSWORD"
 echo
 MAGENTO_DATABASE_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
 MAGENTO_DATABASE_PASSWORD="${MAGENTO_DATABASE_PASSWORD_GEN}${RANDOM}"
-MAGENTO_DATABASE_HASH="$(openssl rand -hex 4)"
+MAGENTO_DATABASE_HASH="$(openssl rand -hex 2)"
 MAGENTO_DATABASE_HOST="localhost" 
-MAGENTO_DATABASE_NAME="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}_prod" 
+MAGENTO_DATABASE_NAME="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}_production" 
 MAGENTO_DATABASE_USER="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}"
 
 GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
