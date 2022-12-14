@@ -2067,18 +2067,9 @@ su ${MAGENTO_OWNER} -s /bin/bash
 or run commands from root as user:
 su ${MAGENTO_OWNER} -s /bin/bash -c 'bin/magento'
 
-to copy folders for development use:
-useradd -d /home/staging -s /bin/bash staging
-useradd -M -s /sbin/nologin -d /home/staging php-staging
-usermod -g php-staging staging
-rsync -a ${MAGENTO_ROOT_PATH} /home/staging/
-chown -R staging:php-staging /home/staging/public_html
-chmod 711 /home/staging
-chmod 2750 /home/staging/public_html
-setfacl -R -m m:rx,u:staging:rwx,g:php-staging:r-x,o::-,d:u:staging:rwx,d:g:php-staging:r-x,d:o::- /home/staging/public_html
-cd /home/staging/public_html
-setfacl -R -m u:staging:rwx,g:php-staging:rwx,o::-,d:u:staging:rwx,d:g:php-staging:rwx,d:o::- generated var pub/media pub/static
-setfacl -R -m u:nginx:r-x,d:u:nginx:r-x /home/staging/public_html
+For development and automated deployment, please read at:
+https://github.com/magenx/Magento-2-server-installation/wiki
+
 
 ===========================  INSTALLATION LOG  ======================================" | tee ${MAGENX_CONFIG_PATH}/install.log
 echo
