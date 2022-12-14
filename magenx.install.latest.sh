@@ -1195,6 +1195,7 @@ echo
 
           ## create magento owner/ssh user
           useradd -d ${MAGENTO_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
+          mkdir -p ${MAGENTO_ROOT_PATH}
           ## create magento php user
           MAGENTO_PHP_USER="php-${MAGENTO_OWNER}"
           useradd -M -s /sbin/nologin -d ${MAGENTO_ROOT_PATH%/*} ${MAGENTO_PHP_USER}
@@ -1203,8 +1204,6 @@ echo
 	  mkdir -p ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
 	  chmod 2750 ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
 	  chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	  # create public_html
-          mkdir -p ${MAGENTO_ROOT_PATH} && cd $_
           chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_ROOT_PATH}
 	  # magento root folder permissions
           chmod 2750 ${MAGENTO_ROOT_PATH}
@@ -1221,6 +1220,8 @@ WHITETXT "- Less dependencies and security risks!"
 echo
 pause '[] Press [Enter] key to start'
 echo
+
+cd ${MAGENTO_ROOT_PATH}
 
 ## composer download
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
