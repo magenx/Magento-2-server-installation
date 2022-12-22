@@ -1959,7 +1959,8 @@ cat ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY}.pub > .ssh/authorized_keys
 
 GITHUB_ACTIONS_SSHKEY="github_actions_sshkey"
 ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY} -C "github actions ${MAGENTO_DOMAIN}" -q -N ""
-awk '{print "command=\"build_version=${SSH_ORIGINAL_COMMAND} ${MAGENTO_ROOT_PATH%/*}/deploy.sh\" "$0}' ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY}.pub >> .ssh/authorized_keys
+deploy_command="command=\"build_version=\${SSH_ORIGINAL_COMMAND} ${MAGENTO_ROOT_PATH%/*}/deploy.sh\" "
+awk -v var="${deploy_command}" '{print var $0}' ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY}.pub >> .ssh/authorized_keys
 
 chmod +x /usr/local/bin/*
 chmod -R 600 ${MAGENX_CONFIG_PATH}
