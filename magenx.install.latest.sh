@@ -1978,9 +1978,15 @@ END
 
 cat > .bashrc <<END
 # .bashrc
+# history timestamp
+export HISTTIMEFORMAT="%d/%m/%y %T "
+# got to app root folder
 cd ${MAGENTO_ROOT_PATH}
+# change prompt color
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
+
+echo 'export HISTTIMEFORMAT="%d/%m/%y %T "' >> ~/.bashrc
 
 echo
 cd ${MAGENTO_ROOT_PATH}
