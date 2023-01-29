@@ -313,7 +313,7 @@ fi
 # check if memory is enough
 TOTALMEM=$(awk '/MemTotal/{print $2}' /proc/meminfo | xargs -I {} echo "scale=4; {}/1024^2" | bc | xargs printf "%1.0f")
 if [ "${TOTALMEM}" -ge "4" ]; then
-  GREENTXT "PASS: YOU HAVE [ ${TOTALMEM}Gb ] OF RAM"
+  GREENTXT "PASS: TOTAL RAM ${BOLD}${TOTALMEM}Gb"
  else
   echo
   REDTXT "[!] TOTAL RAM LESS THAN ${BOLD}4Gb"
