@@ -316,8 +316,8 @@ if [ "${TOTALMEM}" -ge "4" ]; then
   GREENTXT "PASS: YOU HAVE [ ${TOTALMEM}Gb ] OF RAM"
  else
   echo
-  REDTXT "[!] YOU HAVE LESS THAN 4Gb OF RAM"
-  YELLOWTXT "[!] TO PROPERLY RUN COMPLETE STACK YOU NEED >4Gb"
+  REDTXT "[!] TOTAL RAM LESS THAN ${BOLD}4Gb"
+  YELLOWTXT "[!] TO PROPERLY RUN COMPLETE STACK YOU NEED MORE RAM"
   echo
 fi
 
@@ -608,6 +608,7 @@ if [ "${repo_mariadb_install}" == "y" ]; then
      echo
      WHITETXT "Calculating innodb_buffer_pool_size"
      IBPS=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
+     if [ "${IBPS}" == "0" ]; then IBPS=1; fi
      sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${IBPS}G/" /etc/my.cnf
      ##sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${IBPS}/" /etc/my.cnf
      echo
