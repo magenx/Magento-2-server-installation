@@ -1314,15 +1314,14 @@ END
 fi
 chmod 600 /root/.my.cnf /root/.mytop
 echo
-GREENTXT "GENERATE MYSQL USER AND DATABASE NAMES WITH NEW PASSWORD"
+GREENTXT "GENERATE MYSQL USER, DATABASE NAME AND PASSWORD"
 echo
-MAGENTO_DATABASE_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
-MAGENTO_DATABASE_PASSWORD="${MAGENTO_DATABASE_PASSWORD_GEN}${RANDOM}"
-MAGENTO_DATABASE_HASH="$(openssl rand -hex 2)"
-MAGENTO_DATABASE_HOST="localhost" 
-MAGENTO_DATABASE_NAME="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}_production" 
-MAGENTO_DATABASE_USER="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}"
-
+  HASH="$(openssl rand -hex 2)"
+  read -e -p "  [?] Host name: " -i "localhost"  MAGENTO_DATABASE_HOST
+  read -e -p "  [?] Database name: " -i "${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${HASH}_production"  MAGENTO_DATABASE_NAME
+  read -e -p "  [?] User name: " -i "${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${HASH}"  MAGENTO_DATABASE_USER
+  read -e -p "  [?] User password: " -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  MAGENTO_DATABASE_PASSWORD
+echo
 GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
 echo
 mariadb <<EOMYSQL
