@@ -1178,10 +1178,7 @@ echo
 BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGENTO_VERSION}    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
-echo   
-     YELLOWTXT "[?] SELECT MAGENTO VERSION: "
-     updown_menu "${MAGENTO_VERSION_LIST}" MAGENTO_VERSION_INSTALLED
-     echo
+echo
      echo
      YELLOWTXT "[?] ENTER MAGENTO DOMAIN AND SSH USER: "
      read -e -p "  > STORE ROOT DOMAIN NAME: " -i "rootdomain.tld" MAGENTO_DOMAIN
@@ -1189,10 +1186,6 @@ echo
      echo
      
      MAGENTO_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
-	 
-     echo
-     _echo "[!] MAGENTO [ ${MAGENTO_VERSION_INSTALLED} ] will be downloaded to ${MAGENTO_ROOT_PATH}"
-     echo
 
           ## create magento owner/ssh user
           useradd -d ${MAGENTO_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
@@ -1210,39 +1203,84 @@ echo
           chmod 2750 ${MAGENTO_ROOT_PATH}
 	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_ROOT_PATH}
 	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_ROOT_PATH}
-	  
-echo
-GREENTXT "${MAGENTO_MINIMUM} INSTALLATION"
-echo
-WHITETXT "- Better memory allocation!"
-WHITETXT "- Faster cli, backend and frontend operations!"
-WHITETXT "- Less maintenance work!"
-WHITETXT "- Less dependencies and security risks!"
-echo
-pause '[] Press [Enter] key to start'
-echo
 
-cd ${MAGENTO_ROOT_PATH}
+while true; do
+  _echo "Select how to get Magento 2 code:"
+  _echo "Rsync from another server"
+  _echo "Clone from private GitHub repository"
+  _echo "New installation with Composer"
+  
+  updown_menu "Rsync Github Composer" choice
 
-## composer download
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php --${COMPOSER_VERSION} --install-dir=/usr/bin --filename=composer
-php -r "unlink('composer-setup.php');"
+  if [ "$choice" == "Rsync" ]; then
+    echo
+    read -e -p "Server IP address: " -i "1.2.3.4" RSYNC_IP
+    read -e -p "SSH port: " -i "22" RSYNC_PORT
+    read -e -p "SSH username: " -i "username"  RSYNC_USER
+    read -e -p "Folder path: " -i "/path/to/magento"  RSYNC_ROOT_PATH
+    echo
+    if [ ! -f ${MAGENX_CONFIG_PATH}/rsync_magento ]; then
+    ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/rsync_magento -C "rsync magento ${MAGENTO_DOMAIN}" -q -N ""
+    fi
+    echo "Add this key to your remote server magento ssh account authorized_keys:"
+    cat ${MAGENX_CONFIG_PATH}/rsync_magento.pub
+    pause '[] Press [Enter] to start rsync connection'
+    rsync -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH}" . || { echo "Error: Rsync failed"; continue; }
+    break
+  elif [ "$choice" == "Github" ]; then
+    echo
+    read -e -p "GitHub account: " -i "account"  GITHUB_ACCOUNT
+    read -e -p "GitHub repository: " -i "repository.git"  GITHUB_REPOSITORY
+    echo
+    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" . || { echo "Error: Git clone failed"; continue; }
+    break
+  elif [ "$choice" == "Composer" ]; then
+    echo
+    GREENTXT "${MAGENTO_MINIMUM} INSTALLATION"
+    echo
+    WHITETXT "- Better memory allocation!"
+    WHITETXT "- Faster cli, backend and frontend operations!"
+    WHITETXT "- Less maintenance work!"
+    WHITETXT "- Less dependencies and security risks!"
+    echo
+    pause '[] Press [Enter] key to start'
+    echo
 
-su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${MAGENTO_COMPOSER_NAME} ${MAGENTO_COMPOSER_PASSWORD}"
-su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
+    cd ${MAGENTO_ROOT_PATH}
+    
+    YELLOWTXT "[?] SELECT MAGENTO VERSION: "
+    updown_menu "${MAGENTO_VERSION_LIST}" MAGENTO_VERSION_INSTALLED
+    echo
+    
+     echo
+     _echo "[!] MAGENTO [ ${MAGENTO_VERSION_INSTALLED} ] will be downloaded to ${MAGENTO_ROOT_PATH}"
+     echo
 
-# composer replace bloatware
-curl -sO ${MAGENX_INSTALL_GITHUB_REPO}composer_replace
-sed -i '/"conflict":/ {
-r composer_replace
-N
-}' composer.json
+    ## composer download
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    php composer-setup.php --${COMPOSER_VERSION} --install-dir=/usr/bin --filename=composer
+    php -r "unlink('composer-setup.php');"
 
-rm composer_replace
+    su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${MAGENTO_COMPOSER_NAME} ${MAGENTO_COMPOSER_PASSWORD}"
+    su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
 
-# install magento from here
-su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
+    # composer replace bloatware
+    curl -sO ${MAGENX_INSTALL_GITHUB_REPO}composer_replace
+    sed -i '/"conflict":/ {
+    r composer_replace
+    N
+    }' composer.json
+
+    rm composer_replace
+
+    # install magento from here
+    su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
+
+    break
+  else
+    echo "Error: Invalid choice"
+  fi
+done
 
 # reset permissions
 su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
