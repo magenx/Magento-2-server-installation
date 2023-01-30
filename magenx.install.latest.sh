@@ -313,11 +313,11 @@ fi
 # check if memory is enough
 TOTALMEM=$(awk '/MemTotal/{print $2}' /proc/meminfo | xargs -I {} echo "scale=4; {}/1024^2" | bc | xargs printf "%1.0f")
 if [ "${TOTALMEM}" -ge "4" ]; then
-  GREENTXT "PASS: YOU HAVE [ ${TOTALMEM}Gb ] OF RAM"
+  GREENTXT "PASS: TOTAL RAM ${BOLD}${TOTALMEM}Gb"
  else
   echo
-  REDTXT "[!] YOU HAVE LESS THAN 4Gb OF RAM"
-  YELLOWTXT "[!] TO PROPERLY RUN COMPLETE STACK YOU NEED >4Gb"
+  REDTXT "[!] TOTAL RAM LESS THAN ${BOLD}4Gb"
+  YELLOWTXT "[!] TO PROPERLY RUN COMPLETE STACK YOU NEED MORE RAM"
   echo
 fi
 
@@ -608,6 +608,7 @@ if [ "${repo_mariadb_install}" == "y" ]; then
      echo
      WHITETXT "Calculating innodb_buffer_pool_size"
      IBPS=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
+     if [ "${IBPS}" == "0" ]; then IBPS=1; fi
      sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${IBPS}G/" /etc/my.cnf
      ##sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${IBPS}/" /etc/my.cnf
      echo
@@ -1314,15 +1315,14 @@ END
 fi
 chmod 600 /root/.my.cnf /root/.mytop
 echo
-GREENTXT "GENERATE MYSQL USER AND DATABASE NAMES WITH NEW PASSWORD"
+GREENTXT "GENERATE MYSQL USER, DATABASE NAME AND PASSWORD"
 echo
-MAGENTO_DATABASE_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)
-MAGENTO_DATABASE_PASSWORD="${MAGENTO_DATABASE_PASSWORD_GEN}${RANDOM}"
-MAGENTO_DATABASE_HASH="$(openssl rand -hex 2)"
-MAGENTO_DATABASE_HOST="localhost" 
-MAGENTO_DATABASE_NAME="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}_production" 
-MAGENTO_DATABASE_USER="${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${MAGENTO_DATABASE_HASH}"
-
+  HASH="$(openssl rand -hex 2)"
+  read -e -p "  [?] Host name: " -i "localhost"  MAGENTO_DATABASE_HOST
+  read -e -p "  [?] Database name: " -i "${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${HASH}_production"  MAGENTO_DATABASE_NAME
+  read -e -p "  [?] User name: " -i "${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${HASH}"  MAGENTO_DATABASE_USER
+  read -e -p "  [?] User password: " -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  MAGENTO_DATABASE_PASSWORD
+echo
 GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
 echo
 mariadb <<EOMYSQL
