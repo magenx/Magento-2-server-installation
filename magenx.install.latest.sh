@@ -1205,11 +1205,11 @@ echo
 	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_ROOT_PATH}
 
 while true; do
-  YELLOWTXT "[?] Select how to get Magento 2 code:"
-  _echo "
-  ${BOLD}Rsync${RESET} from another server
-  ${BOLD}GitHub${RESET} clone from private repository
-  ${BOLD}Composer${RESET} new installation"
+  echo
+  YELLOWTXT "[?] SELECT HOW TO GET MAGENTO 2 CODE:"
+  _echo "--> ${BOLD}Rsync${RESET} from another server
+  --> ${BOLD}GitHub${RESET} clone from private repository
+  --> ${BOLD}Composer${RESET} new installation"
   echo
   
   updown_menu "Rsync Github Composer" choice
@@ -1224,12 +1224,13 @@ while true; do
     if [ ! -f ${MAGENX_CONFIG_PATH}/rsync_magento ]; then
     ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/rsync_magento -C "rsync magento ${MAGENTO_DOMAIN}" -q -N ""
     fi
-    echo "Add this key to your remote server magento ssh account authorized_keys:"
+    echo "[!] Add this key to your remote server magento ssh account authorized_keys:"
     cat ${MAGENX_CONFIG_PATH}/rsync_magento.pub
     echo
+    _echo "[!] MAGENTO will be synced to ${MAGENTO_ROOT_PATH}"
     pause '[] Press [Enter] to start rsync connection'
     echo
-    rsync --contimeout=5 --timeout=30 -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH}" . || { echo "Error: Rsync failed"; continue; }
+    rsync --timeout=30 -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH} ${MAGENTO_ROOT_PATH}/" || { echo "Error: Rsync failed"; continue; }
     echo
     break
   elif [ "$choice" == "Github" ]; then
@@ -1237,7 +1238,10 @@ while true; do
     read -e -p "--> GitHub account: " -i "account"  GITHUB_ACCOUNT
     read -e -p "--> GitHub repository: " -i "repository.git"  GITHUB_REPOSITORY
     echo
-    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" . || { echo "Error: Github clone failed"; continue; }
+    _echo "[!] MAGENTO will be synced to ${MAGENTO_ROOT_PATH}"
+    pause '[] Press [Enter] to start rsync connection'
+    echo
+    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" ${MAGENTO_ROOT_PATH}/ || { echo "Error: Github clone failed"; continue; }
     echo
     break
   elif [ "$choice" == "Composer" ]; then
