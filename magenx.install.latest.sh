@@ -1181,8 +1181,8 @@ echo
 echo
      echo
      YELLOWTXT "[?] ENTER MAGENTO DOMAIN AND SSH USER: "
-     read -e -p "  > STORE ROOT DOMAIN NAME: " -i "rootdomain.tld" MAGENTO_DOMAIN
-     read -e -p "  > FILES OWNER / SSH USER: " -i "${MAGENTO_DOMAIN//[.-]*}" MAGENTO_OWNER
+     read -e -p "  > Store root domain name: " -i "rootdomain.tld" MAGENTO_DOMAIN
+     read -e -p "  > Files owner / ssh user: " -i "${MAGENTO_DOMAIN//[.-]*}" MAGENTO_OWNER
      echo
      
      MAGENTO_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
@@ -1205,34 +1205,40 @@ echo
 	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_ROOT_PATH}
 
 while true; do
-  _echo "Select how to get Magento 2 code:"
-  _echo "Rsync from another server"
-  _echo "Clone from private GitHub repository"
-  _echo "New installation with Composer"
+  YELLOWTXT "[?] Select how to get Magento 2 code:"
+  _echo "
+  ${BOLD}Rsync${RESET} from another server
+  ${BOLD}GitHub${RESET} clone from private repository
+  ${BOLD}Composer${RESET} new installation"
+  echo
   
   updown_menu "Rsync Github Composer" choice
 
   if [ "$choice" == "Rsync" ]; then
     echo
-    read -e -p "Server IP address: " -i "1.2.3.4" RSYNC_IP
-    read -e -p "SSH port: " -i "22" RSYNC_PORT
-    read -e -p "SSH username: " -i "username"  RSYNC_USER
-    read -e -p "Folder path: " -i "/path/to/magento"  RSYNC_ROOT_PATH
+    read -e -p "--> Server IP address: " -i "1.2.3.4" RSYNC_IP
+    read -e -p "--> SSH port: " -i "22" RSYNC_PORT
+    read -e -p "--> SSH username: " -i "username"  RSYNC_USER
+    read -e -p "--> Folder path: " -i "/path/to/magento/*"  RSYNC_ROOT_PATH
     echo
     if [ ! -f ${MAGENX_CONFIG_PATH}/rsync_magento ]; then
     ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/rsync_magento -C "rsync magento ${MAGENTO_DOMAIN}" -q -N ""
     fi
     echo "Add this key to your remote server magento ssh account authorized_keys:"
     cat ${MAGENX_CONFIG_PATH}/rsync_magento.pub
+    echo
     pause '[] Press [Enter] to start rsync connection'
-    rsync -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH}" . || { echo "Error: Rsync failed"; continue; }
+    echo
+    rsync --contimeout=5 --timeout=30 -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH}" . || { echo "Error: Rsync failed"; continue; }
+    echo
     break
   elif [ "$choice" == "Github" ]; then
     echo
-    read -e -p "GitHub account: " -i "account"  GITHUB_ACCOUNT
-    read -e -p "GitHub repository: " -i "repository.git"  GITHUB_REPOSITORY
+    read -e -p "--> GitHub account: " -i "account"  GITHUB_ACCOUNT
+    read -e -p "--> GitHub repository: " -i "repository.git"  GITHUB_REPOSITORY
     echo
-    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" . || { echo "Error: Git clone failed"; continue; }
+    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" . || { echo "Error: Github clone failed"; continue; }
+    echo
     break
   elif [ "$choice" == "Composer" ]; then
     echo
