@@ -1203,6 +1203,8 @@ echo
           chmod 2750 ${MAGENTO_ROOT_PATH}
 	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_ROOT_PATH}
 	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_ROOT_PATH}
+	  
+	  cd ${MAGENTO_ROOT_PATH}
 
 while true; do
   echo
@@ -1230,7 +1232,7 @@ while true; do
     _echo "[!] MAGENTO will be synced to ${MAGENTO_ROOT_PATH}"
     pause '[] Press [Enter] to start rsync connection'
     echo
-    rsync --timeout=30 -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH} ${MAGENTO_ROOT_PATH}/" || { echo "Error: Rsync failed"; continue; }
+    rsync --timeout=30 -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH} ." || { echo "Error: Rsync failed"; continue; }
     echo
     break
   elif [ "$choice" == "Github" ]; then
@@ -1238,10 +1240,10 @@ while true; do
     read -e -p "--> GitHub account: " -i "account"  GITHUB_ACCOUNT
     read -e -p "--> GitHub repository: " -i "repository.git"  GITHUB_REPOSITORY
     echo
-    _echo "[!] MAGENTO will be synced to ${MAGENTO_ROOT_PATH}"
-    pause '[] Press [Enter] to start rsync connection'
+    _echo "[!] MAGENTO will be cloned to ${MAGENTO_ROOT_PATH}"
+    pause '[] Press [Enter] to start GitHub connection'
     echo
-    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" ${MAGENTO_ROOT_PATH}/ || { echo "Error: Github clone failed"; continue; }
+    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" . || { echo "Error: Github clone failed"; continue; }
     echo
     break
   elif [ "$choice" == "Composer" ]; then
@@ -1255,8 +1257,6 @@ while true; do
     echo
     pause '[] Press [Enter] key to start'
     echo
-
-    cd ${MAGENTO_ROOT_PATH}
     
     YELLOWTXT "[?] SELECT MAGENTO VERSION: "
     updown_menu "${MAGENTO_VERSION_LIST}" MAGENTO_VERSION_INSTALLED
