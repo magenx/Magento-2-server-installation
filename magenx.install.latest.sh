@@ -1214,9 +1214,9 @@ while true; do
   --> ${BOLD}Composer${RESET} new installation"
   echo
   
-  updown_menu "Rsync Github Composer" choice
+  updown_menu "Rsync Github Composer" MAGENTO_INSTALLATION_TYPE
 
-  if [ "$choice" == "Rsync" ]; then
+  if [ "${MAGENTO_INSTALLATION_TYPE}" == "Rsync" ]; then
     echo
     read -e -p "--> Server IP address: " -i "1.2.3.4" RSYNC_IP
     read -e -p "--> SSH port: " -i "22" RSYNC_PORT
@@ -1227,26 +1227,27 @@ while true; do
     ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/rsync_magento -C "rsync magento ${MAGENTO_DOMAIN}" -q -N ""
     fi
     echo "[!] Add this key to your remote server magento ssh account authorized_keys:"
+    echo
     cat ${MAGENX_CONFIG_PATH}/rsync_magento.pub
     echo
-    _echo "[!] MAGENTO will be synced to ${MAGENTO_ROOT_PATH}"
+    _echo "[!] Magento will be synced to ${MAGENTO_ROOT_PATH}"
     pause '[] Press [Enter] to start rsync connection'
     echo
     rsync --timeout=30 -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH} ." || { echo "Error: Rsync failed"; continue; }
     echo
     break
-  elif [ "$choice" == "Github" ]; then
+  elif [ "${MAGENTO_INSTALLATION_TYPE}" == "Github" ]; then
     echo
     read -e -p "--> GitHub account: " -i "account"  GITHUB_ACCOUNT
     read -e -p "--> GitHub repository: " -i "repository.git"  GITHUB_REPOSITORY
     echo
-    _echo "[!] MAGENTO will be cloned to ${MAGENTO_ROOT_PATH}"
+    _echo "[!] Magento will be cloned to ${MAGENTO_ROOT_PATH}"
     pause '[] Press [Enter] to start GitHub connection'
     echo
     git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" . || { echo "Error: Github clone failed"; continue; }
     echo
     break
-  elif [ "$choice" == "Composer" ]; then
+  elif [ "${MAGENTO_INSTALLATION_TYPE}" == "Composer" ]; then
     echo
     GREENTXT "${MAGENTO_MINIMUM} INSTALLATION"
     echo
@@ -1263,7 +1264,7 @@ while true; do
     echo
     
      echo
-     _echo "[!] MAGENTO [ ${MAGENTO_VERSION_INSTALLED} ] will be downloaded to ${MAGENTO_ROOT_PATH}"
+     _echo "[!] Magento [ ${MAGENTO_VERSION_INSTALLED} ] will be downloaded to ${MAGENTO_ROOT_PATH}"
      echo
 
     ## composer download
@@ -1288,9 +1289,11 @@ while true; do
 
     break
   else
-    echo "Error: Invalid choice"
+    echo "Error: Invalid installation type"
   fi
 done
+
+[ "${MAGENTO_INSTALLATION_TYPE}" != "Composer" ] && MAGENTO_VERSION_INSTALLED="$(${MAGENTO_ROOT_PATH}/bin/magento --version --no-ansi | awk '{print $NF}')"
 
 # reset permissions
 su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
@@ -1308,6 +1311,7 @@ echo
 cat > ${MAGENX_CONFIG_PATH}/magento <<END
 # ${MAGENTO_MINIMUM}
 MAGENTO_VERSION="2"
+MAGENTO_INSTALLATION_TYPE="${MAGENTO_INSTALLATION_TYPE}"
 MAGENTO_VERSION_INSTALLED="${MAGENTO_VERSION_INSTALLED}"
 MAGENTO_DOMAIN="${MAGENTO_DOMAIN}"
 MAGENTO_OWNER="${MAGENTO_OWNER}"
