@@ -1178,21 +1178,14 @@ echo
 BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGENTO_VERSION}    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo
-echo   
-     YELLOWTXT "[?] SELECT MAGENTO VERSION: "
-     updown_menu "${MAGENTO_VERSION_LIST}" MAGENTO_VERSION_INSTALLED
-     echo
+echo
      echo
      YELLOWTXT "[?] ENTER MAGENTO DOMAIN AND SSH USER: "
-     read -e -p "  > STORE ROOT DOMAIN NAME: " -i "rootdomain.tld" MAGENTO_DOMAIN
-     read -e -p "  > FILES OWNER / SSH USER: " -i "${MAGENTO_DOMAIN//[.-]*}" MAGENTO_OWNER
+     read -e -p "  > Store root domain name: " -i "rootdomain.tld" MAGENTO_DOMAIN
+     read -e -p "  > Files owner / ssh user: " -i "${MAGENTO_DOMAIN//[.-]*}" MAGENTO_OWNER
      echo
      
      MAGENTO_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
-	 
-     echo
-     _echo "[!] MAGENTO [ ${MAGENTO_VERSION_INSTALLED} ] will be downloaded to ${MAGENTO_ROOT_PATH}"
-     echo
 
           ## create magento owner/ssh user
           useradd -d ${MAGENTO_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
@@ -1211,38 +1204,96 @@ echo
 	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_ROOT_PATH}
 	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_ROOT_PATH}
 	  
-echo
-GREENTXT "${MAGENTO_MINIMUM} INSTALLATION"
-echo
-WHITETXT "- Better memory allocation!"
-WHITETXT "- Faster cli, backend and frontend operations!"
-WHITETXT "- Less maintenance work!"
-WHITETXT "- Less dependencies and security risks!"
-echo
-pause '[] Press [Enter] key to start'
-echo
+	  cd ${MAGENTO_ROOT_PATH}
 
-cd ${MAGENTO_ROOT_PATH}
+while true; do
+  echo
+  YELLOWTXT "[?] SELECT HOW TO GET MAGENTO 2 CODE:"
+  _echo "--> ${BOLD}Rsync${RESET} from another server
+  --> ${BOLD}GitHub${RESET} clone from private repository
+  --> ${BOLD}Composer${RESET} new installation"
+  echo
+  
+  updown_menu "Rsync Github Composer" MAGENTO_INSTALLATION_TYPE
 
-## composer download
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php --${COMPOSER_VERSION} --install-dir=/usr/bin --filename=composer
-php -r "unlink('composer-setup.php');"
+  if [ "${MAGENTO_INSTALLATION_TYPE}" == "Rsync" ]; then
+    echo
+    read -e -p "--> Server IP address: " -i "1.2.3.4" RSYNC_IP
+    read -e -p "--> SSH port: " -i "22" RSYNC_PORT
+    read -e -p "--> SSH username: " -i "username"  RSYNC_USER
+    read -e -p "--> Folder path: " -i "/path/to/magento/*"  RSYNC_ROOT_PATH
+    echo
+    if [ ! -f ${MAGENX_CONFIG_PATH}/rsync_magento ]; then
+    ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/rsync_magento -C "rsync magento ${MAGENTO_DOMAIN}" -q -N ""
+    fi
+    echo "[!] Add this key to your remote server magento ssh account authorized_keys:"
+    echo
+    cat ${MAGENX_CONFIG_PATH}/rsync_magento.pub
+    echo
+    _echo "[!] Magento will be synced to ${MAGENTO_ROOT_PATH}"
+    pause '[] Press [Enter] to start rsync connection'
+    echo
+    rsync --timeout=30 -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH} ." || { echo "Error: Rsync failed"; continue; }
+    echo
+    break
+  elif [ "${MAGENTO_INSTALLATION_TYPE}" == "Github" ]; then
+    echo
+    read -e -p "--> GitHub account: " -i "account"  GITHUB_ACCOUNT
+    read -e -p "--> GitHub repository: " -i "repository.git"  GITHUB_REPOSITORY
+    echo
+    _echo "[!] Magento will be cloned to ${MAGENTO_ROOT_PATH}"
+    pause '[] Press [Enter] to start GitHub connection'
+    echo
+    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" . || { echo "Error: Github clone failed"; continue; }
+    echo
+    break
+  elif [ "${MAGENTO_INSTALLATION_TYPE}" == "Composer" ]; then
+    echo
+    GREENTXT "${MAGENTO_MINIMUM} INSTALLATION"
+    echo
+    WHITETXT "- Better memory allocation!"
+    WHITETXT "- Faster cli, backend and frontend operations!"
+    WHITETXT "- Less maintenance work!"
+    WHITETXT "- Less dependencies and security risks!"
+    echo
+    pause '[] Press [Enter] key to start'
+    echo
+    
+    YELLOWTXT "[?] SELECT MAGENTO VERSION: "
+    updown_menu "${MAGENTO_VERSION_LIST}" MAGENTO_VERSION_INSTALLED
+    echo
+    
+     echo
+     _echo "[!] Magento [ ${MAGENTO_VERSION_INSTALLED} ] will be downloaded to ${MAGENTO_ROOT_PATH}"
+     echo
 
-su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${MAGENTO_COMPOSER_NAME} ${MAGENTO_COMPOSER_PASSWORD}"
-su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
+    ## composer download
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    php composer-setup.php --${COMPOSER_VERSION} --install-dir=/usr/bin --filename=composer
+    php -r "unlink('composer-setup.php');"
 
-# composer replace bloatware
-curl -sO ${MAGENX_INSTALL_GITHUB_REPO}composer_replace
-sed -i '/"conflict":/ {
-r composer_replace
-N
-}' composer.json
+    su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${MAGENTO_COMPOSER_NAME} ${MAGENTO_COMPOSER_PASSWORD}"
+    su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
 
-rm composer_replace
+    # composer replace bloatware
+    curl -sO ${MAGENX_INSTALL_GITHUB_REPO}composer_replace
+    sed -i '/"conflict":/ {
+    r composer_replace
+    N
+    }' composer.json
 
-# install magento from here
-su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
+    rm composer_replace
+
+    # install magento from here
+    su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
+
+    break
+  else
+    echo "Error: Invalid installation type"
+  fi
+done
+
+[ "${MAGENTO_INSTALLATION_TYPE}" != "Composer" ] && MAGENTO_VERSION_INSTALLED="$(${MAGENTO_ROOT_PATH}/bin/magento --version --no-ansi | awk '{print $NF}')"
 
 # reset permissions
 su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
@@ -1252,6 +1303,20 @@ setfacl -R -m u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:rwx,o::-,d:u:${MAGENT
 ## make magento great again
 sed -i "s/2-4/2-5/" app/etc/di.xml
 
+if [ "${MAGENTO_INSTALLATION_TYPE}" != "Github" ]; then
+echo
+YELLOWTXT "[!] For development and code deployment, please create a free Github account:"
+_echo "https://github.com/pricing
+
+## Github pros:
+Disaster recovery - secure code backup.
+No malware - reset files to the state in the repository.
+Easy Maintenance - Developers don't need to login to the server.
+Approved Modifications - Keep track of all changes.
+Support service - tickets and resolving issues."
+fi
+
+echo
 echo
 GREENTXT "[~]    MAGENTO ${MAGENTO_MINIMUM} DOWNLOADED AND READY FOR SETUP    [~]"
 WHITETXT "--------------------------------------------------------------------"
@@ -1260,6 +1325,7 @@ echo
 cat > ${MAGENX_CONFIG_PATH}/magento <<END
 # ${MAGENTO_MINIMUM}
 MAGENTO_VERSION="2"
+MAGENTO_INSTALLATION_TYPE="${MAGENTO_INSTALLATION_TYPE}"
 MAGENTO_VERSION_INSTALLED="${MAGENTO_VERSION_INSTALLED}"
 MAGENTO_DOMAIN="${MAGENTO_DOMAIN}"
 MAGENTO_OWNER="${MAGENTO_OWNER}"
@@ -1282,8 +1348,7 @@ echo
 BLUEBG "[~]    CREATE MYSQL USER AND DATABASE    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 if [ ! -f /root/.my.cnf ]; then
-MYSQL_ROOT_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
-MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD_GEN}${RANDOM}"
+MYSQL_ROOT_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"
 
 systemctl restart mariadb
 mariadb-admin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL SERVER DOWN \n"; exit 1; }
@@ -1380,8 +1445,7 @@ read -e -p "  [?] Admin first name: " -i "Magento"  MAGENTO_ADMIN_FIRSTNAME
 read -e -p "  [?] Admin last name: " -i "Administrator"  MAGENTO_ADMIN_LASTNAME
 read -e -p "  [?] Admin email: " -i "admin@${MAGENTO_DOMAIN}"  MAGENTO_ADMIN_EMAIL
 read -e -p "  [?] Admin login name: " -i "admin"  MAGENTO_ADMIN_LOGIN
-MAGENTO_ADMIN_PASSWORD_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%&?=' | fold -w 10 | head -n 1)
-read -e -p "  [?] Admin password: " -i "${MAGENTO_ADMIN_PASSWORD_GEN}${RANDOM}"  MAGENTO_ADMIN_PASSWORD
+read -e -p "  [?] Admin password: " -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%&?=' | fold -w 10 | head -n 1)${RANDOM}"  MAGENTO_ADMIN_PASSWORD
 read -e -p "  [?] Shop base url: " -i "http://${MAGENTO_DOMAIN}/"  MAGENTO_BASE_URL
 echo
 WHITETXT "Language, Currency and Timezone settings"
