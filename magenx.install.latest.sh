@@ -1305,17 +1305,21 @@ sed -i "s/2-4/2-5/" app/etc/di.xml
 
 if [ "${MAGENTO_INSTALLATION_TYPE}" != "Github" ]; then
 echo
+echo
+echo
 YELLOWTXT "[!] For development and code deployment, please create a free Github account:"
+echo
 _echo "https://github.com/pricing
-
-## Github pros:
-Disaster recovery - secure code backup.
-No malware - reset files to the state in the repository.
-Easy Maintenance - Developers don't need to login to the server.
-Approved Modifications - Keep track of all changes.
-Support service - tickets and resolving issues."
+  
+  ## Github pros:
+  Disaster recovery - secure code backup.
+  No malware - reset files to the state in the repository.
+  Easy Maintenance - Developers don't need to login to the server.
+  Approved Modifications - Keep track of all changes.
+  Support service - tickets and resolving issues."
 fi
 
+echo
 echo
 echo
 GREENTXT "[~]    MAGENTO ${MAGENTO_MINIMUM} DOWNLOADED AND READY FOR SETUP    [~]"
