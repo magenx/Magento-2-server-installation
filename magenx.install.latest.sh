@@ -1847,13 +1847,13 @@ GREENTXT "VARNISH CACHE CONFIGURATION"
 fi
 echo
 GREENTXT "DOWNLOADING n98-MAGERUN2"
-curl -s -o /usr/local/bin/magerun2 https://files.magerun.net/n98-magerun2.phar
+curl -s -o /usr/local/bin/n98-magerun2 https://files.magerun.net/n98-magerun2.phar
 echo
 GREENTXT "CACHE CLEANER SCRIPT"
 echo "${MAGENTO_OWNER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart php*fpm.service, /usr/bin/systemctl restart nginx.service" >>  /etc/sudoers
 cat > /usr/local/bin/cacheflush <<END
 #!/bin/bash
-magerun2 cache:flush
+n98-magerun2 cache:flush
 sudo /usr/bin/systemctl restart php*fpm.service
 sudo /usr/bin/systemctl restart nginx.service
 END
@@ -2117,11 +2117,9 @@ htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
 [elk admin user]: elastic
 [elk admin password]: ${ELASTIC_PASSWORD}
 
-[percona toolkit]: https://www.percona.com/doc/percona-toolkit/LATEST/index.html
-
 [database monitor]: /usr/local/bin/mytop
 [mysqltuner]: /usr/local/bin/mysqltuner
-[n98-magerun2]: /usr/local/bin/magerun2
+[n98-magerun2]: /usr/local/bin/n98-magerun2
 [cache cleaner]: /usr/local/bin/cacheflush
 
 [audit log]: ausearch -k ${MAGENTO_OWNER} | aureport -f -i
