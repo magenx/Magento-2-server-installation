@@ -7,16 +7,6 @@
 SELF=$(basename $0)
 MAGENX_VERSION=$(curl -s https://api.github.com/repos/magenx/Magento-2-server-installation/tags 2>&1 | head -3 | grep -oP '(?<=")\d.*(?=")')
 MAGENX_BASE="https://magenx.sh"
-
-# Config path
-MAGENX_CONFIG_PATH="/opt/magenx/config"
-if [ ! -d "${MAGENX_CONFIG_PATH}" ]; then
-  mkdir -p ${MAGENX_CONFIG_PATH}
-fi
-
-# Get machine id
-MACHINE_ID="$(cat /etc/machine-id)"
-
 ###################################################################################
 ###                              REPOSITORY AND PACKAGES                        ###
 ###################################################################################
@@ -28,7 +18,6 @@ MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-s
 MAGENTO_VERSION="2"
 MAGENTO_VERSION_LIST=$(curl -s https://api.github.com/repos/magento/magento${MAGENTO_VERSION}/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
 MAGENTO_PROJECT="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
-MAGENTO_MINIMUM="MINIMUM MODULES"
 
 MAGENTO_COMPOSER_NAME="8c681734f22763b50ea0c29dff9e7af2" 
 MAGENTO_COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974" 
@@ -36,14 +25,13 @@ MAGENTO_COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 ## Version lock
 COMPOSER_VERSION="2.2"
 RABBITMQ_VERSION="3.9*"
-MARIADB_VERSION="10.5.17"
-ELK_VERSION="7.x"
-VARNISH_VERSION="70"
-REDIS_VERSION="6.2"
+MARIADB_VERSION="10.6.12"
+ELASTICSEARCH_VERSION="7.x"
+VARNISH_VERSION="71"
+REDIS_VERSION="7"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
-REMI_RPM_REPO="http://rpms.famillecollet.com/enterprise/remi-release-8.rpm"
 
 # Nginx configuration
 NGINX_VERSION=$(curl -s http://nginx.org/en/download.html | grep -oP '(?<=gz">nginx-).*?(?=</a>)' | head -1)
@@ -58,31 +46,16 @@ MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
 MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 
 # WebStack Packages .deb
-EXTRA_PACKAGES_DEB="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
+EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
 logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
 
-PERL_MODULES_DEB="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
+PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
-PHP_PACKAGES_DEB=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
-
-# WebStack Packages .rpm
-EXTRA_PACKAGES_RPM="autoconf snapd jq automake nc netcat bind-utils screen iptraf inotify-tools util-linux iptables smartmontools mlocate unzip vim \
-wget sudo mailx logrotate git patch ipset strace rsyslog GeoIP GeoIP-devel geoipupdate ImageMagick moreutils lsof net-snmp net-snmp-utils \
-ncftp postfix sysstat acl attr iotop expect"
-
-PHP_PACKAGES_RPM=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp phpseclib recode \
-tcpdf tidy ldap lz4)
-
-PHP_PECL_PACKAGES_RPM=(pecl-redis pecl-lzf pecl-geoip pecl-zip pecl-memcache pecl-oauth pecl-apcu)
-
-PERL_MODULES_RPM=(LWP-Protocol-https Config-IniFiles libwww-perl CPAN TermReadKey DBI DBD-MySQL)
-
-
+PHP_PACKAGES=(cli fpm common mysql zip lz4 gd mbstring curl xml bcmath intl ldap soap oauth apcu)
 ###################################################################################
 ###                                    COLORS                                   ###
 ###################################################################################
-
 RED="\e[31;40m"
 GREEN="\e[32;40m"
 YELLOW="\e[33;40m"
@@ -96,7 +69,6 @@ REDBG="  \e[41m"
 BOLD="\e[1m"
 ### Reset
 RESET="\e[0m"
-
 ###################################################################################
 ###                            ECHO MESSAGES DESIGN                             ###
 ###################################################################################
@@ -127,23 +99,21 @@ BLUEBG () {
 pause () {
    read -p "  $*"
 }
-include_config () {
-    [[ -f "$1" ]] && . "$1"
-}
 _echo () {
   echo -en "  $@"
 }
 
-PKG_INSTALLED="  \033[32;40mInstalled:\033[0m "
-
+PACKAGES_INSTALLED () {
+GREENTXT "Installed: "
+apt -qq list --installed $@ 2>/dev/null | awk '{print "   " $0}'
+}
 ###################################################################################
 ###                            ARROW KEYS UP/DOWN MENU                          ###
 ###################################################################################
-
 updown_menu () {
 i=1;for items in $(echo $1); do item[$i]="${items}"; let i=$i+1; done
 i=1
-echo -e "\n---> Use up/down arrow keys then press [ Enter ] to select $2"
+echo -e "\n  Use up/down arrow keys then press [ Enter ] to select $2"
 while [ 0 ]; do
   if [ "$i" -eq 0 ]; then i=1; fi
   if [ ! "${item[$i]}" ]; then let i=i-1; fi
@@ -153,134 +123,189 @@ while [ 0 ]; do
   case "${selector}" in
     "B") let i=i+1;;
     "A") let i=i-1;;
-    "") echo; read -sn 1 -p "To confirm [ ${item[$i]} ] press "$(echo -e $BOLD$GREEN"y"$RESET)" or "$(echo -e $BOLD$RED"n"$RESET)" for new selection" confirm
+    "") echo; read -sn 1 -p "  [?] To confirm [ "$(echo -e $BOLD${item[$i]}$RESET)" ] press "$(echo -e $BOLD$GREEN"y"$RESET)" or "$(echo -e $BOLD$RED"n"$RESET)" for new selection" confirm
       if [[ "${confirm}" =~ ^[Yy]$  ]]; then
         printf -v "$2" '%s' "${item[$i]}"
         break
       else
         echo
-        echo -e "\n---> Use up/down arrow keys then press [ Enter ] to select $2"
+        echo -e "\n  Use up/down arrow keys then press [ Enter ] to select $2"
       fi
       ;;
   esac
 done }
-
-clear
 ###################################################################################
-###                              CHECK IF WE CAN RUN IT                         ###
+###           CHECK IF ROOT AND CREATE DATABASE TO SAVE ALL SETTINGS            ###
 ###################################################################################
-echo
-echo
-
+echo ""
+echo ""
 # root?
 if [[ ${EUID} -ne 0 ]]; then
   echo
-  REDTXT "[!] THIS SCRIPT MUST BE RUN AS ROOT!"
-  YELLOWTXT "[!] USE SUPER-USER PRIVILEGES."
+  REDTXT "[!] This script must be run as root user!"
+  YELLOWTXT "[!] Login as root and run this script again."
   exit 1
-  else
+else
   GREENTXT "PASS: ROOT!"
 fi
 
-# some selinux, sir?
-  if [ ! -f "/etc/selinux/config" ]; then
-    GREENTXT "PASS: SELINUX IS DISABLED"
-   else
-    SELINUX=$(awk -F "=" '/^SELINUX=/ {print $2}' /etc/selinux/config)
-    if [ "${SELINUX}" != "disabled" ]; then
-      echo
-      REDTXT "[!] SELINUX IS NOT DISABLED OR PERMISSIVE"
-      YELLOWTXT "[!] PLEASE CHECK YOUR SELINUX SETTINGS"
-      echo
-      _echo "[?] Disable SELinux and reboot now?  [y/n][y]:"
-      read selinux_disable
-    if [ "${selinux_disable}" == "y" ]; then
-      sed -i "s/^SELINUX=.*/SELINUX=disabled/" /etc/selinux/config
-      reboot
-  fi
- fi
+# Config path
+MAGENX_CONFIG_PATH="/opt/magenx/config"
+if [ ! -d "${MAGENX_CONFIG_PATH}" ]; then
+  mkdir -p ${MAGENX_CONFIG_PATH}
 fi
-	
 
-## Ubuntu Debian RedHat Rocky Amazon
-## Distro detect and set installation key
-distro_error ()
-{
-    echo
-    REDTXT "[!] ${OS_NAME} ${OS_VERSION} detected"
-    echo
-    echo " Unfortunately, your operating system distribution and version are not supported by this script"
-    echo " Supported: Ubuntu 20.04; Debian 11; RedHat 8; Rocky Linux 8; Amazon Linux 2"
-    echo " Please email support@magenx.com and let us know if you run into any issues"
-    echo
+# SQLite check, create database path and command
+if ! which sqlite3 >/dev/null; then
+  echo ""
+  YELLOWTXT "[!] SQLite is not installed on this system!"
+  YELLOWTXT "[!] Installing..."
+  echo ""
+  echo ""
+  apt update
+  apt -y install sqlite3
+fi
+
+SQLITE3_DB="magenx.db"
+SQLITE3_DB_PATH="${MAGENX_CONFIG_PATH}/${SQLITE3_DB}"
+SQLITE3="sqlite3 ${SQLITE3_DB_PATH}"
+if [ ! -f "${SQLITE3_DB_PATH}" ]; then
+  ${SQLITE3} "" ""
+
+# Create base tables to save configuration
+${SQLITE3} "CREATE TABLE IF NOT EXISTS system(
+   machine_id             text,
+   distro_name            text,
+   distro_version         text,
+   web_stack              text,
+   timezone               text,
+   system_test            text,
+   ssh_port               text,
+   terms                  text,
+   system_update          text,
+   php_version            text,
+   phpmyadmin_password    text,
+   webmin_password        text,
+   mysql_root_password    text,
+   elasticsearch_password text
+   );"
+   
+${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
+   magento_env                       text,
+   magento_mode                      text,
+   magento_redis_password            text,
+   magento_rabbitmq_password         text,
+   magento_indexer_password          text,
+   magento_version_installed         text,
+   magento_domain                    text,
+   magento_owner                     text,
+   magento_php_user                  text,
+   magento_root_path                 text,
+   magento_database_host             text,
+   magento_database_name             text,
+   magento_database_user             text,
+   magento_database_password         text,
+   magento_admin_login               text,
+   magento_admin_password            text,
+   magento_admin_email               text,
+   magento_locale                    text,
+   magento_admin_path                text,
+   magento_crypt_key                 text,
+   magento_tfa_key                   text,
+   magento_private_ssh_key           text,
+   magento_public_ssh_key            text,
+   github_actions_private_ssh_key    text,
+   github_actions_public_ssh_key     text,
+   magento_lock                      text
+   );"
+   
+${SQLITE3} "CREATE TABLE IF NOT EXISTS menu(
+   lemp        text,
+   magento     text,
+   database    text,
+   install     text,
+   config      text,
+   csf         text,
+   webmin      text
+   );"
+   
+${SQLITE3} "INSERT INTO menu (lemp, magento, database, install, config, csf, webmin)
+ VALUES('-', '-', '-', '-', '-', '-', '-');"
+fi
+###################################################################################
+###                              CHECK IF WE CAN RUN IT                         ###
+###################################################################################
+## Ubuntu Debian
+## Distro detectction
+distro_error() {
+  echo ""
+  REDTXT "[!] ${OS_NAME} ${OS_VERSION} detected"
+  echo ""
+  echo " Unfortunately, your operating system distribution and version are not supported by this script"
+  echo " Supported: Ubuntu 20.04; Debian 11"
+  echo " Please email admin@magenx.com and let us know if you run into any issues"
+  echo ""
   exit 1
 }
 
-if [ -f "${MAGENX_CONFIG_PATH}/distro" ]; then
-  include_config ${MAGENX_CONFIG_PATH}/distro
-  GREENTXT "PASS: [ ${OS_NAME} ${OS_VERSION} ]"
-  else
-  if [ -f /etc/os-release ]; then
+# Check if distribution name and version are already in the database
+DISTRO_INFO=($(${SQLITE3} -list -separator '  ' "SELECT distro_name, distro_version FROM system;"))
+if [ -n "${DISTRO_INFO[0]}" ]; then
+  DISTRO_NAME="${DISTRO_INFO[0]}"
+  DISTRO_VERSION="${DISTRO_INFO[1]}"
+  GREENTXT "PASS: [ ${DISTRO_NAME} ${DISTRO_VERSION} ]"
+else
+  # Detect distribution name and version
+  if [ -f "/etc/os-release" ]; then
     . /etc/os-release
-    OS_NAME=${NAME}
-    OS_VERSION=${VERSION_ID}
+    DISTRO_NAME="${NAME}"
+    DISTRO_VERSION="${VERSION_ID}"
 
-  if [ "${OS_NAME%% *}" == "Ubuntu" ] && [[ "${OS_VERSION}" =~ "20.04" ]]; then
-    OS_DISTRO_KEY="ubuntu"
-  elif [ "${OS_NAME%% *}" == "Debian" ] && [ "${OS_VERSION}" == "11" ]; then
-    OS_DISTRO_KEY="debian"
-  elif [[ "${OS_NAME%% *}" =~ (Red|Rocky) ]] && [ "${OS_VERSION//.*}" == "8" ]; then
-    OS_DISTRO_KEY="redhat"
-  elif [ "${OS_NAME%% *}" == "Amazon" ] && [ "${OS_VERSION}" == "2" ]; then
-    OS_DISTRO_KEY="amazon"
-  else
-    distro_error
-  fi
-    echo
-    _echo "[?]${REDBG}${BOLD}[ ${OS_NAME} ${OS_VERSION} ]${RESET} detected correctly ? [y/n][n]:"
+    # Check if distribution is supported
+    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ "20.04" ]]; then
+      DISTRO_NAME="Ubuntu"
+    elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [ "${DISTRO_VERSION}" == "11" ]; then
+      DISTRO_NAME="Debian"
+    else
+      distro_error
+    fi
+
+    # Confirm distribution detection with user input
+    echo ""
+    _echo "${YELLOW}[?]${REDBG}${BOLD}[ ${DISTRO_NAME} ${DISTRO_VERSION} ]${RESET} ${YELLOW}detected correctly ? [y/n][n]: ${RESET}"
     read distro_detect
-   if [ "${distro_detect}" == "y" ]; then
-    echo
-    GREENTXT "PASS: [ ${OS_NAME} ${OS_VERSION} ]"
-    echo OS_NAME=\"${OS_NAME}\" > ${MAGENX_CONFIG_PATH}/distro
-    echo OS_VERSION=\"${OS_VERSION}\" >> ${MAGENX_CONFIG_PATH}/distro
-    echo OS_DISTRO_KEY=\"${OS_DISTRO_KEY}\" >> ${MAGENX_CONFIG_PATH}/distro
-   else
-    echo
-    distro_error
-    echo
-   fi
+    if [ "${distro_detect}" = "y" ]; then
+      echo ""
+      GREENTXT "PASS: [ ${DISTRO_NAME} ${DISTRO_VERSION} ]"
+      # Get machine id
+      MACHINE_ID="$(cat /etc/machine-id)"
+      ${SQLITE3} "INSERT INTO system (machine_id, distro_name, distro_version) VALUES ('${MACHINE_ID}', '${DISTRO_NAME}', '${DISTRO_VERSION}');"
+    else
+      distro_error
+    fi
   else
-   echo
-   distro_error
-   echo
+    distro_error
   fi
 fi
 
 # network is up?
-host1=google.com
+host1=${MAGENX_BASE}
 host2=github.com
 
 RESULT=$(((ping -w3 -c2 ${host1} || ping -w3 -c2 ${host2}) > /dev/null 2>&1) && echo "up" || (echo "down" && exit 1))
 if [[ ${RESULT} == up ]]; then
   GREENTXT "PASS: NETWORK IS UP. GREAT, LETS START!"
   else
-  echo
-  REDTXT "[!] NETWORK IS DOWN ?"
-  YELLOWTXT "[!] PLEASE CHECK YOUR NETWORK SETTINGS."
-  echo
-  echo
+  echo ""
+  REDTXT "[!] Network is down ?"
+  YELLOWTXT "[!] Please check your network settings."
+  echo ""
+  echo ""
   exit 1
 fi
 
-      # install packages to run CPU and HDD test
-      if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-       rpm --quiet -q epel-release || yum -y install epel-release
-       rpm --quiet -q dnf-automatic yum-utils || yum install -y 'dnf*' yum-utils
-       rpm --quiet -q curl time bc bzip2 tar || dnf -y install curl time bc bzip2 tar
-      else
-       dpkg-query -l curl time bc bzip2 tar >/dev/null || { apt update -o Acquire::ForceIPv4=true; apt -y install curl time bc bzip2 tar; }
-      fi
+# install packages to run CPU and HDD test
+dpkg-query -l curl time bc bzip2 tar >/dev/null || { echo; echo; apt update -o Acquire::ForceIPv4=true; apt -y install curl time bc bzip2 tar; }
 
 # check if you need self update
 MD5_NEW=$(curl -sL ${MAGENX_BASE} > ${SELF}.new && md5sum ${SELF}.new | awk '{print $1}')
@@ -289,23 +314,24 @@ MD5=$(md5sum ${SELF} | awk '{print $1}')
    GREENTXT "PASS: INTEGRITY CHECK FOR '${SELF}' OK"
    rm ${SELF}.new
   elif [[ "${MD5_NEW}" != "${MD5}" ]]; then
-   echo
-   YELLOWTXT "INTEGRITY CHECK FOR '${SELF}'"
-   YELLOWTXT "DETECTED DIFFERENT MD5 CHECKSUM"
-   YELLOWTXT "REMOTE REPOSITORY FILE HAS SOME CHANGES"
-   REDTXT "IF YOU HAVE LOCAL CHANGES - SKIP UPDATES"
-   echo
-   _echo "[?] Would you like to update the file now?  [y/n][y]:"
+   echo ""
+   YELLOWTXT "Integrity check for '${SELF}'"
+   YELLOWTXT "detected different md5 checksum"
+   YELLOWTXT "remote repository file has some changes"
+   echo ""
+   REDTXT "IF YOU HAVE LOCAL CHANGES REMOVE INTEGRITY CHECK OR SKIP UPDATES"
+   echo ""
+   _echo "[?] Would you like to update the file now?  [y/n][y]: "
    read update_agree
   if [ "${update_agree}" == "y" ];then
    mv ${SELF}.new ${SELF}
-   echo
-   GREENTXT "THE FILE HAS BEEN UPGRADED, PLEASE RUN IT AGAIN"
-   echo
+   echo ""
+   GREENTXT "The file has been upgraded, please run it again"
+   echo ""
   exit 1
   else
-   echo
-   YELLOWTXT "NEW FILE SAVED TO ${SELF}.new"
+   echo ""
+   YELLOWTXT "New file saved to ${SELF}.new"
    echo
   fi
 fi
@@ -313,138 +339,175 @@ fi
 # check if memory is enough
 TOTALMEM=$(awk '/MemTotal/{print $2}' /proc/meminfo | xargs -I {} echo "scale=4; {}/1024^2" | bc | xargs printf "%1.0f")
 if [ "${TOTALMEM}" -ge "4" ]; then
-  GREENTXT "PASS: TOTAL RAM ${BOLD}${TOTALMEM}Gb"
+  GREENTXT "PASS: TOTAL RAM [${TOTALMEM}Gb]"
  else
   echo
-  REDTXT "[!] TOTAL RAM LESS THAN ${BOLD}4Gb"
-  YELLOWTXT "[!] TO PROPERLY RUN COMPLETE STACK YOU NEED MORE RAM"
+  REDTXT "[!] Total RAM less than ${BOLD}4Gb"
+  YELLOWTXT "[!] To run complete stack you need more RAM"
   echo
 fi
 
 # check if web stack is clean
-if ! grep -q "web_stack_is_clean" ${MAGENX_CONFIG_PATH}/web_stack >/dev/null 2>&1 ; then
- if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-    installed_packages="$(rpm -qa --qf '%{name} ' 'mysqld?|firewalld|rabbitmq*|elasticsearch|Percona*|maria*|php-?|nginx*|*ftp*|varnish*|certbot*|redis*|webmin')"
-    else
-    installed_packages="$(apt -qq list --installed mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
-  fi
+WEB_STACK=$(${SQLITE3} "SELECT web_stack FROM system;")
+if [ "${WEB_STACK}" != "magenx" ]; then
+  installed_packages="$(apt -qq list --installed mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
   if [ ! -z "$installed_packages" ]; then
-    REDTXT  "[!] SOME WEBSTACK PACKAGES ALREADY INSTALLED"
-    YELLOWTXT "[!] YOU NEED TO REMOVE THEM OR RE-INSTALL MINIMAL OS VERSION"
+    REDTXT  "[!] Some webstack packages already installed"
+    YELLOWTXT "[!] You need to remove them or reinstall minimal OS version"
     echo
-  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-    echo -e "\t\t dnf remove ${installed_packages} --noautoremove"
-  else
     echo -e "\t\t apt remove ${installed_packages}"
-  fi
     echo
     echo
-  exit 1
-    else
-      # set web_stack clean
-      echo "web_stack_is_clean" > ${MAGENX_CONFIG_PATH}/web_stack
+    exit 1
+  else
+    # set web_stack clean
+    ${SQLITE3} "UPDATE system SET web_stack = 'magenx';"
   fi
 fi
 
 # print path
 GREENTXT "PATH: ${PATH}"
 
-echo
-if ! grep -q "tested" ${MAGENX_CONFIG_PATH}/system_test >/dev/null 2>&1 ; then
-echo
-BLUEBG "~    QUICK SYSTEM TEST    ~"
-WHITETXT "-------------------------------------------------------------------------------------"
-echo    
-    test_file=vpsbench__$$
-    tar_file=tarfile
-    now=$(date +"%m/%d/%Y")
+# Lets set magento mode/environment type to configure
+MAGENTO_ENV=($(${SQLITE3} "SELECT DISTINCT magento_env FROM magento;"))
+MAGENTO_LOCK="$(${SQLITE3} "SELECT magento_lock FROM magento LIMIT 1;")"
+if [ "${MAGENTO_LOCK}" == "lock" ]; then
+  echo ""
+  echo ""
+  REDTXT "Configuration lock found"
+  REDTXT "[ ${MAGENTO_ENV[@]} ] environment already configured"
+  REDTXT "You can only run one environment type configuration on this server"
+  echo ""
+  exit 1
+elif [ ${#MAGENTO_ENV[@]} -eq 0 ]; then
+  echo ""
+  echo ""
+  echo ""
+  YELLOWTXT "[?] Select magento environment type and mode:"
+  echo ""
+  _echo "${BOLD}production${RESET} - write disabled! production mode.
+  ${BOLD}staging${RESET} - write disabled! production mode.
+  ${BOLD}developer${RESET} - write enabled! developer mode.
+  ${BOLD}all_3${RESET} - configure all 3 environments on this server"
+  echo ""
+  updown_menu "production staging developer all_3" MAGENTO_ENV_SELECTED
+  if [ "${MAGENTO_ENV_SELECTED}" == "all_3" ]; then
+    MAGENTO_ENV=("production" "staging" "developer")
+  else
+    MAGENTO_EMV=("${MAGENTO_ENV_SELECTED}")
+  fi
+  for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
+    do
+    # magento mode? LOL
+    # if magento is running in production, staging, developer environment and has production mode, default mode, developer mode 
+    # and in the production environment it runs by default, should the default mode in production environment be the default mode?
+    # since having a default mode in between production and developer is kind of brain-crap...
+    # feels like the default mode should be staging mode to run in staging environment, or remove it completely 
+    # cause staging environment runs in production mode as well. maybe that would make some sense then. 
+    [[ "${MAGENTO_ENV_SELECTED}" == "staging" ]] && MAGENTO_MODE="production" || MAGENTO_MODE="${MAGENTO_ENV_SELECTED}"
+    ${SQLITE3} "INSERT INTO magento (magento_env, magento_mode) VALUES ('${MAGENTO_ENV_SELECTED}', '${MAGENTO_MODE}');"
+  done
+else
+  GREENTXT "MAGENTO ENVIRONMENT: ${MAGENTO_ENV[@]}"
+fi
 
-    cname=$( awk -F: '/model name/ {name=$2} END {print name}' /proc/cpuinfo )
-    cores=$( awk -F: '/model name/ {core++} END {print core}' /proc/cpuinfo )
-    freq=$( awk -F: ' /cpu MHz/ {freq=$2} END {print freq}' /proc/cpuinfo )
-    tram=$( free -m | awk 'NR==2 {print $2}' )   
-    echo  
-    _echo "${YELLOW}[?] I/O PERFORMANCE${RESET}:" | tee -a ${MAGENX_CONFIG_PATH}/system_test
-    io=$( ( dd if=/dev/zero of=$test_file bs=64k count=16k conv=fdatasync && rm -f $test_file ) 2>&1 | awk -F, '{io=$NF} END { print io}' )
-    _echo $io | tee ${MAGENX_CONFIG_PATH}/system_test
-    echo
-    echo
-    _echo "${YELLOW}[?] CPU PERFORMANCE${RESET}:" | tee -a ${MAGENX_CONFIG_PATH}/system_test
-    dd if=/dev/urandom of=$tar_file bs=1024 count=25000 >>/dev/null 2>&1
-    tf=$( (/usr/bin/time -f "%es" tar cfj $tar_file.bz2 $tar_file) 2>&1 )
-    rm -f tarfile*
-    _echo $tf | tee -a ${MAGENX_CONFIG_PATH}/system_test
-    echo
-    echo
+# configure system/magento timezone
+TIMEZONE="$(${SQLITE3} "SELECT timezone FROM system;")"
+if [ -z "${TIMEZONE}" ]; then
+  echo ""
+  echo ""
+  YELLOWTXT "[!] Server and Magento timezone configuration:"
+  echo ""
+  pause "[] Press [Enter] key to proceed"
+  echo ""
+  dpkg-reconfigure tzdata
+  TIMEZONE=$(timedatectl | awk '/Time zone:/ {print $3}')
+  ${SQLITE3} "UPDATE system SET timezone = '${TIMEZONE}';"
+fi
+GREENTXT "TIMEZONE: ${TIMEZONE}"
 
-WHITETXT "${BOLD}SYSTEM DETAILS:
-  CPU model: $cname
-  Number of cores: $cores
-  CPU frequency: $freq MHz
-  Total amount of RAM: $tram MB" | tee -a ${MAGENX_CONFIG_PATH}/system_test
-
-    echo
-    # set system_test tested
-    echo "tested" >> ${MAGENX_CONFIG_PATH}/system_test
 echo
-pause "[] Press [Enter] key to proceed"
 echo
+SYSTEM_TEST=$(${SQLITE3} "SELECT system_test FROM system;")
+if [ -z "${SYSTEM_TEST}" ]; then
+ echo
+ BLUEBG "~    QUICK SYSTEM TEST    ~"
+ WHITETXT "-------------------------------------------------------------------------------------"
+ echo
+  # run I/O and CPU tests
+  TEST_FILE="TEST_FILE__$$"
+  TAR_FILE="TAR_FILE"
+  _echo "${YELLOW}[?] I/O PERFORMANCE${RESET}:"
+  IO=$( ( dd if=/dev/zero of=${TEST_FILE} bs=64k count=16k conv=fdatasync && rm -f ${TEST_FILE} ) 2>&1 | awk -F, '{IO=$NF} END { print IO}' )
+  _echo ${IO}
+  echo
+  _echo "${YELLOW}[?] CPU PERFORMANCE${RESET}:"
+  dd if=/dev/urandom of=${TAR_FILE} bs=1024 count=25000 >>/dev/null 2>&1
+  CPU_TIME=$( (/usr/bin/time -f "%es" tar cfj ${TAR_FILE}.bz2 ${TAR_FILE}) 2>&1 )
+  rm -f ${TAR_FILE}*
+  _echo ${CPU_TIME}
+ echo
+ echo
+ echo
+ # set system_test tested
+ ${SQLITE3} "UPDATE system SET system_test = 'I/O:${IO} CPU:${CPU_TIME}';"
+ echo
+ pause "[] Press [Enter] key to proceed"
+ echo
 fi
 echo
-# ssh port test
-if ! grep -q "updated" ${MAGENX_CONFIG_PATH}/ssh_port >/dev/null 2>&1 ; then
-      touch ${MAGENX_CONFIG_PATH}/ssh_port
-      echo
-      sed -i "s/.*LoginGraceTime.*/LoginGraceTime 30/" /etc/ssh/sshd_config
-      sed -i "s/.*MaxAuthTries.*/MaxAuthTries 6/" /etc/ssh/sshd_config     
-      sed -i "s/.*X11Forwarding.*/X11Forwarding no/" /etc/ssh/sshd_config
-      sed -i "s/.*PrintLastLog.*/PrintLastLog yes/" /etc/ssh/sshd_config
-      sed -i "s/.*TCPKeepAlive.*/TCPKeepAlive yes/" /etc/ssh/sshd_config
-      sed -i "s/.*ClientAliveInterval.*/ClientAliveInterval 600/" /etc/ssh/sshd_config
-      sed -i "s/.*ClientAliveCountMax.*/ClientAliveCountMax 3/" /etc/ssh/sshd_config
-      sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
-      sed -i "s/.*PrintMotd.*/PrintMotd no/" /etc/ssh/sshd_config
-      
-      echo
-      SSH_PORT="$(awk '/#?Port [0-9]/ {print $2}' /etc/ssh/sshd_config)"
-      if [ "${SSH_PORT}" == "22" ]; then
-        REDTXT "[!] DEFAULT SSH PORT :22 DETECTED"
-	 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.BACK
-          SSH_PORT_NEW=$(shuf -i 9537-9554 -n 1)
-         sed -i "s/.*Port 22/Port ${SSH_PORT_NEW}/g" /etc/ssh/sshd_config
-	SSH_PORT=${SSH_PORT_NEW}
-      fi
 
-     echo
-        GREENTXT "SSH PORT AND SETTINGS WERE UPDATED  -  OK"
-	echo
-        GREENTXT "[!] SSH MAIN PORT: ${SSH_PORT}"
-	echo
-        systemctl restart sshd.service
-        ss -tlp | grep sshd
-     echo
-echo
-REDTXT "[!] IMPORTANT: NOW OPEN NEW SSH SESSION WITH THE NEW PORT!"
-REDTXT "[!] IMPORTANT: DO NOT CLOSE YOUR CURRENT SESSION!"
-echo
-_echo "[?] Have you logged in another session? [y/n][n]:"
-read ssh_test
-if [ "${ssh_test}" == "y" ];then
+# ssh port test
+SSH_PORT=$(${SQLITE3} "SELECT ssh_port FROM system;")
+if [ -z "${SSH_PORT}" ]; then
+ echo
+ sed -i "s/.*LoginGraceTime.*/LoginGraceTime 30/" /etc/ssh/sshd_config
+ sed -i "s/.*MaxAuthTries.*/MaxAuthTries 6/" /etc/ssh/sshd_config     
+ sed -i "s/.*X11Forwarding.*/X11Forwarding no/" /etc/ssh/sshd_config
+ sed -i "s/.*PrintLastLog.*/PrintLastLog yes/" /etc/ssh/sshd_config
+ sed -i "s/.*TCPKeepAlive.*/TCPKeepAlive yes/" /etc/ssh/sshd_config
+ sed -i "s/.*ClientAliveInterval.*/ClientAliveInterval 600/" /etc/ssh/sshd_config
+ sed -i "s/.*ClientAliveCountMax.*/ClientAliveCountMax 3/" /etc/ssh/sshd_config
+ sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
+ sed -i "s/.*PrintMotd.*/PrintMotd no/" /etc/ssh/sshd_config
+ echo
+ SSH_PORT="$(awk '/#?Port [0-9]/ {print $2}' /etc/ssh/sshd_config)"
+  if [ "${SSH_PORT}" == "22" ]; then
+    REDTXT "[!] Default ssh port :22 detected"
+    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.BACK
+    SSH_PORT_NEW=$(shuf -i 9537-9554 -n 1)
+    sed -i "s/.*Port 22/Port ${SSH_PORT_NEW}/g" /etc/ssh/sshd_config
+    SSH_PORT=${SSH_PORT_NEW}
+  fi
   echo
-   GREENTXT "[!] MAIN SSH PORT: ${SSH_PORT}"
+  GREENTXT "SSH port and settings were updated  -  OK"
+  echo
+  GREENTXT "[!] SSH Port: ${SSH_PORT}"
+  echo
+  systemctl restart sshd.service
+  ss -tlp | grep sshd
+  echo
+echo
+REDTXT "[!] IMPORTANT: Now open new SSH session with the new port!"
+REDTXT "[!] IMPORTANT: Do not close your current session!"
+echo
+_echo "[?] Have you logged in another session? [y/n][n]: "
+read ssh_test
+if [ "${ssh_test}" == "y" ]; then
+  echo
+   GREENTXT "[!] SSH Port: ${SSH_PORT}"
    echo
-   echo "# updated" > ${MAGENX_CONFIG_PATH}/ssh_port
-   echo SSH_PORT="${SSH_PORT}" >> ${MAGENX_CONFIG_PATH}/ssh_port
+   ${SQLITE3} "UPDATE system SET ssh_port = '${SSH_PORT}';"
    echo
    echo
    pause "[] Press [Enter] key to proceed"
   else
    echo
    mv /etc/ssh/sshd_config.BACK /etc/ssh/sshd_config
-   REDTXT "RESTORING sshd_config FILE BACK TO DEFAULTS ${GREEN} [ok]"
+   REDTXT "Restoring sshd_config file back to defaults ${GREEN} [ok]"
    systemctl restart sshd.service
    echo
-   GREENTXT "SSH PORT HAS BEEN RESTORED  -  OK"
+   GREENTXT "SSH port has been restored  -  OK"
    ss -tlp | grep sshd
   fi
 fi
@@ -454,8 +517,8 @@ echo
 ###                                  AGREEMENT                                  ###
 ###################################################################################
 echo
-if ! grep -q "agreed" ${MAGENX_CONFIG_PATH}/terms >/dev/null 2>&1 ; then
-printf "\033c"
+TERMS=$(${SQLITE3} "SELECT terms FROM system;")
+if [ "${TERMS}" != "agreed" ]; then
 echo
   YELLOWTXT "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   echo
@@ -468,315 +531,267 @@ echo
   YELLOWTXT "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   echo
    echo
-    _echo "[?] Do you agree to these terms ?  [y/n][y]:"
+    _echo "[?] Do you agree to these terms ?  [y/n][y]: "
     read terms_agree
     if [ "${terms_agree}" == "y" ]; then
       # set terms agreed
-      echo "agreed" > ${MAGENX_CONFIG_PATH}/terms
+      ${SQLITE3} "UPDATE system SET terms = 'agreed';"
     else
-      REDTXT "Going out. EXIT"
+      REDTXT "Going out."
       echo
       exit 1
   fi
 fi
-
 ###################################################################################
 ###                                  MAIN MENU                                  ###
 ###################################################################################
-
 showMenu () {
+MENU_CHECK=($(${SQLITE3} -list -separator '  ' "SELECT lemp, magento, database, install, config, csf, webmin FROM menu;"))
 printf "\033c"
-    echo
-      echo
+    echo ""
+      echo ""
         echo -e "${DGREYBG}${BOLD}  MAGENTO SERVER CONFIGURATION v.${MAGENX_VERSION}  ${RESET}"
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        echo
-        WHITETXT "[-] Install repository and LEMP packages :  ${YELLOW}\tlemp"
-        WHITETXT "[-] Download Magento latest packages     :  ${YELLOW}\tmagento"
-        WHITETXT "[-] Setup Magento database               :  ${YELLOW}\tdatabase"
-        WHITETXT "[-] Install Magento no sample data       :  ${YELLOW}\tinstall"
-        WHITETXT "[-] Post-Install configuration           :  ${YELLOW}\tconfig"
-        echo
+        echo ""
+        WHITETXT "[${MENU_CHECK[0]}] Install repository and LEMP packages :  ${YELLOW}\tlemp"
+        WHITETXT "[${MENU_CHECK[1]}] Download Magento latest version      :  ${YELLOW}\tmagento"
+        WHITETXT "[${MENU_CHECK[2]}] Setup Magento database               :  ${YELLOW}\tdatabase"
+        WHITETXT "[${MENU_CHECK[3]}] Install Magento no sample data       :  ${YELLOW}\tinstall"
+        WHITETXT "[${MENU_CHECK[4]}] Post-Installation config             :  ${YELLOW}\tconfig"
+        echo ""
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        echo
-        WHITETXT "[-] Install CSF Firewall or Fail2Ban     :  ${YELLOW}\tfirewall"
-        WHITETXT "[-] Install Webmin control panel         :  ${YELLOW}\twebmin"
-        echo
+        echo ""
+        WHITETXT "[${MENU_CHECK[5]}] Install CSF Firewall                 :  ${YELLOW}\tfirewall"
+        WHITETXT "[${MENU_CHECK[6]}] Install Webmin control panel         :  ${YELLOW}\twebmin"
+        echo ""
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        echo
+        echo ""
         WHITETXT "[-] To quit and exit                     :  ${RED}\texit"
-        echo
-    echo
+      echo ""
+    echo ""
 }
 while [ 1 ]
 do
-    showMenu
-    read CHOICE
-    case "${CHOICE}" in
-    "lemp")
-echo
-echo
+  showMenu
+  read CHOICE
+  case "${CHOICE}" in
+  "lemp")
+echo ""
+echo ""
 ###################################################################################
 ###                                  SYSTEM UPGRADE                             ###
 ###################################################################################
+# Get distro_name to make sure its set
+DISTRO_NAME=$(${SQLITE3} "SELECT distro_name FROM system;")
 
-# get os_distro_key to make sure its set
-include_config ${MAGENX_CONFIG_PATH}/distro
 # check if system update still required
-if ! grep -q "updated" ${MAGENX_CONFIG_PATH}/system_update >/dev/null 2>&1 ; then
+SYSTEM_UPDATE=$(${SQLITE3} "SELECT system_update FROM system;")
+if [ -z "${SYSTEM_UPDATE}" ]; then
   ## install all extra packages
   echo
 BLUEBG "[~]    SYSTEM UPDATE AND PACKAGES INSTALLATION   [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
-  echo
- if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-  dnf -y upgrade --nobest
-  dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-  dnf config-manager --set-enabled codeready-builder-for-rhel-8-rhui-rpms
-  dnf config-manager --set-enabled powertools
-  dnf -y install ${EXTRA_PACKAGES_RPM} ${PERL_MODULES_RPM[@]/#/perl-} 'dnf-command(versionlock)'
-  dnf -y module reset nginx php redis varnish
-  echo
- elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
-  dnf -y upgrade --nobest
-  amazon-linux-extras install epel -y
-  dnf install -y yum-utils 'dnf-command(versionlock)'
-  dnf -y install ${EXTRA_PACKAGES_RPM} ${PERL_MODULES_RPM[@]/#/perl-}
-  echo
- else
+  echo ""
   debconf-set-selections <<< "postfix postfix/mailname string localhost"
   debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Local only'"
-  apt update && apt -y upgrade
+  apt update && apt upgrade -y
   apt -y install software-properties-common
   apt-add-repository contrib
   apt update
-  apt -y install ${EXTRA_PACKAGES_DEB} ${PERL_MODULES_DEB}
-  echo
- fi
+  apt -y install ${EXTRA_PACKAGES} ${PERL_MODULES}
+  echo ""
  if [ "$?" != 0 ]; then
-  echo
-  REDTXT "[!] INSTALLATION ERROR"
-  REDTXT "[!] PLEASE CORRECT AND TRY AGAIN"
+  echo ""
+  REDTXT "[!] Installation error."
+  REDTXT "[!] Please correct errors and run it again."
   exit 1
-  echo
+  echo ""
  fi
-  echo "updated" > ${MAGENX_CONFIG_PATH}/system_update
-  echo
+  # Set system_update to full release version
+  [ "${DISTRO_NAME}" == "Debian" ] && FULL_VERSION="$(cat /etc/debian_version )" || FULL_VERSION="$(lsb_release -d | awk '/20.04.+/{print $3}')"
+  ${SQLITE3} "UPDATE system SET system_update = 'installed @ ${FULL_VERSION}';"
+  echo ""
 fi
-  echo
-  echo
-BLUEBG "[~]    LEMP STACK INSTALLATION    [~]"
+  echo ""
+  echo ""
+BLUEBG "[~]    LEMP WEB STACK INSTALLATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
-  echo
-  echo
-  _echo "[?] Install MariaDB ${MARIADB_VERSION} database ? [y/n][n]:"
-  read repo_mariadb_install
-if [ "${repo_mariadb_install}" == "y" ]; then
+  echo ""
+  echo ""
+  _echo "${YELLOW}[?] Install MariaDB ${MARIADB_VERSION} database ? [y/n][n]:${RESET} "
+  read mariadb_install
+if [ "${mariadb_install}" == "y" ]; then
   echo
   curl -sS ${MARIADB_REPO_CONFIG} | bash -s -- --mariadb-server-version=${MARIADB_VERSION}
   echo
  if [ "$?" = 0 ] # if repository installed then install package
    then
     echo
-    GREENTXT "REPOSITORY INSTALLED  -  OK"
+    GREENTXT "MariaDB repository installed  -  OK"
     echo
+    YELLOWTXT "MariaDB ${MARIADB_VERSION} database installation:"
     echo
-    GREENTXT "MariaDB ${MARIADB_VERSION} database installation:"
-    echo
-   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-    dnf module disable -y mysql
-    dnf install -y MariaDB-server
-   else
     apt update
     apt install -y mariadb-server
-  fi
   if [ "$?" = 0 ] # if package installed then configure
     then
      echo
-     GREENTXT "DATABASE INSTALLED  -  OK"
+     GREENTXT "MariaDB installed  -  OK"
      echo
      systemctl enable mariadb
      echo
-    if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-     rpm -qa 'mariadb*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
-    else
-     apt -qq list --installed mariadb* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
-    fi
+     PACKAGES_INSTALLED mariadb*
+     echo "127.0.0.1 mariadb" >> /etc/hosts
      echo
      WHITETXT "Downloading my.cnf file from MagenX Github repository"
      curl -sSo /etc/my.cnf https://raw.githubusercontent.com/magenx/magento-mysql/master/my.cnf/my.cnf
      echo
-     WHITETXT "Calculating innodb_buffer_pool_size"
-     IBPS=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
-     if [ "${IBPS}" == "0" ]; then IBPS=1; fi
-     sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${IBPS}G/" /etc/my.cnf
-     ##sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${IBPS}/" /etc/my.cnf
+     WHITETXT "[?] Calculating [innodb_buffer_pool_size]:"
+     INNODB_BUFFER_POOL_SIZE=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
+     if [ "${INNODB_BUFFER_POOL_SIZE}" == "0" ]; then IBPS=1; fi
+     sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${INNODB_BUFFER_POOL_SIZE}G/" /etc/my.cnf
+     ##sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${INNODB_BUFFER_POOL_SIZE}/" /etc/my.cnf
      echo
-     YELLOWTXT "innodb_buffer_pool_size = ${IBPS}G"
-     YELLOWTXT "innodb_buffer_pool_instances = ${IBPS}"
+     WHITETXT "innodb_buffer_pool_size = ${INNODB_BUFFER_POOL_SIZE}G"
+     WHITETXT "innodb_buffer_pool_instances = ${INNODB_BUFFER_POOL_SIZE}"
      echo
     else
      echo
-     REDTXT "DATABASE INSTALLATION ERROR"
+     REDTXT "MariaDB installation error"
     exit # if package is not installed then exit
   fi
     else
      echo
-     REDTXT "REPOSITORY INSTALLATION ERROR"
+     REDTXT "MariaDB repository installation error"
     exit # if repository is not installed then exit
    fi
     else
      echo
-     YELLOWTXT "MariaDB repository installation was skipped. Next step"
+     YELLOWTXT "MariaDB installation was skipped by user input. Proceeding to next step."
 fi
   echo
 WHITETXT "============================================================================="
   echo
-  _echo "[?] Install Nginx ${NGINX_VERSION} ? [y/n][n]:"
-  read repo_nginx_install
-if [ "${repo_nginx_install}" == "y" ]; then
+  _echo "${YELLOW}[?] Install Nginx ${NGINX_VERSION} ? [y/n][n]:${RESET} "
+  read nginx_install
+if [ "${nginx_install}" == "y" ]; then
   echo
-  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-cat > /etc/yum.repos.d/nginx.repo <<END
-[nginx-mainline]
-name=nginx mainline repo
-baseurl=http://nginx.org/packages/mainline/centos/\$releasever/\$basearch/
-gpgcheck=1
-enabled=1
-gpgkey=https://nginx.org/keys/nginx_signing.key
-module_hotfixes=true
-END
-  else
-   echo "deb http://nginx.org/packages/mainline/${OS_DISTRO_KEY} $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
-   curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
-   echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
-  fi
-   echo
-   GREENTXT "REPOSITORY INSTALLED  -  OK"
-   echo
-   GREENTXT "Nginx package installation:"
-   echo
-  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   dnf -y -q install nginx nginx-module-perl nginx-module-image-filter
-   rpm  --quiet -q nginx
-  else
-   apt update
-   apt -y install nginx nginx-module-perl nginx-module-image-filter nginx-module-geoip
-  fi
-  if [ "$?" = 0 ]; then
+  echo "deb http://nginx.org/packages/mainline/${DISTRO_NAME,,} $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
+  curl -fL https://nginx.org/keys/nginx_signing.key | apt-key add -
+  echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
+   if [ "$?" = 0 ]; then # if repository installed then install package
     echo
-    GREENTXT "NGINX INSTALLED  -  OK"
+    GREENTXT "Nginx repository installed  -  OK"
     echo
-    systemctl enable nginx >/dev/null 2>&1
-   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-    rpm -qa 'nginx*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
-   else
-    apt -qq list --installed nginx* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
-   fi
+    YELLOWTXT "Nginx ${NGINX_VERSION} installation:"
+    echo
+    apt update
+    apt -y install nginx nginx-module-perl nginx-module-image-filter nginx-module-geoip
+    if [ "$?" = 0 ]; then
+     echo
+     GREENTXT "Nginx ${NGINX_VERSION} installed  -  OK"
+     echo
+     systemctl enable nginx >/dev/null 2>&1
+     PACKAGES_INSTALLED nginx*
+    else
+     echo
+     REDTXT "Nginx ${NGINX_VERSION} installation error"
+    exit # if package is not installed then exit
+  fi
+    else
+     echo
+     REDTXT "Nginx repository installation error"
+    exit
+    fi
    else
     echo
-    REDTXT "NGINX INSTALLATION ERROR"
-   exit
-  fi
-   else
-    echo
-    YELLOWTXT "Nginx repository installation was skipped. Next step"
+    YELLOWTXT "Nginx installation was skipped by user input. Proceeding to next step."
 fi
 echo
 WHITETXT "============================================================================="
 echo
-_echo "[?] Install PHP ? [y/n][n]:"
-read repo_install
-if [ "${repo_install}" == "y" ]; then
-  echo
-  GREENTXT "PHP repository installation:"
-  echo
-  read -e -p "  [?] Enter required PHP version: " -i "8.1" PHP_VERSION
-  echo
- if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-  dnf install -y ${REMI_RPM_REPO}
-  dnf -y module enable php:remi-${PHP_VERSION}
-  dnf config-manager --set-enabled remi >/dev/null 2>&1
-  rpm  --quiet -q remi-release
- elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
-  dnf install -y ${REMI_RPM_REPO//8/7}
-  dnf config-manager --set-enabled remi >/dev/null 2>&1
-  rpm  --quiet -q remi-release
- elif [ "${OS_DISTRO_KEY}" == "debian" ]; then
-  curl -sSo /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+_echo "${YELLOW}[?] Install PHP ? [y/n][n]:${RESET} "
+read php_install
+if [ "${php_install}" == "y" ]; then
+  echo ""
+  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required PHP version: "${RESET})" -i "8.1" PHP_VERSION
+  # Set php_version
+  ${SQLITE3} "UPDATE system SET php_version = '${PHP_VERSION}';"
+  echo ""
+ if [ "${DISTRO_NAME}" == "Debian" ]; then
+  curl -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
   echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
  else
   add-apt-repository ppa:ondrej/php -y
  fi
  if [ "$?" = 0 ]; then
+   echo ""
+   GREENTXT "PHP repository installed  -  OK"
+   echo ""
+   echo ""
+   YELLOWTXT "PHP ${PHP_VERSION} installation:"
    echo
-   GREENTXT "REPOSITORY INSTALLED  -  OK"
-   echo
-   echo
-   GREENTXT "PHP ${PHP_VERSION} installation:"
-   echo
-  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   dnf -y install php ${PHP_PACKAGES_RPM[@]/#/php-} ${PHP_PECL_PACKAGES_RPM[@]/#/php-}
-   rpm  --quiet -q php
-  else
    apt update
-   apt -y install php${PHP_VERSION} ${PHP_PACKAGES_DEB[@]/#/php${PHP_VERSION}-} php-pear
-  fi
+   apt -y install php${PHP_VERSION} ${PHP_PACKAGES[@]/#/php${PHP_VERSION}-} php-pear
   if [ "$?" = 0 ]; then
-    echo
-    GREENTXT "PHP ${PHP_VERSION} INSTALLED  -  OK"
-    echo
-   if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-    rpm -qa 'php*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
+    echo ""
+    GREENTXT "PHP ${PHP_VERSION} installed  -  OK"
+    echo ""
+    PACKAGES_INSTALLED php${PHP_VERSION}*
+    echo ""
+    # composer download
+    echo ""
+    YELLOWTXT "Composer ${COMPOSER_VERSION} installation:"
+    echo ""
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    php composer-setup.php --${COMPOSER_VERSION} --install-dir=/usr/bin --filename=composer
+    php -r "unlink('composer-setup.php');"
    else
-    apt -qq list --installed php${PHP_VERSION}* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
-   fi
-   else
-    echo
-    REDTXT "PHP INSTALLATION ERROR"
+    echo ""
+    REDTXT "PHP installation error"
    exit 1 # if package is not installed then exit
    fi
     else
      echo
-     REDTXT "REPOSITORY INSTALLATION ERROR"
+     REDTXT "PHP repository installation error"
     exit 1 # if repository is not installed then exit
   fi
    else
     echo
-    YELLOWTXT "Remi repository installation was skipped. Next step"
+    YELLOWTXT "PHP installation was skipped by user input. Proceeding to next step."
 fi
 echo
 echo
 WHITETXT "============================================================================="
 echo
-_echo "[?] Install Redis ? [y/n][n]:"
+_echo "${YELLOW}[?] Install Redis ${REDIS_VERSION} ? [y/n][n]:${RESET} "
 read redis_install
 if [ "${redis_install}" == "y" ]; then
-  echo
-  GREENTXT "Redis installation:"
-  echo
- if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  dnf -y module install redis:remi-${REDIS_VERSION}
-  rpm  --quiet -q redis
- else
-  curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+  curl -fL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
   echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list
-  apt update
-  apt -y install redis
- fi
- if [ "$?" = 0 ]; then
+ if [ "$?" = 0 ]; then # 
      echo
-     GREENTXT "REDIS INSTALLED OK"
-     systemctl disable redis
+     GREENTXT "Redis repository installed - OK"
      echo
-    if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-     rpm -qa 'redis*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
-     redis_conf="/etc/redis.conf"
-        else
-     apt -qq list --installed redis-server* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
-     redis_conf="/etc/redis/redis.conf"
-    fi
-echo
+     YELLOWTXT "Redis installation:"
+     echo
+     apt update
+     apt -y install redis
+     echo ""
+     if [ "$?" = 0 ]; then
+      echo ""
+      GREENTXT "Redis installed  -  OK"
+      echo ""
+      PACKAGES_INSTALLED redis-server*
+      echo ""
+      echo ""
+      YELLOWTXT "Redis configuration per environment:"
+      echo ""
+
+systemctl stop redis-server
+systemctl disable redis-server
+
+# Create Redis config
 cat > /etc/systemd/system/redis@.service <<END
 [Unit]
 Description=Advanced key-value store at %i
@@ -786,56 +801,73 @@ After=network.target
 Type=notify
 User=redis
 Group=redis
+
+# Security options
 PrivateTmp=true
-RuntimeDirectory=redis-%i
-RuntimeDirectoryMode=2755
+ProtectSystem=full
+ProtectHome=true
+ReadOnlyPaths=/
 
-UMask=007
-PrivateTmp=yes
+# Resource limits
 LimitNOFILE=65535
-PrivateDevices=yes
-ProtectHome=yes
-ReadOnlyDirectories=/
-ReadWritePaths=-/var/lib/redis-%i
-ReadWritePaths=-/var/log/redis
-ReadWritePaths=-/run/redis-%i
 
-PIDFile=/run/redis-%i/redis-%i.pid
+# Directories to create and permissions
+RuntimeDirectory=redis
+RuntimeDirectoryMode=2755
+UMask=007
+
+# Directories and files that Redis can read and write
+ReadWritePaths=-/var/lib/redis
+ReadWritePaths=-/var/log/redis
+ReadWritePaths=-/run/redis
+
+# Command-line options
+PIDFile=/run/redis/redis-%i.pid
+ExecStartPre=/usr/bin/test -f /etc/redis/redis-%i.conf
 ExecStart=/usr/bin/redis-server /etc/redis/redis-%i.conf --daemonize yes --supervised systemd
+
+# Timeouts
 Restart=on-failure
-ProtectSystem=true
-ReadWriteDirectories=-/etc/redis
+TimeoutStartSec=5s
+TimeoutStopSec=5s
 
 [Install]
 WantedBy=multi-user.target
 
 END
 
-# generate redis_password
-MAGENTO_REDIS_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%&?' | fold -w 32 | head -n 1)"
-echo MAGENTO_REDIS_PASSWORD="\"${MAGENTO_REDIS_PASSWORD}"\" > ${MAGENX_CONFIG_PATH}/redis
-
-for REDIS_PORT in 6379 6380
-do
-mkdir -p /var/lib/redis-${REDIS_PORT}
-chmod 750 /var/lib/redis-${REDIS_PORT}
-chown redis /var/lib/redis-${REDIS_PORT}
+mkdir -p /var/lib/redis
+chmod 750 /var/lib/redis
+chown redis /var/lib/redis
 mkdir -p /etc/redis/
+rm /etc/redis/redis.conf
 
-cat > /etc/redis/redis-${REDIS_PORT}.conf<<END
+PORT=6379
+# Loop through the environments and services to create redis config
+for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
+  do
+  MAGENTO_REDIS_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%&?' | fold -w 32 | head -n 1)"
+  ${SQLITE3} "UPDATE magento SET magento_redis_password = '${MAGENTO_REDIS_PASSWORD}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
+    for SERVICE in session cache
+    do
+
+cat > /etc/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.conf<<END
+
 bind 127.0.0.1
-port ${REDIS_PORT}
+port ${PORT}
 
 daemonize yes
 supervised auto
-
-dir /var/lib/redis-${REDIS_PORT}
-logfile /var/log/redis/redis-${REDIS_PORT}.log
-pidfile /run/redis-${REDIS_PORT}/redis-${REDIS_PORT}.pid
-
-save ""
+protected-mode yes
+timeout 0
 
 requirepass ${MAGENTO_REDIS_PASSWORD}
+
+dir /var/lib/redis
+logfile /var/log/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.log
+pidfile /run/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.pid
+
+save ""
 
 maxmemory 1024mb
 maxmemory-policy allkeys-lru
@@ -854,50 +886,63 @@ rename-command DEBUG ""
 rename-command BGSAVE ""
 rename-command BGREWRITEAOF ""
 END
-done
 
-chown redis /etc/redis/redis-${REDIS_PORT}.conf
-chmod 640 /etc/redis/redis-${REDIS_PORT}.conf
+((PORT++))
 
-echo
+chown redis /etc/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.conf
+chmod 640 /etc/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.conf
+
+echo "127.0.0.1 redis-${SERVICE}-${MAGENTO_ENV_SELECTED}" >> /etc/hosts
+
 systemctl daemon-reload
-systemctl enable redis@6379 redis@6380
-systemctl stop redis-server
-systemctl disable redis-server
-systemctl restart redis@6379 redis@6380
-
+systemctl enable redis@${SERVICE}-${MAGENTO_ENV_SELECTED}
+systemctl restart redis@${SERVICE}-${MAGENTO_ENV_SELECTED}
+done
+done
+   else
+    echo
+    REDTXT "Redis installation error"
+   exit 1 # if package is not installed then exit
+   fi
  else
   echo
-  REDTXT "REDIS INSTALLATION ERROR"
+  REDTXT "Redis repository installation error"
  exit 1
  fi
   else
    echo
-   YELLOWTXT "Redis installation was skipped. Next step"
+   YELLOWTXT "Redis installation was skipped by user input. Proceeding to next step."
 fi
 echo
 WHITETXT "============================================================================="
 echo
 echo
-_echo "[?] Install RabbitMQ ? [y/n][n]:"
-read rabbit_install
-if [ "${rabbit_install}" == "y" ];then
- if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | bash
-   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | bash
-   dnf -y install rabbitmq-server-${RABBITMQ_VERSION}
-   rpm  --quiet -q rabbitmq-server
- else
-  curl -sSL https://packages.erlang-solutions.com/${OS_DISTRO_KEY}/erlang_solutions.asc | apt-key add -
-  echo "deb https://packages.erlang-solutions.com/${OS_DISTRO_KEY} $(lsb_release -cs) contrib" | tee /etc/apt/sources.list.d/erlang.list
+_echo "${YELLOW}[?] Install RabbitMQ ${RABBITMQ_VERSION} ? [y/n][n]:${RESET} "
+read rabbitmq_install
+if [ "${rabbitmq_install}" == "y" ];then
+  curl -L https://packages.erlang-solutions.com/${DISTRO_NAME,,}/erlang_solutions.asc | apt-key add -
+  echo "deb https://packages.erlang-solutions.com/${DISTRO_NAME,,} $(lsb_release -cs) contrib" | tee /etc/apt/sources.list.d/erlang.list
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
-  apt -y install rabbitmq-server=${RABBITMQ_VERSION}
- fi
- if [ "$?" = 0 ]; then
- 
-systemctl stop rabbitmq-server
-systemctl stop epmd*
-epmd -kill
+  if [ "$?" = 0 ]; then
+    echo
+    GREENTXT "RabbitMQ repository installed - OK"
+    echo
+    YELLOWTXT "RabbitMQ ${RABBITMQ_VERSION} installation:"
+    echo
+    apt -y install rabbitmq-server=${RABBITMQ_VERSION} 
+    if [ "$?" = 0 ]; then
+     echo ""
+     GREENTXT "RabbitMQ ${RABBITMQ_VERSION} installed  -  OK"
+     echo ""
+     PACKAGES_INSTALLED rabbitmq* erlang*
+     echo "127.0.0.1 rabbitmq" >> /etc/hosts
+     echo ""
+     echo ""
+     YELLOWTXT "RabbitMQ ${RABBITMQ_VERSION} configuration per environment:"
+     echo ""
+     systemctl stop rabbitmq-server
+     systemctl stop epmd*
+     epmd -kill
 
 cat > /etc/rabbitmq/rabbitmq-env.conf <<END
 NODENAME=rabbit@localhost
@@ -951,160 +996,157 @@ systemctl start rabbitmq-server
 rabbitmqctl wait /var/lib/rabbitmq/mnesia/rabbitmq_pid
 sleep 5
 
-# generate rabbitmq_password
-MAGENTO_RABBITMQ_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)"
-echo MAGENTO_RABBITMQ_PASSWORD="${MAGENTO_RABBITMQ_PASSWORD}" > ${MAGENX_CONFIG_PATH}/rabbitmq
-
-## delete guest and create magento user
+# delete guest user
 rabbitmqctl delete_user guest
-rabbitmqctl add_user magento ${MAGENTO_RABBITMQ_PASSWORD}
-rabbitmqctl set_permissions -p / magento ".*" ".*" ".*"
 
-   GREENTXT "RabbitMQ INSTALLED  -  OK"
-   echo
-  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   rpm -qa 'rabbitmq*' 'erlang*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
+# generate rabbitmq password for environment
+for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
+  do
+  MAGENTO_RABBITMQ_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)"
+  ${SQLITE3} "UPDATE magento SET magento_rabbitmq_password = '${MAGENTO_RABBITMQ_PASSWORD}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
+  rabbitmqctl add_user ${MAGENTO_ENV_SELECTED} ${MAGENTO_RABBITMQ_PASSWORD}
+  rabbitmqctl set_permissions -p / ${MAGENTO_ENV_SELECTED} ".*" ".*" ".*"
+done
+   else
+    echo ""
+    REDTXT "RabbitMQ ${RABBITMQ_VERSION} installation error"
+   exit 1 # if package is not installed then exit
+   fi
   else
-   apt -qq list --installed rabbitmq* erlang* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
-  fi
-  else
-   echo
-   REDTXT "RabbitMQ INSTALLATION ERROR"
+   echo ""
+   REDTXT "RabbitMQ repository installation error"
    exit 1
   fi
   else
    echo
-   YELLOWTXT "RabbitMQ installation was skipped. Next step"
+   YELLOWTXT "RabbitMQ ${RABBITMQ_VERSION} installation was skipped by user input. Proceeding to next step."
 fi
 echo
 WHITETXT "============================================================================="
 echo
 echo
-_echo "[?] Install Varnish Cache ? [y/n][n]:"
+_echo "${YELLOW}[?] Install Varnish Cache ? [y/n][n]:${RESET} "
 read varnish_install
-if [ "${varnish_install}" == "y" ];then
- if [ "${OS_DISTRO_KEY}" == "redhat" ]; then
-   curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${VARNISH_VERSION}/script.rpm.sh | bash
-   dnf -y install varnish
-   rpm  --quiet -q varnish
-  elif [ "${OS_DISTRO_KEY}" == "amazon" ]; then
-   curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${VARNISH_VERSION}/script.rpm.sh | bash os=el dist=7
-   echo
-   dnf -y install varnish
-   rpm  --quiet -q varnish
-  else
+if [ "${varnish_install}" == "y" ];then 
   curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${VARNISH_VERSION}/script.deb.sh | bash
-  apt update
-  apt -y install varnish
- fi
- if [ "$?" = 0 ]; then
-   echo
-   curl -sSo /etc/systemd/system/varnish.service ${MAGENX_INSTALL_GITHUB_REPO}varnish.service
-   curl -sSo /etc/varnish/varnish.params ${MAGENX_INSTALL_GITHUB_REPO}varnish.params
-   uuidgen > /etc/varnish/secret
-   systemctl daemon-reload
-   GREENTXT "VARNISH INSTALLED  -  OK"
-   echo
-  if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   rpm -qa 'varnish*' | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
+  if [ "$?" = 0 ]; then
+    echo ""
+    GREENTXT "Varnish Cache repository installed - OK"
+    echo
+    YELLOWTXT "Varnish Cache installation:"
+    echo ""
+    apt update
+    apt -y install varnish
+   if [ "$?" = 0 ]; then
+     echo
+     GREENTXT "Varnish Cache installed  -  OK"
+     echo
+     curl -sSo /etc/systemd/system/varnish.service ${MAGENX_INSTALL_GITHUB_REPO}varnish.service
+     curl -sSo /etc/varnish/varnish.params ${MAGENX_INSTALL_GITHUB_REPO}varnish.params
+     uuidgen > /etc/varnish/secret
+     systemctl daemon-reload
+     PACKAGES_INSTALLED varnish*
+     echo "127.0.0.1 varnish" >> /etc/hosts
+    else
+    echo ""
+    REDTXT "Varnish Cache installation error"
+   exit 1
+   fi
   else
-   apt -qq list --installed varnish* 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
-  fi
-  else
-   echo
-   REDTXT "VARNISH INSTALLATION ERROR"
+   echo ""
+   REDTXT "Varnish Cache repository installation error"
    exit 1
   fi
   else
-   echo
-   YELLOWTXT "Varnish installation was skipped. Next step"
+   echo ""
+   YELLOWTXT "Varnish installation was skipped by user input. Proceeding to next step."
 fi
 echo
 WHITETXT "============================================================================="
 echo
-_echo "[?] Install ElasticSearch ${ELK_VERSION} ? [y/n][n]:"
+_echo "${YELLOW}[?] Install ElasticSearch ${ELASTICSEARCH_VERSION} ? [y/n][n]:${RESET} "
 read elastic_install
 if [ "${elastic_install}" == "y" ];then
-echo
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-GREENTXT "Elasticsearch installation:"
-echo
-rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
-cat > /etc/yum.repos.d/elastic.repo << EOF
-[elasticsearch-${ELK_VERSION}]
-name=Elasticsearch repository for ${ELK_VERSION} packages
-baseurl=https://artifacts.elastic.co/packages/${ELK_VERSION}/yum
-gpgcheck=1
-gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
-enabled=1
-autorefresh=1
-type=rpm-md
-EOF
-echo
-   dnf -y install --enablerepo=elasticsearch-${ELK_VERSION} elasticsearch jq
-   rpm  --quiet -q elasticsearch
-  else
-   curl -sSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
-   echo "deb https://artifacts.elastic.co/packages/${ELK_VERSION}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELK_VERSION}.list
-   apt update
-   apt -y install elasticsearch jq
-  fi
+  curl -L https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+  echo "deb https://artifacts.elastic.co/packages/${ELASTICSEARCH_VERSION}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELASTICSEARCH_VERSION}.list
   if [ "$?" = 0 ]; then
-echo
-## elasticsearch settings
-if ! grep -q "xpack.security.enabled: true" /etc/elasticsearch/elasticsearch.yml >/dev/null 2>&1 ; then
-echo "discovery.type: single-node" >> /etc/elasticsearch/elasticsearch.yml
-echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-echo "xpack.security.transport.ssl.enabled: false" >> /etc/elasticsearch/elasticsearch.yml
-echo "xpack.security.authc.api_key.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-sed -i "s/.*cluster.name.*/cluster.name: magento/" /etc/elasticsearch/elasticsearch.yml
-sed -i "s/.*node.name.*/node.name: magento-node1/" /etc/elasticsearch/elasticsearch.yml
-sed -i "s/.*network.host.*/network.host: 127.0.0.1/" /etc/elasticsearch/elasticsearch.yml
-sed -i "s/.*http.port.*/http.port: 9200/" /etc/elasticsearch/elasticsearch.yml
-sed -i "s/.*-Xms.*/-Xms512m/" /etc/elasticsearch/jvm.options
-sed -i "s/.*-Xmx.*/-Xmx2048m/" /etc/elasticsearch/jvm.options
-## use builtin java
- if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  sed -i "s,#ES_JAVA_HOME=,ES_JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/sysconfig/elasticsearch
- else
-  sed -i "s,#ES_JAVA_HOME=,ES_JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/default/elasticsearch
- fi
-fi
+    echo ""
+    GREENTXT "ElasticSearch ${ELASTICSEARCH_VERSION} repository installed - OK"
+    echo ""
+    YELLOWTXT "ElasticSearch ${ELASTICSEARCH_VERSION} installation:"
+    apt update
+    apt -y install elasticsearch jq
+   if [ "$?" = 0 ]; then
+    echo ""
+    GREENTXT "Elasticsearch ${ELASTICSEARCH_VERSION} installed  -  OK"
+    echo ""
+    YELLOWTXT "Elasticsearch configuration:"
+    echo ""
+    ## elasticsearch settings
+    if ! grep -q "magento" /etc/elasticsearch/elasticsearch.yml >/dev/null 2>&1 ; then
+      cp /etc/elasticsearch/elasticsearch.yml /etc/elasticsearch/_elasticsearch.yml_default
+      sed -i '/BEGIN SECURITY AUTO CONFIGURATION/,$d' /etc/elasticsearch/elasticsearch.yml
+cat > /etc/elasticsearch/elasticsearch.yml <<END
+#--------------------------------------------------------------------#
+#----------------------- MAGENX CONFIGURATION -----------------------#
+# -------------------------------------------------------------------#
+# original config saved: /etc/elasticsearch/_elasticsearch.yml_default
+
+cluster.name: magento
+node.name: magento-node1
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+
+network.host: 127.0.0.1
+http.host: 127.0.0.1
+
+discovery.type: single-node
+xpack.security.enabled: true
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+xpack.security.authc.api_key.enabled: true
+
+END
+
+      sed -i "s/.*-Xms.*/-Xms512m/" /etc/elasticsearch/jvm.options
+      sed -i "s/.*-Xmx.*/-Xmx1024m/" /etc/elasticsearch/jvm.options
+      ## use builtin java
+      sed -i "s,#ES_JAVA_HOME=,ES_JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/default/elasticsearch
+    fi
 
 chown -R :elasticsearch /etc/elasticsearch/*
 systemctl daemon-reload
 systemctl enable elasticsearch.service
 systemctl restart elasticsearch.service
 
-# generate random passwords for elasticsearch users
-/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b > /tmp/elasticsearch
+    if [ "$?" != 0 ]; then
+      echo ""
+      REDTXT "[!] Elasticsearch startup error"
+      REDTXT "[!] Please correct error above and try again"
+      echo ""
+      exit 1
+    fi
 
-export ELASTIC_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
-export MAGENTO_INDEXER_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)"
+echo ""
+YELLOWTXT "Re-generating random password for elastic user:"
+ELASTICSEARCH_PASSWORD="$(/usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -f -b 2>&1 | awk '/New value: /{print $3}')"
+${SQLITE3} "UPDATE system SET elasticsearch_password = '${ELASTICSEARCH_PASSWORD}';"
 
-cat > ${MAGENX_CONFIG_PATH}/elasticsearch <<END
-APM_SYSTEM_PASSWORD="$(awk '/PASSWORD apm_system/ { print $4 }' /tmp/elasticsearch)"
-KIBANA_SYSTEM_PASSWORD="$(awk '/PASSWORD kibana_system/ { print $4 }' /tmp/elasticsearch)"
-KIBANA_PASSWORD="$(awk '/PASSWORD kibana =/ { print $4 }' /tmp/elasticsearch)"
-LOGSTASH_SYSTEM_PASSWORD="$(awk '/PASSWORD logstash_system/ { print $4 }' /tmp/elasticsearch)"
-BEATS_SYSTEM_PASSWORD="$(awk '/PASSWORD beats_system/ { print $4 }' /tmp/elasticsearch)"
-REMOTE_MONITORING_USER_PASSWORD="$(awk '/PASSWORD remote_monitoring_user/ { print $4 }' /tmp/elasticsearch)"
-ELASTIC_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
-MAGENTO_INDEXER_PASSWORD="${MAGENTO_INDEXER_PASSWORD}"
-END
-
-rm -rf /tmp/elasticsearch
-
-echo
-# check if role already created
-ROLE_CREATED=$(curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_indexer" \
+# generate elasticsearch password for environment
+for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
+  do
+  MAGENTO_INDEXER_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)"
+  ${SQLITE3} "UPDATE magento SET magento_indexer_password = '${MAGENTO_INDEXER_PASSWORD}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
+  echo ""
+# create and check if role already created
+ROLE_CREATED=$(curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${MAGENTO_ENV_SELECTED}_indexer" \
 -H 'Content-Type: application/json' -sS \
 -d @<(cat <<EOF
 {
   "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
   "indices": [
     {
-      "names": [ "magento_indexer*"],
+      "names": [ "magento_${MAGENTO_ENV_SELECTED}*"],
       "privileges": ["all"]
     }
   ]
@@ -1112,248 +1154,186 @@ ROLE_CREATED=$(curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:920
 EOF
 ) | jq -r ".role.created")
 
-# check if we have user enabled
-USER_ENABLED=$(curl -X GET -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_indexer" \
+# create and check if we have user enabled
+USER_ENABLED=$(curl -X GET -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${MAGENTO_ENV_SELECTED}_indexer" \
 -H 'Content-Type: application/json' -sS | jq -r ".[].enabled")
 
 if [[ ${ROLE_CREATED} == true ]] && [[ ${USER_ENABLED} != true ]]; then
-echo
-curl -X POST -u elastic:${ELASTIC_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_indexer" \
+echo ""
+YELLOWTXT "[!] Create user [magento_${MAGENTO_ENV_SELECTED}_indexer]: "
+curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${MAGENTO_ENV_SELECTED}_indexer" \
 -H 'Content-Type: application/json' -sS \
 -d "$(cat <<EOF
 {
   "password" : "${MAGENTO_INDEXER_PASSWORD}",
-  "roles" : [ "magento_indexer"],
-  "full_name" : "ELK User for Magento 2 Indexer"
+  "roles" : [ "magento_${MAGENTO_ENV_SELECTED}_indexer"],
+  "full_name" : "ELK User for Magento 2 Indexer in ${MAGENTO_ENV_SELECTED}"
 }
 EOF
 )"
 else
-REDTXT "  [!] ELK return error for role magento_indexer "
+REDTXT "  [!] ELK return error for role magento_${MAGENTO_ENV_SELECTED}_indexer "
 fi
-
-echo
-echo
-GREENTXT "ELASTICSEARCH ${ELK_VERSION} INSTALLED  -  OK"
-echo
- if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  rpm -qa elasticsearch | awk -v var="${PKG_INSTALLED}" '{print var,$1}'
+done
+echo ""
+  echo ""
+  PACKAGES_INSTALLED elasticsearch
+  echo "127.0.0.1 elasticsearch" >> /etc/hosts
+  else
+  echo ""
+    REDTXT "Elasticsearch ${ELASTICSEARCH_VERSION} installation error"
+   exit 1
+   fi
  else
-  apt -qq list --installed elasticsearch 2>/dev/null | awk -v var="${PKG_INSTALLED}" '{print var,$0}'
- fi
- else
-echo
-REDTXT "ELASTICSEARCH INSTALLATION ERROR"
+echo ""
+REDTXT "Elasticsearch ${ELASTICSEARCH_VERSION} repository installation error"
 exit 1
 fi
 else
-echo
-YELLOWTXT "ElasticSearch installation was skipped. Next step"
+echo ""
+YELLOWTXT "ElasticSearch ${ELASTICSEARCH_VERSION} installation was skipped by user input. Proceeding to next step."
 fi
-echo
-echo
+echo ""
+echo ""
+${SQLITE3} "UPDATE menu SET lemp = 'x';"
 ## keep versions for critical services to avoid issues
- if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-   dnf versionlock add elasticsearch erlang rabbitmq-server
-  else
-   apt-mark hold elasticsearch erlang rabbitmq-server
- fi
-echo
-echo
+apt-mark hold elasticsearch erlang rabbitmq-server
+echo ""
+echo ""
 GREENTXT "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
 WHITETXT "-------------------------------------------------------------------------------------"
-echo
-echo
+echo ""
+echo ""
 pause '[] Press [Enter] key to show the menu'
 printf "\033c"
 ;;
-
 ###################################################################################
 ###                                  MAGENTO DOWNLOAD                           ###
 ###################################################################################
-
 "magento")
+printf "\033c"
 echo
-echo
-BLUEBG "[~]    DOWNLOAD MAGENTO ${MAGENTO_VERSION}    [~]"
+BLUEBG "[~]    MAGENTO ${MAGENTO_VERSION} CONFIGURATION PER ENVIRONMENT  [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
-echo
-echo
-     echo
-     YELLOWTXT "[?] ENTER MAGENTO DOMAIN AND SSH USER: "
-     read -e -p "  > Store root domain name: " -i "rootdomain.tld" MAGENTO_DOMAIN
-     read -e -p "  > Files owner / ssh user: " -i "${MAGENTO_DOMAIN//[.-]*}" MAGENTO_OWNER
-     echo
-     
-     MAGENTO_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
-
-          ## create magento owner/ssh user
-          useradd -d ${MAGENTO_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
-          mkdir -p ${MAGENTO_ROOT_PATH}
-          ## create magento php user
-          MAGENTO_PHP_USER="php-${MAGENTO_OWNER}"
-          useradd -M -s /sbin/nologin -d ${MAGENTO_ROOT_PATH%/*} ${MAGENTO_PHP_USER}
-          usermod -g ${MAGENTO_PHP_USER} ${MAGENTO_OWNER}
-          chmod 711 ${MAGENTO_ROOT_PATH%/*}
-	  mkdir -p ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	  chmod 2750 ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-	  chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-          chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_ROOT_PATH}
-	  # magento root folder permissions
-          chmod 2750 ${MAGENTO_ROOT_PATH}
-	  setfacl -R -m m:rx,u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:r-x,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:r-x,d:o::- ${MAGENTO_ROOT_PATH}
-	  setfacl -R -m u:nginx:r-x,d:u:nginx:r-x ${MAGENTO_ROOT_PATH}
-	  
-	  cd ${MAGENTO_ROOT_PATH}
-
-while true; do
-  echo
-  YELLOWTXT "[?] SELECT HOW TO GET MAGENTO 2 CODE:"
-  _echo "--> ${BOLD}Rsync${RESET} from another server
-  --> ${BOLD}GitHub${RESET} clone from private repository
-  --> ${BOLD}Composer${RESET} new installation"
-  echo
+echo ""
+# get magento_mode to configure
+MAGENTO_ENV=($(${SQLITE3} "SELECT DISTINCT magento_env FROM magento;"))
+for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
+ do
+ echo ""
+ read -e -p "$(echo -e ${YELLOW}"  [?] Store domain name for [ ${MAGENTO_ENV_SELECTED} ]: "${RESET})" -i "yourdomain.tld" MAGENTO_DOMAIN
+ read -e -p "$(echo -e ${YELLOW}"  [?] Files owner/SSH user for [ ${MAGENTO_ENV_SELECTED} ]: "${RESET})" -i "${MAGENTO_DOMAIN//[-.]/}" MAGENTO_OWNER
+ echo ""
   
-  updown_menu "Rsync Github Composer" MAGENTO_INSTALLATION_TYPE
+ MAGENTO_ROOT_PATH="/home/${MAGENTO_OWNER}/public_html"
 
-  if [ "${MAGENTO_INSTALLATION_TYPE}" == "Rsync" ]; then
-    echo
-    read -e -p "--> Server IP address: " -i "1.2.3.4" RSYNC_IP
-    read -e -p "--> SSH port: " -i "22" RSYNC_PORT
-    read -e -p "--> SSH username: " -i "username"  RSYNC_USER
-    read -e -p "--> Folder path: " -i "/path/to/magento/*"  RSYNC_ROOT_PATH
-    echo
-    if [ ! -f ${MAGENX_CONFIG_PATH}/rsync_magento ]; then
-    ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/rsync_magento -C "rsync magento ${MAGENTO_DOMAIN}" -q -N ""
+ ## create magento/ssh user
+ useradd -d ${MAGENTO_ROOT_PATH%/*} -s /bin/bash ${MAGENTO_OWNER}
+ mkdir -p ${MAGENTO_ROOT_PATH}
+ ## create magento php user
+ MAGENTO_PHP_USER="php-${MAGENTO_OWNER}"
+ useradd -M -s /sbin/nologin -d ${MAGENTO_ROOT_PATH%/*} ${MAGENTO_PHP_USER}
+ usermod -g ${MAGENTO_PHP_USER} ${MAGENTO_OWNER}
+ chmod 711 ${MAGENTO_ROOT_PATH%/*}
+ chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_ROOT_PATH}
+ # magento root folder permissions
+ chmod 2750 ${MAGENTO_ROOT_PATH}
+ setfacl -R -m m:r-X,u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:r-X,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:r-X,d:o::- ${MAGENTO_ROOT_PATH}
+ setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${MAGENTO_ROOT_PATH}
+
+ touch ${MAGENTO_ROOT_PATH%/*}/${MAGENTO_ENV_SELECTED}
+ cd ${MAGENTO_ROOT_PATH}
+ 
+ _echo "[?] Download Magento ${MAGENTO_VERSION} for [ ${MAGENTO_ENV_SELECTED} ] environment? [y/n][n]: "
+ read download_magento
+ if [ "${download_magento}" == "y" ];then
+   echo ""
+   echo ""
+   YELLOWTXT "[?] Select Magento full version: "
+   updown_menu "${MAGENTO_VERSION_LIST}" MAGENTO_VERSION_INSTALLED
+   echo ""
+   echo ""
+   _echo "[!] Magento [ ${MAGENTO_VERSION_INSTALLED} ] will be downloaded to [ ${MAGENTO_ROOT_PATH} ] for [ ${MAGENTO_ENV_SELECTED} ] environment."
+   echo ""
+   echo ""
+   pause '[] Press [Enter] key to start downloading'
+   echo ""
+   ## create some temp dirs
+   COMPOSER_TMP=".config,.cache,.local,.composer"
+   mkdir -p ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+   chmod 2750 ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+   chown -R ${MAGENTO_OWNER}:${MAGENTO_OWNER} ${MAGENTO_ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+   ##
+
+   su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${MAGENTO_COMPOSER_NAME} ${MAGENTO_COMPOSER_PASSWORD}"
+   su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
+
+   # composer replace bloatware
+   curl -sO ${MAGENX_INSTALL_GITHUB_REPO}composer_replace
+   sed -i '/"conflict":/ {
+   r composer_replace
+   N
+   }' composer.json
+
+   rm composer_replace
+
+   ### install magento from here ###
+   su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
+   
+    if [ "$?" != 0 ]; then
+      echo ""
+      REDTXT "[!] Magento composer installation error"
+      REDTXT "[!] Please correct error above and try again"
+      echo ""
+      exit 1
     fi
-    echo "[!] Add this key to your remote server magento ssh account authorized_keys:"
-    echo
-    cat ${MAGENX_CONFIG_PATH}/rsync_magento.pub
-    echo
-    _echo "[!] Magento will be synced to ${MAGENTO_ROOT_PATH}"
-    pause '[] Press [Enter] to start rsync connection'
-    echo
-    rsync --timeout=30 -avz -e "ssh -p ${RSYNC_PORT} -i ${MAGENX_CONFIG_PATH}/rsync_magento" "${RSYNC_USER}@${RSYNC_IP}:${RSYNC_ROOT_PATH} ." || { echo "Error: Rsync failed"; continue; }
-    echo
-    break
-  elif [ "${MAGENTO_INSTALLATION_TYPE}" == "Github" ]; then
-    echo
-    read -e -p "--> GitHub account: " -i "account"  GITHUB_ACCOUNT
-    read -e -p "--> GitHub repository: " -i "repository.git"  GITHUB_REPOSITORY
-    echo
-    _echo "[!] Magento will be cloned to ${MAGENTO_ROOT_PATH}"
-    pause '[] Press [Enter] to start GitHub connection'
-    echo
-    git clone "https://github.com/${GITHUB_ACCOUNT}/${GITHUB_REPOSITORY}" . || { echo "Error: Github clone failed"; continue; }
-    echo
-    break
-  elif [ "${MAGENTO_INSTALLATION_TYPE}" == "Composer" ]; then
-    echo
-    GREENTXT "${MAGENTO_MINIMUM} INSTALLATION"
-    echo
-    WHITETXT "- Better memory allocation!"
-    WHITETXT "- Faster cli, backend and frontend operations!"
-    WHITETXT "- Less maintenance work!"
-    WHITETXT "- Less dependencies and security risks!"
-    echo
-    pause '[] Press [Enter] key to start'
-    echo
-    
-    YELLOWTXT "[?] SELECT MAGENTO VERSION: "
-    updown_menu "${MAGENTO_VERSION_LIST}" MAGENTO_VERSION_INSTALLED
-    echo
-    
-     echo
-     _echo "[!] Magento [ ${MAGENTO_VERSION_INSTALLED} ] will be downloaded to ${MAGENTO_ROOT_PATH}"
-     echo
-
-    ## composer download
-    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-    php composer-setup.php --${COMPOSER_VERSION} --install-dir=/usr/bin --filename=composer
-    php -r "unlink('composer-setup.php');"
-
-    su ${MAGENTO_OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${MAGENTO_COMPOSER_NAME} ${MAGENTO_COMPOSER_PASSWORD}"
-    su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
-
-    # composer replace bloatware
-    curl -sO ${MAGENX_INSTALL_GITHUB_REPO}composer_replace
-    sed -i '/"conflict":/ {
-    r composer_replace
-    N
-    }' composer.json
-
-    rm composer_replace
-
-    # install magento from here
-    su ${MAGENTO_OWNER} -s /bin/bash -c "composer install"
-
-    break
-  else
-    echo "Error: Invalid installation type"
-  fi
-done
-
-[ "${MAGENTO_INSTALLATION_TYPE}" != "Composer" ] && MAGENTO_VERSION_INSTALLED="$(${MAGENTO_ROOT_PATH}/bin/magento --version --no-ansi | awk '{print $NF}')"
-
-# reset permissions
-su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
-su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
-setfacl -R -m u:${MAGENTO_OWNER}:rwx,g:${MAGENTO_PHP_USER}:rwx,o::-,d:u:${MAGENTO_OWNER}:rwx,d:g:${MAGENTO_PHP_USER}:rwx,d:o::- var pub/media
-
-## make magento great again
-sed -i "s/2-4/2-5/" app/etc/di.xml
-
-if [ "${MAGENTO_INSTALLATION_TYPE}" != "Github" ]; then
-echo
-echo
-echo
-YELLOWTXT "[!] For development and code deployment, please create a free Github account:"
-echo
-_echo "https://github.com/pricing
+   
+   # make magento great again
+   sed -i "s/2-4/2-6/" app/etc/di.xml
+ fi
   
-  ## Github pros:
-  Disaster recovery - secure code backup.
-  No malware - reset files to the state in the repository.
-  Easy Maintenance - Developers don't need to login to the server.
-  Approved Modifications - Keep track of all changes.
-  Support service - tickets and resolving issues."
-fi
+   # reset permissions
+   if [ "${MAGENTO_ENV_SELECTED}" == "developer" ]; then
+     DEVELOPER_MODE="generated pub/static"
+   fi
+   su ${MAGENTO_OWNER} -s /bin/bash -c "echo 007 > magento_umask"
+   su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p  generated pub/static var pub/media"
+   su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
+   setfacl -R -m u:${MAGENTO_OWNER}:rwX,g:${MAGENTO_PHP_USER}:rwX,o::-,d:u:${MAGENTO_OWNER}:rwX,d:g:${MAGENTO_PHP_USER}:rwX,d:o::- ${DEVELOPER_MODE} var pub/media
 
+   # save all the variables
+   ${SQLITE3} "UPDATE menu SET magento = 'x';"
+   ${SQLITE3} "UPDATE magento SET magento_version_installed = '${MAGENTO_VERSION_INSTALLED}';"
+   ${SQLITE3} "UPDATE magento SET
+   magento_domain = '${MAGENTO_DOMAIN}',
+   magento_owner = '${MAGENTO_OWNER}',
+   magento_php_user = '${MAGENTO_PHP_USER}',
+   magento_root_path = '${MAGENTO_ROOT_PATH}'
+   WHERE
+   magento_env = '${MAGENTO_ENV_SELECTED}'
+   ;"
+  
+done
 echo
 echo
 echo
-GREENTXT "[~]    MAGENTO ${MAGENTO_MINIMUM} DOWNLOADED AND READY FOR SETUP    [~]"
+GREENTXT "[~]    MAGENTO ${MAGENTO_VERSION_INSTALLED} DOWNLOADED AND READY FOR SETUP    [~]"
 WHITETXT "--------------------------------------------------------------------"
 echo
-# save all the variables
-cat > ${MAGENX_CONFIG_PATH}/magento <<END
-# ${MAGENTO_MINIMUM}
-MAGENTO_VERSION="2"
-MAGENTO_INSTALLATION_TYPE="${MAGENTO_INSTALLATION_TYPE}"
-MAGENTO_VERSION_INSTALLED="${MAGENTO_VERSION_INSTALLED}"
-MAGENTO_DOMAIN="${MAGENTO_DOMAIN}"
-MAGENTO_OWNER="${MAGENTO_OWNER}"
-MAGENTO_PHP_USER="${MAGENTO_PHP_USER}"
-MAGENTO_ROOT_PATH="${MAGENTO_ROOT_PATH}"
-END
 echo
 pause '[] Press [Enter] key to show menu'
 printf "\033c"
 ;;
-
 ###################################################################################
 ###                                  DATABASE SETUP                             ###
 ###################################################################################
-
 "database")
 printf "\033c"
-include_config ${MAGENX_CONFIG_PATH}/magento
 echo
 BLUEBG "[~]    CREATE MYSQL USER AND DATABASE    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 if [ ! -f /root/.my.cnf ]; then
 MYSQL_ROOT_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"
-
 systemctl restart mariadb
 mariadb-admin status --wait=2 &>/dev/null || { REDTXT "\n [!] MYSQL SERVER DOWN \n"; exit 1; }
 mariadb --connect-expired-password  <<EOMYSQL
@@ -1381,34 +1361,46 @@ cat > /root/.my.cnf <<END
 user=root
 password="${MYSQL_ROOT_PASSWORD}"
 END
-fi
-chmod 600 /root/.my.cnf /root/.mytop
-echo
-GREENTXT "GENERATE MYSQL USER, DATABASE NAME AND PASSWORD"
-echo
-  HASH="$(openssl rand -hex 2)"
-  read -e -p "  [?] Host name: " -i "localhost"  MAGENTO_DATABASE_HOST
-  read -e -p "  [?] Database name: " -i "${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${HASH}_production"  MAGENTO_DATABASE_NAME
-  read -e -p "  [?] User name: " -i "${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${HASH}"  MAGENTO_DATABASE_USER
-  read -e -p "  [?] User password: " -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&=+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  MAGENTO_DATABASE_PASSWORD
-echo
-GREENTXT "CREATE MYSQL STATEMENT AND EXECUTE IT"
-echo
-mariadb <<EOMYSQL
-CREATE USER '${MAGENTO_DATABASE_USER}'@'${MAGENTO_DATABASE_HOST}' IDENTIFIED BY '${MAGENTO_DATABASE_PASSWORD}';
-CREATE DATABASE ${MAGENTO_DATABASE_NAME};
-GRANT ALL PRIVILEGES ON ${MAGENTO_DATABASE_NAME}.* TO '${MAGENTO_DATABASE_USER}'@'${MAGENTO_DATABASE_HOST}' WITH GRANT OPTION;
-exit
-EOMYSQL
 
-GREENTXT "SAVE VARIABLES TO CONFIG FILE"
-cat > ${MAGENX_CONFIG_PATH}/database <<END
-MAGENTO_DATABASE_HOST="${MAGENTO_DATABASE_HOST}"
-MAGENTO_DATABASE_NAME="${MAGENTO_DATABASE_NAME}"
-MAGENTO_DATABASE_USER="${MAGENTO_DATABASE_USER}"
-MAGENTO_DATABASE_PASSWORD="${MAGENTO_DATABASE_PASSWORD}"
-MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
-END
+# set mysql root password
+${SQLITE3} "UPDATE system SET mysql_root_password = '${MYSQL_ROOT_PASSWORD}';"
+fi
+
+chmod 600 /root/.my.cnf /root/.mytop
+
+# get magento_mode to configure database
+MAGENTO_ENV=($(${SQLITE3} "SELECT DISTINCT magento_env FROM magento;"))
+for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
+do
+ echo ""
+ MAGENTO_DOMAIN=$(${SQLITE3} "SELECT magento_domain FROM magento WHERE magento_env = '${MAGENTO_ENV_SELECTED}';")
+ HASH="$(openssl rand -hex 2)"
+ YELLOWTXT "[-] Settings for [ ${MAGENTO_ENV_SELECTED} ] database:"
+ read -e -p "$(echo -e ${YELLOW}"  [?] Host name: "${RESET})" -i "mariadb"  MAGENTO_DATABASE_HOST
+ read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${HASH}_${MAGENTO_ENV_SELECTED}"  MAGENTO_DATABASE_NAME
+ read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${MAGENTO_DOMAIN//[-.]/}_m${MAGENTO_VERSION}_${HASH}"  MAGENTO_DATABASE_USER
+ read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  MAGENTO_DATABASE_PASSWORD
+ echo ""
+for USER_HOST in ${MAGENTO_DATABASE_HOST} 127.0.0.1
+  do
+mariadb <<EOMYSQL
+ CREATE USER '${MAGENTO_DATABASE_USER}'@'${USER_HOST}' IDENTIFIED BY '${MAGENTO_DATABASE_PASSWORD}';
+ CREATE DATABASE IF NOT EXISTS ${MAGENTO_DATABASE_NAME};
+ GRANT ALL PRIVILEGES ON ${MAGENTO_DATABASE_NAME}.* TO '${MAGENTO_DATABASE_USER}'@'${USER_HOST}' WITH GRANT OPTION;
+ exit
+EOMYSQL
+done
+
+ # save database variables
+ ${SQLITE3} "UPDATE menu SET database = 'x';"
+ ${SQLITE3} "UPDATE magento SET
+  magento_database_host = '${MAGENTO_DATABASE_HOST}',
+  magento_database_name = '${MAGENTO_DATABASE_NAME}',
+  magento_database_user = '${MAGENTO_DATABASE_USER}',
+  magento_database_password = '${MAGENTO_DATABASE_PASSWORD}'
+  WHERE
+  magento_env = '${MAGENTO_ENV_SELECTED}';"
+done
 
 echo
 echo
@@ -1416,139 +1408,149 @@ echo
 pause '[] Press [Enter] key to show menu'
 printf "\033c"
 ;;
-
 ###################################################################################
 ###                                  MAGENTO SETUP                              ###
 ###################################################################################
-
 "install")
 printf "\033c"
 echo
-BLUEBG   "[~]    MAGENTO ${MAGENTO_VERSION_INSTALLED} SETUP    [~]"
+BLUEBG   "[~]    MAGENTO CONFIGURATION TO SETUP INSTALL PER ENVIRONMENT    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
-echo
-include_config ${MAGENX_CONFIG_PATH}/distro
-include_config ${MAGENX_CONFIG_PATH}/magento
-include_config ${MAGENX_CONFIG_PATH}/database
-include_config ${MAGENX_CONFIG_PATH}/rabbitmq
-include_config ${MAGENX_CONFIG_PATH}/redis
-include_config ${MAGENX_CONFIG_PATH}/elasticsearch
+echo ""
+echo ""
+REDIS_PORTS="$(awk '/port /{print $2}' /etc/redis/redis*.conf)"
+for PORT_SELECTED in ${REDIS_PORTS} 9200 5672 3306; do nc -4zvw3 localhost ${PORT_SELECTED}; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE ${PORT_SELECTED} OFFLINE"; exit 1; fi;  done
 
-echo
-for ports in 6379 6380 9200 5672 3306; do nc -4zvw3 localhost $ports; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE $ports OFFLINE"; exit 1; fi;  done
-echo
-echo
-echo
-cd ${MAGENTO_ROOT_PATH}
-chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} *
-chmod u+x bin/magento
-echo
-WHITETXT "Admin name, email and base url"
-echo
-read -e -p "  [?] Admin first name: " -i "Magento"  MAGENTO_ADMIN_FIRSTNAME
-read -e -p "  [?] Admin last name: " -i "Administrator"  MAGENTO_ADMIN_LASTNAME
-read -e -p "  [?] Admin email: " -i "admin@${MAGENTO_DOMAIN}"  MAGENTO_ADMIN_EMAIL
-read -e -p "  [?] Admin login name: " -i "admin"  MAGENTO_ADMIN_LOGIN
-read -e -p "  [?] Admin password: " -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%&?=' | fold -w 10 | head -n 1)${RANDOM}"  MAGENTO_ADMIN_PASSWORD
-read -e -p "  [?] Shop base url: " -i "http://${MAGENTO_DOMAIN}/"  MAGENTO_BASE_URL
-echo
-WHITETXT "Language, Currency and Timezone settings"
-updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_LOCALE
-updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_CURRENCY
-updown_menu "$(bin/magento info:timezone:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_TIMEZONE
-echo
-echo
-GREENTXT "SETUP MAGENTO ${MAGENTO_VERSION} (${MAGENTO_VERSION_INSTALLED}) WITHOUT SAMPLE DATA"
-echo
-pause '[] Press [Enter] key to run setup'
-echo
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGENTO_BASE_URL} \
---db-host=${MAGENTO_DATABASE_HOST} \
---db-name=${MAGENTO_DATABASE_NAME} \
---db-user=${MAGENTO_DATABASE_USER} \
---db-password='${MAGENTO_DATABASE_PASSWORD}' \
---admin-firstname=${MAGENTO_ADMIN_FIRSTNAME} \
---admin-lastname=${MAGENTO_ADMIN_LASTNAME} \
---admin-email=${MAGENTO_ADMIN_EMAIL} \
---admin-user=${MAGENTO_ADMIN_LOGIN} \
---admin-password='${MAGENTO_ADMIN_PASSWORD}' \
---language=${MAGENTO_LOCALE} \
---currency=${MAGENTO_CURRENCY} \
---timezone=${MAGENTO_TIMEZONE} \
---cleanup-database \
---use-rewrites=1 \
---session-save=redis \
---session-save-redis-host=127.0.0.1 \
---session-save-redis-port=6379 \
---session-save-redis-log-level=3 \
---session-save-redis-db=0 \
---session-save-redis-password='${MAGENTO_REDIS_PASSWORD}' \
---session-save-redis-compression-lib=lz4 \
---cache-backend=redis \
---cache-backend-redis-server=127.0.0.1 \
---cache-backend-redis-port=6380 \
---cache-backend-redis-db=0 \
---cache-backend-redis-password='${MAGENTO_REDIS_PASSWORD}' \
---cache-backend-redis-compress-data=1 \
---cache-backend-redis-compression-lib=l4z \
---amqp-host=127.0.0.1 \
---amqp-port=5672 \
---amqp-user=magento \
---amqp-password='${MAGENTO_RABBITMQ_PASSWORD}' \
---amqp-virtualhost='/' \
---consumers-wait-for-messages=0 \
---search-engine=elasticsearch7 \
---elasticsearch-host=127.0.0.1 \
---elasticsearch-port=9200 \
---elasticsearch-index-prefix=magento_indexer_${MAGENTO_DOMAIN} \
---elasticsearch-enable-auth=1 \
---elasticsearch-username=magento_indexer \
---elasticsearch-password='${MAGENTO_INDEXER_PASSWORD}'"
+# Get the distinct Magento modes from the magento table
+MAGENTO_ENV=($(${SQLITE3} "SELECT DISTINCT magento_env FROM magento;"))
+# Loop through the Magento modes
+for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"; do
+  # Create an associative array
+  declare -A GET_
+  # Get the data for the Magento mode from the magento table | sqlite .mode line key=value
+  QUERY=$(${SQLITE3} -line "SELECT * FROM magento WHERE magento_env = '${MAGENTO_ENV_SELECTED}';")
+  # Loop through the lines of the query output and add the key=value pairs to the associative array
+  while IFS='=' read -r KEY VALUE; do
+    # Extract the key and value from the line separated by ' = '
+    KEY=$(echo "${KEY}" | tr -d '[:space:]')
+    VALUE=$(echo "${VALUE}" | tr -d '[:space:]')
+    # Skip adding key=value pair if value is empty
+    if [[ -n "${VALUE}" ]]; then
+      # Add the key=value pair to the associative array
+      GET_["${KEY}"]="${VALUE}"
+    fi
+  done <<< "${QUERY}"
+# Use associative array here
+if [ -f "${GET_[magento_root_path]}/bin/magento" ]; then
+ echo ""
+ YELLOWTXT "[-] Configuration for Magento ${GET_[magento_version_installed]} installed in [ ${MAGENTO_ENV_SELECTED} ] environment."
+ echo ""
+ TIMEZONE=$(${SQLITE3} "SELECT timezone FROM system;")
+ cd ${GET_[magento_root_path]}
+ chown -R ${GET_[magento_owner]}:${GET_[magento_php_user]} *
+ chmod u+x bin/magento
+ YELLOWTXT "[-] Administrator settings and store base url:"
+ read -e -p "$(echo -e ${YELLOW}"  [?] First name: "${RESET})" -i "Magento"  MAGENTO_ADMIN_FIRSTNAME
+ read -e -p "$(echo -e ${YELLOW}"  [?] Last name: "${RESET})" -i "Administrator"  MAGENTO_ADMIN_LASTNAME
+ read -e -p "$(echo -e ${YELLOW}"  [?] Email: "${RESET})" -i "admin@${GET_[magento_domain]}"  MAGENTO_ADMIN_EMAIL
+ read -e -p "$(echo -e ${YELLOW}"  [?] Login name: "${RESET})" -i "admin"  MAGENTO_ADMIN_LOGIN
+ read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%&?=' | fold -w 10 | head -n 1)${RANDOM}"  MAGENTO_ADMIN_PASSWORD
+ read -e -p "$(echo -e ${YELLOW}"  [?] Store base url: "${RESET})" -i "http://${GET_[magento_domain]}/"  MAGENTO_BASE_URL
+ echo
+ YELLOWTXT "[-] Language and currency settings:"
+ updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_LOCALE
+ echo ""
+ updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_CURRENCY
+ echo ""
+ echo ""
+ YELLOWTXT "[-] Magento ${GET_[magento_version_installed]} ready to be installed for ${MAGENTO_ENV_SELECTED} environment"
+ echo ""
+ pause '[!] Press [Enter] key to run setup:install'
+ echo
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento setup:install --base-url=${MAGENTO_BASE_URL} \
+ --db-host=${GET_[magento_database_host]} \
+ --db-name=${GET_[magento_database_name]} \
+ --db-user=${GET_[magento_database_user]} \
+ --db-password='${GET_[magento_database_password]}' \
+ --admin-firstname=${MAGENTO_ADMIN_FIRSTNAME} \
+ --admin-lastname=${MAGENTO_ADMIN_LASTNAME} \
+ --admin-email=${MAGENTO_ADMIN_EMAIL} \
+ --admin-user=${MAGENTO_ADMIN_LOGIN} \
+ --admin-password='${MAGENTO_ADMIN_PASSWORD}' \
+ --language=${MAGENTO_LOCALE} \
+ --currency=${MAGENTO_CURRENCY} \
+ --timezone=${TIMEZONE} \
+ --cleanup-database \
+ --use-rewrites=1 \
+ --session-save=redis \
+ --session-save-redis-host=redis-session-${MAGENTO_ENV_SELECTED} \
+ --session-save-redis-port=$(awk '/port /{print $2}'  /etc/redis/redis-session-${MAGENTO_ENV_SELECTED}.conf) \
+ --session-save-redis-log-level=3 \
+ --session-save-redis-db=0 \
+ --session-save-redis-password='${GET_[magento_redis_password]}' \
+ --session-save-redis-compression-lib=lz4 \
+ --cache-backend=redis \
+ --cache-backend-redis-server=redis-cache-${MAGENTO_ENV_SELECTED} \
+ --cache-backend-redis-port=$(awk '/port /{print $2}' /etc/redis/redis-cache-${MAGENTO_ENV_SELECTED}.conf) \
+ --cache-backend-redis-db=0 \
+ --cache-backend-redis-password='${GET_[magento_redis_password]}' \
+ --cache-backend-redis-compress-data=1 \
+ --cache-backend-redis-compression-lib=l4z \
+ --amqp-host=rabbitmq \
+ --amqp-port=5672 \
+ --amqp-user=${MAGENTO_ENV_SELECTED} \
+ --amqp-password='${GET_[magento_rabbitmq_password]}' \
+ --amqp-virtualhost='/' \
+ --consumers-wait-for-messages=0 \
+ --search-engine=elasticsearch7 \
+ --elasticsearch-host=elasticsearch \
+ --elasticsearch-port=9200 \
+ --elasticsearch-index-prefix=magento_${MAGENTO_ENV_SELECTED}_${GET_[magento_domain]} \
+ --elasticsearch-enable-auth=1 \
+ --elasticsearch-username=magento_${MAGENTO_ENV_SELECTED}_indexer \
+ --elasticsearch-password='${GET_[magento_indexer_password]}'"
 
-
-if [ "$?" != 0 ]; then
-  echo
-  REDTXT "[!] SETUP ERROR"
-  REDTXT "[!] PLEASE CORRECT AND TRY AGAIN"
-  echo
-  exit 1
+ if [ "$?" != 0 ]; then
+   echo ""
+   REDTXT "[!] Magento setup:install error"
+   REDTXT "[!] Please correct error above and try again"
+   echo ""
+   exit 1
+ fi
+ 
+ # save config variables
+ ${SQLITE3} "UPDATE menu SET install = 'x';"
+ ${SQLITE3} "UPDATE magento SET
+  magento_admin_login = '${MAGENTO_ADMIN_LOGIN}',
+  magento_admin_password = '${MAGENTO_ADMIN_PASSWORD}',
+  magento_admin_email = '${MAGENTO_ADMIN_EMAIL}',
+  magento_locale = '${MAGENTO_LOCALE}',
+  magento_admin_path = '$(grep -Po "(?<='frontName' => ')\w*(?=')" ${GET_[magento_root_path]}/app/etc/env.php)',
+  magento_crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[magento_root_path]}/app/etc/env.php)';"
 fi
-
-mysqldump --single-transaction --routines --triggers --events ${MAGENTO_DATABASE_NAME} | gzip > ${MAGENX_CONFIG_PATH}/${MAGENTO_DATABASE_NAME}.sql.gz
-cp app/etc/env.php  ${MAGENX_CONFIG_PATH}/env.php.default
+done 
 echo
 echo
 echo
     WHITETXT "============================================================================="
     echo
-    GREENTXT "INSTALLED MAGENTO ${MAGENTO_VERSION_INSTALLED} WITHOUT SAMPLE DATA"
+    GREENTXT "Magento ${GET_[magento_version_installed]} installed for [ ${MAGENTO_ENV_SELECTED} ] environment"
     echo
     WHITETXT "============================================================================="
 echo
-cat > ${MAGENX_CONFIG_PATH}/install <<END
-MAGENTO_ADMIN_LOGIN="${MAGENTO_ADMIN_LOGIN}"
-MAGENTO_ADMIN_PASSWORD="${MAGENTO_ADMIN_PASSWORD}"
-MAGENTO_ADMIN_EMAIL="${MAGENTO_ADMIN_EMAIL}"
-MAGENTO_TIMEZONE="${MAGENTO_TIMEZONE}"
-MAGENTO_LOCALE="${MAGENTO_LOCALE}"
-MAGENTO_ADMIN_PATH="$(grep -Po "(?<='frontName' => ')\w*(?=')" ${MAGENTO_ROOT_PATH}/app/etc/env.php)"
-MAGENTO_CRYPT_KEY="$(grep -Po "(?<='key' => ')\w*(?=')" ${MAGENTO_ROOT_PATH}/app/etc/env.php)"
-END
 
 pause '[] Press [Enter] key to show menu'
 printf "\033c"
 ;;
-
 ###################################################################################
 ###                                FINAL CONFIGURATION                          ###
 ###################################################################################
-
 "config")
 printf "\033c"
-echo
+echo ""
 BLUEBG "[~]    POST-INSTALLATION CONFIGURATION    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
-echo
+echo ""
 # network is up?
 host1=google.com
 host2=github.com
@@ -1565,43 +1567,25 @@ if [[ ${RESULT} == up ]]; then
   exit 1
 fi
 
-include_config ${MAGENX_CONFIG_PATH}/distro
-include_config ${MAGENX_CONFIG_PATH}/magento
-include_config ${MAGENX_CONFIG_PATH}/database
-include_config ${MAGENX_CONFIG_PATH}/rabbitmq
-include_config ${MAGENX_CONFIG_PATH}/redis
-include_config ${MAGENX_CONFIG_PATH}/install
-include_config ${MAGENX_CONFIG_PATH}/ssh_port
-include_config ${MAGENX_CONFIG_PATH}/elasticsearch
+# Get variables for configuration
+SSH_PORT="$(${SQLITE3} "SELECT ssh_port FROM system;")"
+PHP_VERSION="$(${SQLITE3} "SELECT php_version FROM system;")"
+TIMEZONE="$(${SQLITE3} "SELECT timezone FROM system;")"
 
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-  php_ini="/etc/php.ini"
-  php_fpm_pool_path="/etc/php-fpm.d/"
-  php_ini_path_overrides="/etc/php.d/"
- else
-  PHP_VERSION="$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")"
-  php_ini="/etc/php/${PHP_VERSION}/fpm/php.ini"
-  php_fpm_pool_path="/etc/php/${PHP_VERSION}/fpm/pool.d/"
-  php_ini_path_overrides="/etc/php/${PHP_VERSION}/{cli,fpm}/conf.d/"
-fi
+echo ""
+YELLOWTXT "[-] Server hostname settings"
+MAGENTO_DOMAIN="$(${SQLITE3} "SELECT magento_domain FROM magento LIMIT 1;")"
+hostnamectl set-hostname "${MAGENTO_DOMAIN}" --static
+hostname
 
-echo
-GREENTXT "SERVER HOSTNAME SETTINGS"
-hostnamectl set-hostname server.${MAGENTO_DOMAIN} --static
-
-echo
-GREENTXT "CREATE MOTD"
-curl -o /etc/motd -s ${MAGENX_INSTALL_GITHUB_REPO}motd
-sed -i "s/MAGENTO_VERSION_INSTALLED/${MAGENTO_VERSION_INSTALLED}/" /etc/motd
+echo ""
+YELLOWTXT "[-] Create motd banner"
+curl -o /etc/motd "${MAGENX_INSTALL_GITHUB_REPO}motd"
 sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
 
-echo
-GREENTXT "SERVER TIMEZONE SETTINGS"
-timedatectl set-timezone ${MAGENTO_TIMEZONE}
-
-echo
-GREENTXT "SYSCTL SETTINGS"
-cat >> /etc/sysctl.conf <<END
+echo ""
+YELLOWTXT "[-] Sysctl parameters"
+tee /etc/sysctl.conf <<END
 fs.file-max = 1000000
 fs.inotify.max_user_watches = 1000000
 vm.swappiness = 10
@@ -1640,15 +1624,16 @@ END
 
 sysctl -q -p
 
-echo
-GREENTXT "MYSQL TOOLS"
-curl -sSo /usr/local/bin/mysqltuner ${MYSQL_TUNER}
-curl -sSo /usr/local/bin/mytop ${MYSQL_TOP}
+echo ""
+YELLOWTXT "[-] Downloading mysqltuner and mytop"
+curl -o /usr/local/bin/mysqltuner ${MYSQL_TUNER}
+curl -o /usr/local/bin/mytop ${MYSQL_TOP}
 
-echo
-GREENTXT "PHP SETTINGS"
-
-cat <<END | eval tee ${php_ini_path_overrides}/zz-${MAGENTO_OWNER}-overrides.ini 
+for dir in cli fpm
+do
+echo ""
+YELLOWTXT "[-] PHP global system settings overrides ${dir} ini"
+tee /etc/php/${PHP_VERSION}/$dir/conf.d/zz-magenx-overrides.ini <<END
 opcache.enable_cli = 1
 opcache.memory_consumption = 512
 opcache.interned_strings_buffer = 4
@@ -1690,14 +1675,133 @@ max_input_vars = 50000
 session.gc_maxlifetime = 28800
 mysql.allow_persistent = On
 mysqli.allow_persistent = On
-date.timezone = "${MAGENTO_TIMEZONE}"
+date.timezone = "${TIMEZONE}"
+END
+done
+
+echo ""
+YELLOWTXT "[-] Downloading: /usr/local/bin/n98-magerun2"
+curl -o /usr/local/bin/n98-magerun2 https://files.magerun.net/n98-magerun2.phar
+
+echo ""
+YELLOWTXT "[-] Creating cache cleaner script: /usr/local/bin/cacheflush"
+tee /usr/local/bin/cacheflush <<END
+#!/bin/bash
+sudo -u \${SUDO_USER} n98-magerun2 --root-dir=/home/\${SUDO_USER}/public_html cache:flush
+/usr/bin/systemctl restart php${PHP_VERSION}-fpm.service
+/usr/bin/systemctl restart nginx.service
 END
 
-echo
-GREENTXT "PHP-FPM SETTINGS"
+echo ""
+YELLOWTXT "[-] Certbot installation with snapd"
+snap install --classic certbot
 
-cat > ${php_fpm_pool_path}/${MAGENTO_OWNER}.conf <<END
-[${MAGENTO_OWNER}]
+echo ""
+YELLOWTXT "[-] Generating dhparam for nginx ssl config"
+openssl dhparam -dsaparam -out /etc/ssl/certs/dhparams.pem 4096
+
+echo ""
+YELLOWTXT "[-] Generating default ssl cert for nginx"
+openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/certs/default_server.key -out /etc/ssl/certs/default_server.crt \
+-subj "/CN=default_server" -days 3650 -subj "/C=US/ST=Oregon/L=Portland/O=default_server/OU=Org/CN=default_server"
+
+echo ""
+YELLOWTXT "[-] Downloading nginx configuration files"
+curl -o /etc/nginx/fastcgi_params  ${MAGENX_NGINX_GITHUB_REPO}magento${MAGENTO_VERSION}/fastcgi_params
+curl -o /etc/nginx/nginx.conf  ${MAGENX_NGINX_GITHUB_REPO}magento${MAGENTO_VERSION}/nginx.conf
+mkdir -p /etc/nginx/sites-enabled
+mkdir -p /etc/nginx/sites-available && cd $_
+curl ${MAGENX_NGINX_GITHUB_REPO_API}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -O "$4)}' >/dev/null
+ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
+mkdir -p /etc/nginx/conf_m${MAGENTO_VERSION} && cd /etc/nginx/conf_m${MAGENTO_VERSION}/
+curl ${MAGENX_NGINX_GITHUB_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -O "$4)}' >/dev/null
+
+echo ""
+YELLOWTXT "[-] Magento profiler configuration in nginx"
+PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
+sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+echo "  Magento profiler query => ${PROFILER_PLACEHOLDER}"
+
+echo ""
+YELLOWTXT "[-] phpMyAdmin installation and configuration"
+PHPMYADMIN_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
+PHPMYADMIN_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
+BLOWFISH_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+echo "  phpMyAdmin location => ${PHPMYADMIN_FOLDER}"
+echo ""
+mkdir -p /usr/share/phpMyAdmin && cd $_
+composer -n create-project phpmyadmin/phpmyadmin .
+cp config.sample.inc.php config.inc.php
+sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISH_SECRET}';/" config.inc.php
+sed -i "s|.*UploadDir.*|\$cfg['UploadDir'] = '/tmp/';|"  config.inc.php
+sed -i "s|.*SaveDir.*|\$cfg['SaveDir'] = '/tmp/';|"  config.inc.php
+sed -i "/SaveDir/a\
+\$cfg['TempDir'] = '\/tmp\/';"  config.inc.php
+
+sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PHPMYADMIN_FOLDER}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
+     sed -i "5i \\
+           auth_basic \$authentication; \\
+           auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
+	 	   
+sed -i "s|^listen =.*|listen = /var/run/php${PHP_VERSION}-fpm.sock|" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
+sed -i "s/^listen.owner.*/listen.owner = nginx/" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
+sed -i "s|127.0.0.1:9000|unix:/var/run/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
+
+htpasswd -b -c /etc/nginx/.mysql mysql ${PHPMYADMIN_PASSWORD}  >/dev/null 2>&1
+${SQLITE3} "UPDATE system SET phpmyadmin_password = '${PHPMYADMIN_PASSWORD}';"
+
+echo ""
+YELLOWTXT "[-] Varnish Cache configuration"
+systemctl enable varnish.service
+curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
+curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}devicedetect-include.vcl
+
+echo ""
+YELLOWTXT "[-] Realtime malware monitor with email alerts"
+cd /usr/local/src
+curl -Lo maldetect-current.tar.gz ${MALDET}
+tar -zxf maldetect-current.tar.gz
+cd maldetect-*/
+./install.sh
+
+sed -i 's/email_alert="0"/email_alert="1"/' /usr/local/maldetect/conf.maldet
+sed -i 's/quarantine_hits="0"/quarantine_hits="1"/' /usr/local/maldetect/conf.maldet
+sed -i '/default_monitor_mode="users"/d' /usr/local/maldetect/conf.maldet
+sed -i 's,# default_monitor_mode="/usr/local/maldetect/monitor_paths",default_monitor_mode="/usr/local/maldetect/monitor_paths",' /usr/local/maldetect/conf.maldet
+sed -i 's/inotify_base_watches="16384"/inotify_base_watches="35384"/' /usr/local/maldetect/conf.maldet
+
+maldet --monitor /usr/local/maldetect/monitor_paths
+
+##
+# Configuration per environment
+# Get the distinct Magento modes from the magento table
+MAGENTO_ENV=($(${SQLITE3} "SELECT DISTINCT magento_env FROM magento;"))
+# Loop through the Magento modes
+for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"; do
+  # Create an associative array
+  declare -A GET_
+  # Get the data for the Magento mode from the magento table | sqlite .mode line key=value
+  QUERY=$(${SQLITE3} -line "SELECT * FROM magento WHERE magento_env = '${MAGENTO_ENV_SELECTED}';")
+  # Loop through the lines of the query output and add the key=value pairs to the associative array
+  while IFS='=' read -r KEY VALUE; do
+    # Extract the key and value from the line separated by ' = '
+    KEY=$(echo "${KEY}" | tr -d '[:space:]')
+    VALUE=$(echo "${VALUE}" | tr -d '[:space:]')
+    # Skip adding key=value pair if value is empty
+    if [[ -n "${VALUE}" ]]; then
+      # Add the key=value pair to the associative array
+      GET_["${KEY}"]="${VALUE}"
+    fi
+  done <<< "${QUERY}"
+  echo ""
+# Use associative array here
+_echo "${YELLOW}[?]${REDBG}${BOLD}[ Configuration for ${MAGENTO_ENV_SELECTED} environment ]${RESET} ${YELLOW}${RESET}"
+echo ""
+echo ""
+
+YELLOWTXT "[-] Php-fpm pool configuration for ${MAGENTO_ENV_SELECTED} environment"
+tee /etc/php/${PHP_VERSION}/fpm/pool.d/${GET_[magento_owner]}.conf <<END
+[${GET_[magento_owner]}]
 
 ;;
 ;; Pool user
@@ -1737,7 +1841,7 @@ php_admin_value[realpath_cache_size] = 4096k
 php_admin_value[realpath_cache_ttl] = 86400
 php_admin_value[session.gc_maxlifetime] = 28800
 php_admin_value[error_log] = "/home/\$pool/public_html/var/log/php-fpm-error.log"
-php_admin_value[date.timezone] = "${MAGENTO_TIMEZONE}"
+php_admin_value[date.timezone] = "${TIMEZONE}"
 php_admin_value[upload_tmp_dir] = "/home/\$pool/public_html/var/tmp"
 php_admin_value[sys_temp_dir] = "/home/\$pool/public_html/var/tmp"
 
@@ -1772,128 +1876,43 @@ php_admin_value[opcache.jit] = 1235
 END
 
 systemctl daemon-reload
-echo
-GREENTXT "NGINX SETTINGS"
-curl -sSo /etc/nginx/fastcgi_params  ${MAGENX_NGINX_GITHUB_REPO}magento${MAGENTO_VERSION}/fastcgi_params
-curl -sSo /etc/nginx/nginx.conf  ${MAGENX_NGINX_GITHUB_REPO}magento${MAGENTO_VERSION}/nginx.conf
-mkdir -p /etc/nginx/sites-enabled
-mkdir -p /etc/nginx/sites-available && cd $_
-curl -s ${MAGENX_NGINX_GITHUB_REPO_API}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
-ln -s /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf /etc/nginx/sites-enabled/magento${MAGENTO_VERSION}.conf
-ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
-mkdir -p /etc/nginx/conf_m${MAGENTO_VERSION} && cd /etc/nginx/conf_m${MAGENTO_VERSION}/
-curl -s ${MAGENX_NGINX_GITHUB_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -sO "$4)}' >/dev/null
 
-sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf
-sed -i "s/example.com/${MAGENTO_DOMAIN}/g" /etc/nginx/nginx.conf
-sed -i "s,/var/www/html,${MAGENTO_ROOT_PATH}," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+echo ""
+YELLOWTXT "[-] Nginx configuration for ${MAGENTO_ENV_SELECTED} environment"
+cp /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf  /etc/nginx/sites-available/${GET_[magento_domain]}.conf
+ln -s /etc/nginx/sites-available/${GET_[magento_domain]}.conf /etc/nginx/sites-enabled/${GET_[magento_domain]}.conf
+sed -i "s/example.com/${GET_[magento_domain]}/g" /etc/nginx/sites-available/${GET_[magento_domain]}.conf
 
-PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
-sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
-sed -i "s|127.0.0.1:9000|unix:/var/run/${MAGENTO_OWNER}.sock|" /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+if [ "${#MAGENTO_ENV[@]}" -gt 1 ]; then
+  if [ "${MAGENTO_ENV_SELECTED}" == "production" ]; then
+    sed -i "s/example.com/${GET_[magento_domain]}/g" /etc/nginx/nginx.conf
+    sed -i "s,default.*production php-fpm,${GET_[magento_domain]} unix:/var/run/${GET_[magento_owner]}.sock; # ${MAGENTO_ENV_SELECTED} php-fpm,"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+    sed -i "s,default.*production app folder,${GET_[magento_domain]} ${GET_[magento_root_path]}; # ${MAGENTO_ENV_SELECTED} app folder," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+  else
+    sed -i "/# production php-fpm/a\
+	${GET_[magento_domain]} unix:\/var\/run\/${GET_[magento_owner]}.sock; # ${MAGENTO_ENV_SELECTED} php-fpm"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+    sed -i "/# production app folder/a\
+	${GET_[magento_domain]} ${GET_[magento_root_path]}; # ${MAGENTO_ENV_SELECTED} app folder"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+  fi
+  else
+    sed -i "s/example.com/${GET_[magento_domain]}/g" /etc/nginx/nginx.conf
+    sed -i "s,default.*production php-fpm,${GET_[magento_domain]} unix:/var/run/${GET_[magento_owner]}.sock; # ${MAGENTO_ENV_SELECTED} php-fpm,"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+    sed -i "s,default.*production app folder,${GET_[magento_domain]} ${GET_[magento_root_path]}; # ${MAGENTO_ENV_SELECTED} app folder," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+fi
 
-sed -i "s/ADMIN_PLACEHOLDER/${MAGENTO_ADMIN_PATH}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/extra_protect.conf
-MAGENTO_ADMIN_HTTP_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
-htpasswd -b -c /etc/nginx/.admin ${MAGENTO_ADMIN_LOGIN} ${MAGENTO_ADMIN_HTTP_PASSWORD}  >/dev/null 2>&1
-
-echo
-GREENTXT "PHPMYADMIN INSTALLATION AND CONFIGURATION"
-PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
-PMA_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
-BLOWFISH_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-
-mkdir -p /usr/share/phpMyAdmin && cd $_
-composer -n create-project phpmyadmin/phpmyadmin .
-cp config.sample.inc.php config.inc.php
-sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISH_SECRET}';/" config.inc.php
-sed -i "s|.*UploadDir.*|\$cfg['UploadDir'] = '/tmp/';|"  config.inc.php
-sed -i "s|.*SaveDir.*|\$cfg['SaveDir'] = '/tmp/';|"  config.inc.php
-sed -i "/SaveDir/a\
-\$cfg['TempDir'] = '\/tmp\/';"  config.inc.php
-
-sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
-     sed -i "5i \\
-           auth_basic \$authentication; \\
-           auth_basic_user_file .mysql;"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
-	 	   
-PHP_FPM_LISTEN="php${PHP_VERSION}-fpm.sock"
-sed -i "s|^listen =.*|listen = /var/run/${PHP_FPM_LISTEN}|" ${php_fpm_pool_path}/www.conf
-sed -i "s/^listen.owner.*/listen.owner = nginx/" ${php_fpm_pool_path}/www.conf
-sed -i "s|127.0.0.1:9000|unix:/var/run/${PHP_FPM_LISTEN}|"  /etc/nginx/conf_m${MAGENTO_VERSION}/phpmyadmin.conf
-
-htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWORD}  >/dev/null 2>&1
-echo
-systemctl restart nginx.service
-cat > ${MAGENX_CONFIG_PATH}/phpmyadmin <<END
-PMA_FOLDER="mysql_${PMA_FOLDER}"
-PMA_PASSWORD="${PMA_PASSWORD}"
+echo ""
+YELLOWTXT "[-] Add user ${GET_[magento_owner]} to sudo to execute cacheflush"
+tee -a /etc/sudoers <<END
+${GET_[magento_owner]} ALL=(ALL) NOPASSWD: /usr/local/bin/cacheflush
 END
-echo
-echo
-if [ -f /etc/systemd/system/varnish.service ]; then
-GREENTXT "VARNISH CACHE CONFIGURATION"
-    systemctl enable varnish.service
-    chmod u+x ${MAGENTO_ROOT_PATH}/bin/magento
-    su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_ROOT_PATH}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
-    php ${MAGENTO_ROOT_PATH}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
-    sed -i "s,pub/health_,health_,g" /etc/varnish/default.vcl
-    sed -i 's,if (req.url ~ "^/(pub/)?(media|static)/"),if (req.url ~ "^/media/"),' /etc/varnish/default.vcl
-    sed -i '/# Static files should/{n;s/^/\t#/}' /etc/varnish/default.vcl
-    sed -i 's/#unset/unset/g' /etc/varnish/default.vcl
-    systemctl restart varnish.service
-    curl -sSo /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
-    curl -sSo /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}devicedetect-include.vcl
-    YELLOWTXT "VARNISH CACHE PORT :8081"
-fi
-echo
-GREENTXT "DOWNLOADING n98-MAGERUN2"
-curl -s -o /usr/local/bin/n98-magerun2 https://files.magerun.net/n98-magerun2.phar
-echo
-GREENTXT "CACHE CLEANER SCRIPT"
-echo "${MAGENTO_OWNER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart php*fpm.service, /usr/bin/systemctl restart nginx.service" >>  /etc/sudoers
-cat > /usr/local/bin/cacheflush <<END
-#!/bin/bash
-n98-magerun2 cache:flush
-sudo /usr/bin/systemctl restart php*fpm.service
-sudo /usr/bin/systemctl restart nginx.service
-END
-echo
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-GREENTXT "SYSTEM AUTO UPDATE WITH DNF AUTOMATIC"
-sed -i 's/upgrade_type = default/upgrade_type = security/' /etc/dnf/automatic.conf
-sed -i 's/apply_updates = no/apply_updates = yes/' /etc/dnf/automatic.conf
-sed -i 's/emit_via = stdio/emit_via = email/' /etc/dnf/automatic.conf
-sed -i "s/email_from =.*/email_from = dnf-automatic@${MAGENTO_DOMAIN}/" /etc/dnf/automatic.conf
-sed -i "s/email_to = root/email_to = ${MAGENTO_ADMIN_EMAIL}/" /etc/dnf/automatic.conf
-systemctl enable --now dnf-automatic.timer
-systemctl enable --now snapd.socket
-fi
 
-echo
-GREENTXT "CERTBOT INSTALLATION"
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-ln -s /var/lib/snapd/snap /snap
-ln -s /snap/bin/certbot /usr/local/bin/certbot
-snap wait system seed.loaded
-fi
-snap install --classic certbot
-
-echo
-GREENTXT "GENERATE DHPARAM FOR NGINX SSL"
-openssl dhparam -dsaparam -out /etc/ssl/certs/dhparams.pem 4096
-echo
-
-GREENTXT "GENERATE DEFAULT NGINX SSL SERVER KEY/CERT"
-openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/certs/default_server.key -out /etc/ssl/certs/default_server.crt \
--subj "/CN=default_server" -days 3650 -subj "/C=US/ST=Oregon/L=Portland/O=default_server/OU=Org/CN=default_server"
-echo
-
-GREENTXT "SIMPLE LOGROTATE SCRIPT FOR MAGENTO LOGS"
-cat > /etc/logrotate.d/magento <<END
-${MAGENTO_ROOT_PATH}/var/log/*.log
+echo ""
+YELLOWTXT "[-] Logrotate script for Magento logs in ${MAGENTO_ENV_SELECTED} environment"
+tee /etc/logrotate.d/${GET_[magento_owner]} <<END
+${GET_[magento_root_path]}/var/log/*.log
 {
-su ${MAGENTO_OWNER} ${MAGENTO_PHP_USER}
-create 660 ${MAGENTO_OWNER} ${MAGENTO_PHP_USER}
+su ${GET_[magento_owner]} ${GET_[magento_php_user]}
+create 660 ${GET_[magento_owner]} ${GET_[magento_php_user]}
 weekly
 rotate 2
 notifempty
@@ -1901,139 +1920,157 @@ missingok
 compress
 }
 END
-echo
-systemctl daemon-reload
-echo
-GREENTXT "[!] REALTIME MALWARE MONITOR WITH E-MAIL ALERTING"
-YELLOWTXT "[!] INFECTED FILES WILL BE MOVED TO QUARANTINE"
-echo
-cd /usr/local/src
-curl -sSLo maldetect-current.tar.gz ${MALDET}
-tar -zxf maldetect-current.tar.gz
-cd maldetect-*/
-./install.sh
 
-sed -i 's/email_alert="0"/email_alert="1"/' /usr/local/maldetect/conf.maldet
-sed -i "s/you@domain.com/${MAGENTO_ADMIN_EMAIL}/" /usr/local/maldetect/conf.maldet
-sed -i 's/quarantine_hits="0"/quarantine_hits="1"/' /usr/local/maldetect/conf.maldet
-sed -i '/default_monitor_mode="users"/d' /usr/local/maldetect/conf.maldet
-sed -i 's,# default_monitor_mode="/usr/local/maldetect/monitor_paths",default_monitor_mode="/usr/local/maldetect/monitor_paths",' /usr/local/maldetect/conf.maldet
-sed -i 's/inotify_base_watches="16384"/inotify_base_watches="35384"/' /usr/local/maldetect/conf.maldet
-
-echo -e "${MAGENTO_ROOT_PATH%/*}" > /usr/local/maldetect/monitor_paths
-
-maldet --monitor /usr/local/maldetect/monitor_paths
-echo
-GREENTXT "AUDIT MAGENTO FILES AND FOLDERS"
-cat >> /etc/audit/rules.d/audit.rules <<END
-
-## audit magento files
--a never,exit -F dir=${MAGENTO_ROOT_PATH}/var/ -k exclude
--w ${MAGENTO_ROOT_PATH} -p wa -k ${MAGENTO_OWNER}
+echo ""
+YELLOWTXT "[-] Audit configuration for Magento folders and files"
+sed -i "s/you@domain.com/${GET_[magento_admin_email]}/" /usr/local/maldetect/conf.maldet
+tee -a /usr/local/maldetect/monitor_paths <<END
+${GET_[magento_root_path]}
+END
+tee -a /etc/audit/rules.d/audit.rules <<END
+## audit magento files for ${GET_[magento_owner]}
+-a never,exit -F dir=${GET_[magento_root_path]}/var/ -k exclude
+-w ${GET_[magento_root_path]} -p wa -k ${GET_[magento_owner]}
 END
 service auditd reload
 service auditd restart
 auditctl -l
-echo
-echo
-GREENTXT "ROOT CRONJOBS"
-echo 'MAILTO=""' > rootcron
-echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -s \"MYSQLTUNER WEEKLY REPORT at ${MAGENTO_DOMAIN}\" ${MAGENTO_ADMIN_EMAIL}" >> rootcron
-crontab rootcron
-rm rootcron
-echo
-cd ${MAGENTO_ROOT_PATH}
-# varnish cache hosts
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
-echo
-systemctl daemon-reload
-systemctl restart nginx.service
-systemctl restart php*fpm.service
 
-chown -R ${MAGENTO_OWNER}:${MAGENTO_PHP_USER} ${MAGENTO_ROOT_PATH}
-echo
-GREENTXT "CLEAN MAGENTO CACHE ADD OPTIMIZATIONS AND ENABLE PRODUCTION MODE"
-rm -rf var/*
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${MAGENTO_ADMIN_EMAIL}"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/url/catalog_media_url_format image_optimization_parameters"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/css/minify_files 1"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/js/minify_files 1"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/js/move_script_to_bottom 1"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_hsts 1"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
+echo ""
+if [ -f "${GET_[magento_root_path]}/bin/magento" ]; then
+ _echo "${YELLOW}[?] Would you like to apply config optimization and settings for [ ${MAGENTO_ENV_SELECTED} ] mode installation ? [y/n][n]:${RESET} "
+read apply_config
+if [ "${apply_config}" == "y" ]; then
+ echo ""
+ YELLOWTXT "[-] Add Varnish Cache host to Magento env.php"
+ cd ${GET_[magento_root_path]}
+ chmod u+x bin/magento
+ su ${GET_[magento_owner]} -s /bin/bash -c "${GET_[magento_root_path]}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
+ php ${GET_[magento_root_path]}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
+ sed -i "s,pub/health_,health_,g" /etc/varnish/default.vcl
+ sed -i '/# Static files should/{n;s/^/\t#/}' /etc/varnish/default.vcl
+ sed -i 's/#unset/unset/g' /etc/varnish/default.vcl
 
-#su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento module:disable Magento_TwoFactorAuth Magento_AdobeIms Magento_AdobeImsApi Magento_AdminAdobeIms"
-su ${MAGENTO_OWNER} -s /bin/bash -c "mkdir -p var/tmp"
-su ${MAGENTO_OWNER} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
-su ${MAGENTO_OWNER} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches -n"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento setup:upgrade"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento deploy:mode:set production"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento cache:flush"
+ chown -R ${GET_[magento_owner]}:${GET_[magento_php_user]} ${GET_[magento_root_path]}
+ 
+ echo ""
+ YELLOWTXT "[-] Clean Magento cache add some optimization config and enable [ ${MAGENTO_ENV_SELECTED} ] mode"
+ rm -rf var/*
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${GET_[magento_admin_email]}"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set web/url/catalog_media_url_format image_optimization_parameters"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set dev/css/minify_files 1"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set dev/js/minify_files 1"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set dev/js/move_script_to_bottom 1"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set web/secure/enable_hsts 1"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
+ su ${GET_[magento_owner]} -s /bin/bash -c "mkdir -p var/tmp"
+ su ${GET_[magento_owner]} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
+ su ${GET_[magento_owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches -n"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento setup:upgrade"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[magento_mode]}"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento cache:flush"
 
-rm -rf ${MAGENTO_ROOT_PATH}/var/log/*.log
+ rm -rf var/log/*.log
+ rm -rf ../{.config,.cache,.local,.composer}
+ 
+ echo ""
+ YELLOWTXT "[-] Configure Google 2FA code for ${GET_[magento_admin_login]}"
+ echo ""
+ GOOGLE_TFA_CODE="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&' | fold -w 15 | head -n 1 | base32)"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${GET_[magento_admin_login]} ${GOOGLE_TFA_CODE}"
+ echo "  Google Authenticator mobile app configuration:"
+ echo "  - select: Enter a setup key"
+ echo "  - type in: Account name"
+ echo "  - Paste passkey: ${GOOGLE_TFA_CODE}"
+ echo "  - Choose Time based"
+ echo ""
+ ${SQLITE3} "UPDATE magento SET magento_tfa_key = '${GOOGLE_TFA_CODE}';"
+ echo ""
+ fi
+ sed -i "s/MAGENTO_VERSION_INSTALLED/${GET_[magento_version_installed]}/" /etc/motd
+fi
 
-getfacl -R ../public_html > ${MAGENX_CONFIG_PATH}/public_html.acl
+echo ""
+YELLOWTXT "[-] Add Magento cronjob to ${GET_[magento_php_user]} user crontab"
+BP_HASH="$(echo -n "${GET_[magento_root_path]}" | openssl dgst -sha256 | awk '{print $2}')"
+crontab -l -u ${GET_[magento_php_user]} > /tmp/${GET_[magento_php_user]}_crontab
+cat << END | tee -a /tmp/${GET_[magento_php_user]}_crontab
+#~ MAGENTO START ${BP_HASH}
+* * * * * /usr/bin/php${PHP_VERSION} ${GET_[magento_root_path]}/bin/magento cron:run 2>&1 | grep -v "Ran jobs by schedule" >> ${GET_[magento_root_path]}/var/log/magento.cron.log
+#~ MAGENTO END ${BP_HASH}
+END
+crontab -u ${GET_[magento_php_user]} /tmp/${GET_[magento_php_user]}_crontab
+rm /tmp/${GET_[magento_php_user]}_crontab
 
-echo
-GREENTXT "SAVING composer.json , env.php , config.php"
-cp composer.json ${MAGENX_CONFIG_PATH}/composer.json.saved
-cp composer.lock ${MAGENX_CONFIG_PATH}/composer.lock.saved
-cp app/etc/env.php ${MAGENX_CONFIG_PATH}/env.php.saved
-cp app/etc/config.php ${MAGENX_CONFIG_PATH}/config.php.saved
-
-echo
-GREENTXT "SAVING MAGENTO ENVIRONMENT VARIABLES"
-echo "
-MAGENTO_MODE="production"
-MAGENTO_DOMAIN="${MAGENTO_DOMAIN}"
-MAGENTO_ADMIN_PATH="${MAGENTO_ADMIN_PATH}"
-MAGENTO_REDIS_PASSWORD="${MAGENTO_REDIS_PASSWORD}"
-MAGENTO_REDIS_PREFIX="${MAGENTO_OWNER}"
-MAGENTO_REDIS_SESSION_DATABASE="0"
-MAGENTO_REDIS_CACHE_DATABASE="0"
-MAGENTO_RABBITMQ_PASSWORD="${MAGENTO_RABBITMQ_PASSWORD}"
-MAGENTO_CRYPT_KEY="${MAGENTO_CRYPT_KEY}"
-MAGENTO_DATABASE_NAME="${MAGENTO_DATABASE_NAME}"
-MAGENTO_DATABASE_USER="${MAGENTO_DATABASE_USER}"
-MAGENTO_DATABASE_PASSWORD="${MAGENTO_DATABASE_PASSWORD}"
-MAGENTO_INDEXER_PASSWORD="${MAGENTO_INDEXER_PASSWORD}"
-" > ${MAGENTO_ROOT_PATH%/*}/.env
-
-
-## create mytop config for user
-cat > ${MAGENTO_ROOT_PATH%/*}/.mytop <<END
-user=${MAGENTO_DATABASE_USER}
-pass=${MAGENTO_DATABASE_PASSWORD}
-db=${MAGENTO_DATABASE_NAME}
+echo ""
+YELLOWTXT "[-] Creating Magento environment variables to /home/${GET_[magento_owner]}/.env"
+tee /home/${GET_[magento_owner]}/.env <<END
+MAGENTO_MODE="${GET_[magento_mode]}"
+MAGENTO_DOMAIN="${GET_[magento_domain]}"
+MAGENTO_ADMIN_PATH="${GET_[magento_admin_path]}"
+MAGENTO_REDIS_PASSWORD="${GET_[magento_redis_password]}"
+MAGENTO_REDIS_SESSION_PORT="$(awk '/port /{print $2}' /etc/redis/redis-session-${MAGENTO_ENV_SELECTED}.conf)"
+MAGENTO_REDIS_CACHE_PORT="$(awk '/port /{print $2}' /etc/redis/redis-cache-${MAGENTO_ENV_SELECTED}.conf)"
+MAGENTO_RABBITMQ_PASSWORD="${GET_[magento_rabbitmq_password]}"
+MAGENTO_CRYPT_KEY="${GET_[magento_crypt_key]}"
+MAGENTO_GRAPHQL_ID_SALT=""
+MAGENTO_DATABASE_NAME="${GET_[magento_database_name]}"
+MAGENTO_DATABASE_USER="${GET_[magento_database_user]}"
+MAGENTO_DATABASE_PASSWORD="${GET_[magento_database_password]}"
+MAGENTO_INDEXER_PASSWORD="${GET_[magento_indexer_password]}"
 END
 
-chown ${MAGENTO_OWNER} ${MAGENTO_ROOT_PATH%/*}/.mytop
+echo ""
+YELLOWTXT "[-] Creating .mytop config to /home/${GET_[magento_owner]}/.mytop"
+tee /home/${GET_[magento_owner]}/.mytop <<END
+user=${GET_[magento_database_user]}
+pass=${GET_[magento_database_password]}
+db=${GET_[magento_database_name]}
+END
 
-echo
-GREENTXT "MAGENTO CRONJOBS"
-cd ${MAGENTO_ROOT_PATH}
-chmod ug+x bin/magento
-su ${MAGENTO_PHP_USER} -s /bin/bash -c "bin/magento cron:install"
-echo
+cd /home/${GET_[magento_owner]}/
+chown ${GET_[magento_owner]} /home/${GET_[magento_owner]}/.mytop
 
-cd ${MAGENTO_ROOT_PATH%/*}
-
-GREENTXT "GENERATE SSH KEYS"
+echo ""
+YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions deployment"
 mkdir .ssh
-MAGENTO_OWNER_SSHKEY="${MAGENTO_OWNER}_sshkey"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY} -C "magento owner ${MAGENTO_DOMAIN}" -q -N ""
-cat ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY}.pub > .ssh/authorized_keys
+MAGENTO_SSH_KEY="magento_private_ssh_key_${MAGENTO_ENV_SELECTED}"
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY} -C "ssh for ${GET_[magento_owner]} ${MAGENTO_ENV_SELECTED}" -N ""
+MAGENTO_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY}")
+MAGENTO_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY}.pub")
+${SQLITE3} "UPDATE magento SET magento_private_ssh_key = '${MAGENTO_PRIVATE_SSH_KEY}', magento_public_ssh_key = '${MAGENTO_PUBLIC_SSH_KEY}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
+tee -a .ssh/authorized_keys <<END
+${MAGENTO_PUBLIC_SSH_KEY}
+END
 
-GITHUB_ACTIONS_SSHKEY="github_actions_sshkey"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY} -C "github actions ${MAGENTO_DOMAIN}" -q -N ""
-deploy_command="command=\"build_version=\${SSH_ORIGINAL_COMMAND} ${MAGENTO_ROOT_PATH%/*}/deploy.sh\" "
-awk -v var="${deploy_command}" '{print var $0}' ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY}.pub >> .ssh/authorized_keys
+GITHUB_ACTIONS_SSH_KEY="github_actions_private_ssh_key_${MAGENTO_ENV_SELECTED}"
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY} -C "github actions for ${GET_[magento_owner]} ${MAGENTO_ENV_SELECTED}" -N ""
+GITHUB_ACTIONS_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}")
+GITHUB_ACTIONS_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub")
+${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
+deploy_command="command=\"build_version=\${SSH_ORIGINAL_COMMAND} /home/${GET_[magento_owner]}/deploy.sh\" "
+awk -v var="${deploy_command}" '{print var $0}' ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub >> .ssh/authorized_keys
 
-chmod +x /usr/local/bin/*
-chmod -R 600 ${MAGENX_CONFIG_PATH}
+echo ""
+YELLOWTXT "[-] Creating Github Actions deployment script deploy.sh"
+tee deploy.sh <<END
+#!/bin/bash
+cd public_html/
+git fetch origin \${build_version}
+git reset origin/\${build_version} --hard
+git clean -f -d
+bin/magento setup:db:status --no-ansi -n
+if [[ $? -ne 0 ]]; then
+bin/magento setup:upgrade --keep-generated --no-ansi -n
+fi
+cacheflush
+END
 
-cat > .bash_profile <<END
+echo ""
+YELLOWTXT "[-] Creating bash_profile for ${MAGENTO_ENV_SELECTED}"
+tee .bash_profile <<END
 # .bash_profile
 # Get the aliases and functions
 if [ -f ~/.bashrc ]; then
@@ -2044,164 +2081,101 @@ PATH=\$PATH:\$HOME/bin
 export PATH
 END
 
-cat > .bashrc <<END
+echo ""
+YELLOWTXT "[-] Creating bashrc for ${MAGENTO_ENV_SELECTED}"
+tee .bashrc <<END
 # .bashrc
 # history timestamp
 export HISTTIMEFORMAT="%d/%m/%y %T "
 # got to app root folder
-cd ${MAGENTO_ROOT_PATH}
+cd public_html/
 # change prompt color
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
 
-echo 'export HISTTIMEFORMAT="%d/%m/%y %T "' >> ~/.bashrc
+done
 
-echo
-cd ${MAGENTO_ROOT_PATH}
+echo ""
+YELLOWTXT "[-] Add timestamp to bash history:"
+tee -a  ~/.bashrc <<END
+export HISTTIMEFORMAT="%d/%m/%y %T "
+END
 
-GREENTXT "CONFIGURE GOOGLE AUTH CODE FOR ADMIN ACCESS"
-echo
-GOOGLE_TFA_CODE="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&' | fold -w 15 | head -n 1 | base32)"
-su ${MAGENTO_OWNER} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${MAGENTO_ADMIN_LOGIN} ${GOOGLE_TFA_CODE}"
-echo "  Google Authenticator mobile app configuration:"
-echo "  - select: Enter a setup key"
-echo "  - type in: Account name"
-echo "  - Paste passkey: ${GOOGLE_TFA_CODE}"
-echo "  - Choose Time based"
+# clean config directory and set permissions
+chmod +x /usr/local/bin/*
+find ${MAGENX_CONFIG_PATH}/ -maxdepth 1 -type f ! -name "${SQLITE3_DB}" -delete
+chmod -R 600 ${MAGENX_CONFIG_PATH}
 
-echo
-touch ${MAGENX_CONFIG_PATH}/magenx.lock
-echo
-pause '[] Press [Enter] key to finish and print installation log'
-echo
-echo
-echo
+echo ""
+YELLOWTXT "[-] Locking Magento configuration"
+${SQLITE3} "UPDATE magento SET magento_lock = 'lock';"
 
-REDTXT "PRINTING INSTALLATION LOG AND SAVING INTO ${MAGENX_CONFIG_PATH}/install.log"
-echo
-echo -e "===========================  INSTALLATION LOG  ======================================
-
-[shop domain]: ${MAGENTO_DOMAIN}
-[path]: ${MAGENTO_ROOT_PATH}
-
-[admin path]: ${MAGENTO_DOMAIN}/${MAGENTO_ADMIN_PATH}
-[admin name]: ${MAGENTO_ADMIN_LOGIN}
-[admin pass]: ${MAGENTO_ADMIN_PASSWORD}
-[admin http auth name]: ${MAGENTO_ADMIN_LOGIN}
-[admin http auth pass]: ${MAGENTO_ADMIN_HTTP_PASSWORD}
-for additional access, please generate new user/password:
-htpasswd -b -c /etc/nginx/.admin USERNAME PASSWORD
-
-[google tfa code]: ${GOOGLE_TFA_CODE}
-
-[ssh port]: ${SSH_PORT}
-
-[files owner]: ${MAGENTO_OWNER}
-[${MAGENTO_OWNER} ssh key]: ${MAGENX_CONFIG_PATH}/${MAGENTO_OWNER_SSHKEY}
-[Github Actions ssh key]: ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSHKEY}
-
-[phpmyadmin url]: ${MAGENTO_DOMAIN}/mysql_${PMA_FOLDER}/
-[phpmyadmin http auth name]: mysql
-[phpmyadmin http auth pass]: ${PMA_PASSWORD}
-for additional access, please generate new user/password:
-htpasswd -b -c /etc/nginx/.mysql USERNAME PASSWORD
-
-[mysql host]: ${MAGENTO_DATABASE_HOST}
-[mysql user]: ${MAGENTO_DATABASE_USER}
-[mysql pass]: ${MAGENTO_DATABASE_PASSWORD}
-[mysql database]: ${MAGENTO_DATABASE_NAME}
-[mysql root pass]: ${MYSQL_ROOT_PASSWORD}
-
-[magento indexer elk user]: magento_indexer
-[magento indexer elk password]: ${MAGENTO_INDEXER_PASSWORD}
-[elk admin user]: elastic
-[elk admin password]: ${ELASTIC_PASSWORD}
-
-[database monitor]: /usr/local/bin/mytop
-[mysqltuner]: /usr/local/bin/mysqltuner
-[n98-magerun2]: /usr/local/bin/n98-magerun2
-[cache cleaner]: /usr/local/bin/cacheflush
-
-[audit log]: ausearch -k ${MAGENTO_OWNER} | aureport -f -i
-
-[redis sessions]: systemctl status redis@6379
-[redis cache]: systemctl status redis@6380
-[redis password]: ${MAGENTO_REDIS_PASSWORD}
-
-[rabbitmq password]: ${MAGENTO_RABBITMQ_PASSWORD}
-
-[installed db dump]: ${MAGENX_CONFIG_PATH}/${MAGENTO_DATABASE_NAME}.sql.gz
-[composer.json copy]: ${MAGENX_CONFIG_PATH}/composer.json.saved
-[env.php copy]: ${MAGENX_CONFIG_PATH}/env.php.saved
-[config.php copy]: ${MAGENX_CONFIG_PATH}/config.php.saved
-[env.php default copy]: ${MAGENX_CONFIG_PATH}/env.php.default
-
-[php-fpm pool]: ${php_fpm_pool_path}/${MAGENTO_OWNER}.conf
-
-[ACL map]: ${MAGENX_CONFIG_PATH}/public_html.acl
-
-when you run any command for magento cli or custom php script,
-please use ${MAGENTO_OWNER} user, either switch to:
-su ${MAGENTO_OWNER} -s /bin/bash
-
-or run commands from root as user:
-su ${MAGENTO_OWNER} -s /bin/bash -c 'bin/magento'
-
-For development and automated deployment, please read at:
-https://github.com/magenx/Magento-2-server-installation/wiki
-
-
-===========================  INSTALLATION LOG  ======================================" | tee ${MAGENX_CONFIG_PATH}/install.log
-echo
-echo
-GREENTXT "SERVER IS READY. THANK YOU"
+systemctl daemon-reload
+systemctl restart nginx.service
+systemctl restart php*fpm.service
+systemctl restart varnish.service
+echo ""
+echo ""
+YELLOWTXT "Magento configuration parameters:"
+${SQLITE3} -line "SELECT * FROM magento;"
+echo ""
+echo ""
+YELLOWTXT "For issues and support:"
+WHITETXT "https://github.com/magenx/Magento-2-server-installation"
+echo ""
+echo ""
+YELLOWTXT "For Github Actions CI/CD integration:"
+WHITETXT "admin@magenx.com"
+echo ""
 echo "PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '" >> /etc/bashrc
-echo
-touch ${MAGENX_CONFIG_PATH}/magenx.lock
-echo
-## simple installation statis
-curl --silent -X POST https://www.magenx.com/ping_back_os_${OS_DISTRO_KEY}_domain_${MAGENTO_DOMAIN}_geo_${TIMEZONE}_keep_30d >/dev/null 2>&1
-echo
+echo ""
+## simple installation stats
+MAGENTO_DOMAIN=$(${SQLITE3} "SELECT magento_domain FROM magento LIMIT 1;")
+DISTRO_NAME=$(${SQLITE3} "SELECT distro_name FROM system;")
+curl --silent -X POST https://www.magenx.com/ping_back_os_${DISTRO_NAME}_domain_${MAGENTO_DOMAIN}_geo_${TIMEZONE}_keep_30d >/dev/null 2>&1
+echo ""
+echo "#===================================================================================================================#"
+GREENTXT "${BOLD}~~  SERVER IS READY. THANK YOU  ~~"
+echo "#===================================================================================================================#"
+echo ""
+${SQLITE3} "UPDATE menu SET config = 'x';"
+echo ""
 pause '[] Press [Enter] key to show menu'
 ;;
-
 ###################################################################################
 ###                               FIREWALL INSTALLATION                         ###
 ###################################################################################
-
 "firewall")
 WHITETXT "============================================================================="
-echo
-
-include_config ${MAGENX_CONFIG_PATH}/magento
-include_config ${MAGENX_CONFIG_PATH}/install
-
-echo
-_echo "[?] Install CSF firewall [y/n][n]:"
-read csffirewall
-if [ "${csffirewall}" == "y" ];then
- echo
- GREENTXT "DOWNLOADING CSF FIREWALL"
- echo
+echo ""
+echo ""
+_echo "[?] Install CSF firewall [y/n][n]: "
+read csf_firewall
+if [ "${csf_firewall}" == "y" ]; then
+  MAGENTO_DOMAIN=$(${SQLITE3} "SELECT magento_domain FROM magento LIMIT 1;")
+  MAGENTO_ADMIN_EMAIL=$(${SQLITE3} "SELECT magento_admin_email FROM magento LIMIT 1;")
+ echo ""
+ YELLOWTXT "Downloading CSF Firewall:"
+ echo ""
  cd /usr/local/src/
  curl -sSL https://download.configserver.com/csf.tgz | tar -xz
-  echo
+  echo ""
   cd csf
-  GREENTXT "NEXT, TEST IF YOU HAVE THE REQUIRED IPTABLES MODULES"
-  echo
+  YELLOWTXT "Testing if you have required iptables modules:"
+  echo ""
  if perl csftest.pl | grep "FATAL" ; then
   perl csftest.pl
   echo
-  REDTXT "CSF FILERWALL TEST FATAL ERRORS"
+  REDTXT "CSF Firewall fatal errors"
   echo
   pause '[] Press [Enter] key to show menu'
  else
   echo
-  GREENTXT "CSF FIREWALL INSTALLATION"
+  YELLOWTXT "CSF Firewall installation: "
   echo
   sh install.sh
   echo
-  GREENTXT "CSF FIREWALL HAS BEEN INSTALLED OK"
+  GREENTXT "CSF Firewall installed - OK"
   echo
   YELLOWTXT "Add ip addresses to whitelist/ignore (paypal,api,erp,backup,github,etc)"
   echo
@@ -2250,7 +2224,7 @@ END
  fi
   else
    echo
-   YELLOWTXT "Firewall installation was skipped. Next step"
+   YELLOWTXT "CSF Firewall installation was skipped by user input."
   exit 1
 fi
 echo
@@ -2258,41 +2232,25 @@ echo
 pause '[] Press [Enter] key to show menu'
 printf "\033c"
 ;;
-
 ###################################################################################
 ###                                  WEBMIN INSTALLATION                        ###
 ###################################################################################
-
 "webmin")
-include_config ${MAGENX_CONFIG_PATH}/magento
-include_config ${MAGENX_CONFIG_PATH}/distro
-echo
-_echo "[?] Install Webmin Control Panel ? [y/n][n]:"
+echo ""
+echo ""
+_echo "[?] Install Webmin Control Panel ? [y/n][n]: "
+MAGENTO_DOMAIN=$(${SQLITE3} "SELECT magento_domain FROM magento LIMIT 1;")
+MAGENTO_OWNER=$(${SQLITE3} "SELECT magento_owner FROM magento LIMIT 1;")
+MAGENTO_ADMIN_EMAIL=$(${SQLITE3} "SELECT magento_admin_email FROM magento LIMIT 1;")
 read webmin_install
 if [ "${webmin_install}" == "y" ];then
- echo
- GREENTXT "Webmin package installation:"
- echo
-if [[ "${OS_DISTRO_KEY}" =~ (redhat|amazon) ]]; then
-WEBMINEXEC=libexec
-cat > /etc/yum.repos.d/webmin.repo <<END
-[Webmin]
-name=Webmin Distribution
-#baseurl=http://download.webmin.com/download/yum
-mirrorlist=http://download.webmin.com/download/yum/mirrorlist
-enabled=1
-END
-rpm --import http://www.webmin.com/jcameron-key.asc
- echo
- dnf -y install webmin
- rpm  --quiet -q webmin
-else
- WEBMINEXEC=share
+ echo ""
+ YELLOWTXT "Webmin installation:"
+ echo ""
  echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
  curl -sSL https://download.webmin.com/jcameron-key.asc | apt-key add -
  apt update
  apt -y install webmin
-fi
 if [ "$?" = 0 ]; then
  WEBMIN_PORT=$(shuf -i 17556-17728 -n 1)
  sed -i 's/theme=gray-theme/theme=authentic-theme/' /etc/webmin/config
@@ -2304,38 +2262,35 @@ if [ "$?" = 0 ]; then
  echo "certfile=/etc/letsencrypt/live/${MAGENTO_DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
  
   if [ -f "/usr/local/csf/csfwebmin.tgz" ]; then
-    perl /usr/${WEBMINEXEC}/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
-    GREENTXT "INSTALLED CSF FIREWALL PLUGIN"
+    perl /usr/share/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
+    GREENTXT "Installed CSF Firewall plugin"
   fi
   
-  echo "${MAGENTO_OWNER}_webmin:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
-  sed -i "s/root:/${MAGENTO_OWNER}_webmin:/" /etc/webmin/webmin.acl
-  WEBMIN_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@#%^?=+_[]{}()' | fold -w 15 | head -n 1)
-  /usr/${WEBMINEXEC}/webmin/changepass.pl /etc/webmin/ ${MAGENTO_OWNER}_webmin "${WEBMIN_PASS}"
+  echo "webmin_${MAGENTO_OWNER}:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
+  sed -i "s/root:/webmin_${MAGENTO_OWNER}:/" /etc/webmin/webmin.acl
+  WEBMIN_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@#%^?=+_[]{}()' | fold -w 15 | head -n 1)
+  /usr/share/webmin/changepass.pl /etc/webmin/ webmin_${MAGENTO_OWNER} "${WEBMIN_PASSWORD}"
   
   systemctl enable webmin
   /etc/webmin/restart
 
   echo
-  GREENTXT "WEBMIN INSTALLED - OK"
+  GREENTXT "Webmin installed - OK"
   echo
-  YELLOWTXT "[!] WEBMIN PORT: ${WEBMIN_PORT}"
-  YELLOWTXT "[!] USER: ${MAGENTO_OWNER}_webmin"
-  YELLOWTXT "[!] PASSWORD: ${WEBMIN_PASS}"
+  YELLOWTXT "[!] Webmin Port: ${WEBMIN_PORT}"
+  YELLOWTXT "[!] User: webmin_${MAGENTO_OWNER}"
+  YELLOWTXT "[!] Password: ${WEBMIN_PASSWORD}"
+  echo ""
   REDTXT "[!] PLEASE ENABLE TWO-FACTOR AUTHENTICATION!"
-	    
-cat > ${MAGENX_CONFIG_PATH}/webmin <<END
-WEBMIN_PORT="${WEBMIN_PORT}"
-WEBMIN_USER="${MAGENTO_OWNER}_webmin"
-WEBMIN_PASS="${WEBMIN_PASS}"
-END
+  
+  ${SQLITE3} "UPDATE system SET webmin_password = '${WEBMIN_PASSWORD}';"
   else
    echo
-   REDTXT "WEBMIN INSTALLATION ERROR"
+   REDTXT "Webmin installation error"
   fi
   else
    echo
-   YELLOWTXT "Webmin installation was skipped. Next step"
+   YELLOWTXT "Webmin installation was skipped by user input."
 fi
 echo
 echo
@@ -2343,7 +2298,7 @@ pause '[] Press [Enter] key to show menu'
 echo
 ;;
 "exit")
-REDTXT "[!] EXIT"
+REDTXT "[!] Exit"
 exit
 ;;
 
