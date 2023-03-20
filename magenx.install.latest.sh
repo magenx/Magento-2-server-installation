@@ -394,7 +394,7 @@ elif [ ${#MAGENTO_ENV[@]} -eq 0 ]; then
   if [ "${MAGENTO_ENV_SELECTED}" == "all_3" ]; then
     MAGENTO_ENV=("production" "staging" "developer")
   else
-    MAGENTO_EMV=("${MAGENTO_ENV_SELECTED}")
+    MAGENTO_ENV=("${MAGENTO_ENV_SELECTED}")
   fi
   for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
     do
