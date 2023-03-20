@@ -355,7 +355,7 @@ if [ "${WEB_STACK}" != "magenx" ]; then
     REDTXT  "[!] Some webstack packages already installed"
     YELLOWTXT "[!] You need to remove them or reinstall minimal OS version"
     echo
-    echo -e "\t\t apt remove ${installed_packages}"
+    echo -e "\t\t apt -y remove ${installed_packages}"
     echo
     echo
     exit 1
