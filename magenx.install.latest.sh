@@ -1129,7 +1129,8 @@ systemctl restart elasticsearch.service
 
 echo ""
 YELLOWTXT "Re-generating random password for elastic user:"
-ELASTICSEARCH_PASSWORD="$(/usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -f -b 2>&1 | awk '/New value: /{print $3}')"
+/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b > /tmp/elasticsearch
+ELASTICSEARCH_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
 ${SQLITE3} "UPDATE system SET elasticsearch_password = '${ELASTICSEARCH_PASSWORD}';"
 
 # generate elasticsearch password for environment
