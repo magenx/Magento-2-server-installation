@@ -1085,7 +1085,6 @@ if [ "${elastic_install}" == "y" ];then
     ## elasticsearch settings
     if ! grep -q "magento" /etc/elasticsearch/elasticsearch.yml >/dev/null 2>&1 ; then
       cp /etc/elasticsearch/elasticsearch.yml /etc/elasticsearch/_elasticsearch.yml_default
-      sed -i '/BEGIN SECURITY AUTO CONFIGURATION/,$d' /etc/elasticsearch/elasticsearch.yml
 cat > /etc/elasticsearch/elasticsearch.yml <<END
 #--------------------------------------------------------------------#
 #----------------------- MAGENX CONFIGURATION -----------------------#
