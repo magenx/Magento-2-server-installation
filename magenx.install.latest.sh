@@ -1132,6 +1132,7 @@ YELLOWTXT "Re-generating random password for elastic user:"
 /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b > /tmp/elasticsearch
 ELASTICSEARCH_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
 ${SQLITE3} "UPDATE system SET elasticsearch_password = '${ELASTICSEARCH_PASSWORD}';"
+rm /tmp/elasticsearch
 
 # generate elasticsearch password for environment
 for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
