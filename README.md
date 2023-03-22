@@ -44,6 +44,7 @@ Get a fully pre-configured server with Magento and LEMP stack in just 10 minutes
   
 Extra premium options available:  
   
+- [x] Multiple environments
 - [x] Webmin control panel
 - [x] SFTP advanced configuration
 - [x] SSH private key access ready
@@ -79,6 +80,11 @@ Complete linux stack including: <br/>
 - separate permissions for nginx and php user
 - and many more
 
+  
+## Get config:
+```
+sqlite3 -line /opt/magenx/config/magenx.db "SELECT * FROM magento;"
+```
 
 **System requirements**:<br/>
 *Dedicated server / Container*<br/>
