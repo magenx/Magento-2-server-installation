@@ -84,8 +84,14 @@ Complete linux stack including: <br/>
 ## Get config:
 ```
 sqlite3 -line /opt/magenx/config/magenx.db "SELECT * FROM magento;"
+sqlite3 -line /opt/magenx/config/magenx.db "SELECT * FROM system;"
 ```
-
+  
+## DevOps idea:
+You have the opportunity to install a new Magento 2, and it is best to do this in a developer environment. Push the code to your Github repository and from there develop and deploy to production and staging environment using Github Actions.  
+This is the safest and most productive approach.
+  
+  
 **System requirements**:<br/>
 *Dedicated server / Container*<br/>
 *8Gb RAM*<br/>
