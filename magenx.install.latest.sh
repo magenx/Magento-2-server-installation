@@ -411,8 +411,23 @@ else
   GREENTXT "MAGENTO ENVIRONMENT: ${MAGENTO_ENV[@]}"
 fi
 
-echo ""
-echo ""
+# configure system/magento timezone
+TIMEZONE="$(${SQLITE3} "SELECT timezone FROM system;")"
+if [ -z "${TIMEZONE}" ]; then
+  echo ""
+  echo ""
+  YELLOWTXT "[!] Server and Magento timezone configuration:"
+  echo ""
+  pause "[] Press [Enter] key to proceed"
+  echo ""
+  dpkg-reconfigure tzdata
+  TIMEZONE=$(timedatectl | awk '/Time zone:/ {print $3}')
+  ${SQLITE3} "UPDATE system SET timezone = '${TIMEZONE}';"
+fi
+GREENTXT "TIMEZONE: ${TIMEZONE}"
+
+echo
+echo
 SYSTEM_TEST=$(${SQLITE3} "SELECT system_test FROM system;")
 if [ -z "${SYSTEM_TEST}" ]; then
  echo
@@ -1407,14 +1422,6 @@ echo ""
 REDIS_PORTS="$(awk '/port /{print $2}' /etc/redis/redis*.conf)"
 for PORT_SELECTED in ${REDIS_PORTS} 9200 5672 3306; do nc -4zvw3 localhost ${PORT_SELECTED}; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE ${PORT_SELECTED} OFFLINE"; exit 1; fi;  done
 
-# configure system/magento timezone
-echo ""
-YELLOWTXT "[!] Server and Magento timezone configuration:"
-echo ""
-updown_menu "$(php -r "foreach(timezone_identifiers_list() as \$tz) echo \$tz . PHP_EOL;")" TIMEZONE
-${SQLITE3} "UPDATE system SET timezone = '${TIMEZONE}';"
-
-
 # Get the distinct Magento modes from the magento table
 MAGENTO_ENV=($(${SQLITE3} "SELECT DISTINCT magento_env FROM magento;"))
 # Loop through the Magento modes
@@ -1571,10 +1578,6 @@ YELLOWTXT "[-] Server hostname settings"
 MAGENTO_DOMAIN="$(${SQLITE3} "SELECT magento_domain FROM magento LIMIT 1;")"
 hostnamectl set-hostname "${MAGENTO_DOMAIN}" --static
 hostname
-
-echo ""
-YELLOWTXT "[-] Server timezone settings"
-timedatectl set-timezone ${TIMEZONE}
 
 echo ""
 YELLOWTXT "[-] Create motd banner"
