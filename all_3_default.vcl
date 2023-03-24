@@ -115,6 +115,11 @@ sub vcl_recv {
     if (req.url ~ "^/(pub/)?(health_check.php)$") {
         return (pass);
     }
+    
+    # Bypass profiler query
+    if (req.url ~ "\?PROFILER_PLACEHOLDER") {
+        return (pass);
+    }
 
     # Set initial grace period usage status
     set req.http.grace = "none";
