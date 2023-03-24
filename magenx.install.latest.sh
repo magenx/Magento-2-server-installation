@@ -2049,7 +2049,7 @@ echo ""
 YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions deployment"
 mkdir .ssh
 MAGENTO_SSH_KEY="magento_private_ssh_key_${GET_[magento_env]}"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY} -C "ssh for ${GET_[magento_owner]} ${GET_[magento_env]}" -N ""
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY} -C "ssh for ${GET_[magento_domain]} ${GET_[magento_env]}" -N ""
 MAGENTO_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY}")
 MAGENTO_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY}.pub")
 ${SQLITE3} "UPDATE magento SET magento_private_ssh_key = '${MAGENTO_PRIVATE_SSH_KEY}', magento_public_ssh_key = '${MAGENTO_PUBLIC_SSH_KEY}' WHERE magento_env = '${GET_[magento_env]}';"
@@ -2058,7 +2058,7 @@ ${MAGENTO_PUBLIC_SSH_KEY}
 END
 
 GITHUB_ACTIONS_SSH_KEY="github_actions_private_ssh_key_${GET_[magento_env]}"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY} -C "github actions for ${GET_[magento_owner]} ${GET_[magento_env]}" -N ""
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY} -C "github actions for ${GET_[magento_domain]} ${GET_[magento_env]}" -N ""
 GITHUB_ACTIONS_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}")
 GITHUB_ACTIONS_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub")
 ${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}' WHERE magento_env = '${GET_[magento_env]}';"
@@ -2126,6 +2126,7 @@ systemctl daemon-reload
 systemctl restart nginx.service
 systemctl restart php*fpm.service
 systemctl restart varnish.service
+
 echo ""
 echo ""
 YELLOWTXT "Magento configuration parameters:"
