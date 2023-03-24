@@ -1,8 +1,9 @@
 # Magento 2 installation - Magenx ecommerce webstack  
 ## Debian 11 | Ubuntu 20.04
-### (Amazon Linux 2 | RedHat 8 | Rocky Linux 8) on request2
+## Also supports AWS Graviton2 ARM and OCI ARM
+### (Amazon Linux 2 | RedHat 8 | Rocky Linux 8) on request
 
-## Production ready + AWS Graviton2 ARM support
+## The easiest way to deploy Magento for production or development!
 
 > get your $100 credit and deploy on [DigitalOcean](https://m.do.co/c/ccc5d115377f)
 
@@ -20,10 +21,8 @@ dnf install -y epel-release; dnf install -y screen
 screen
 bash magenx.sh
 ```
-Once up and running, set up SSL with certbot (already installed) and uncomment the lines for SSL in:
-- /etc/nginx/nginx.conf
+Once up and running, set up SSL with certbot (already installed) and edit the lines for SSL in:
 - /etc/nginx/sites-available/magento2.conf
-- /etc/nginx/conf_m2/varnish_proxy.conf
 
 #### MagenX ecommerce webstack - server configuration for Magento 2 Open Source  
 Get a fully pre-configured server with Magento and LEMP stack in just 10 minutes! 🚀 
