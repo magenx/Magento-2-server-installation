@@ -1444,7 +1444,7 @@ for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"; do
 # Use associative array here
 if [ -f "${GET_[magento_root_path]}/bin/magento" ]; then
  echo ""
- YELLOWTXT "[-] Configuration for Magento ${GET_[magento_version_installed]} installed in [ ${MAGENTO_ENV_SELECTED} ] environment."
+ YELLOWTXT "[-] Configuration for Magento ${GET_[magento_version_installed]} installed in [ ${GET_[magento_env]} ] environment."
  echo ""
  TIMEZONE=$(${SQLITE3} "SELECT timezone FROM system;")
  cd ${GET_[magento_root_path]}
@@ -1464,7 +1464,7 @@ if [ -f "${GET_[magento_root_path]}/bin/magento" ]; then
  updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" MAGENTO_CURRENCY
  echo ""
  echo ""
- YELLOWTXT "[-] Magento ${GET_[magento_version_installed]} ready to be installed for ${MAGENTO_ENV_SELECTED} environment"
+ YELLOWTXT "[-] Magento ${GET_[magento_version_installed]} ready to be installed for ${GET_[magento_env]} environment"
  echo ""
  pause '[!] Press [Enter] key to run setup:install'
  echo
@@ -1484,31 +1484,31 @@ if [ -f "${GET_[magento_root_path]}/bin/magento" ]; then
  --cleanup-database \
  --use-rewrites=1 \
  --session-save=redis \
- --session-save-redis-host=redis-session-${MAGENTO_ENV_SELECTED} \
- --session-save-redis-port=$(awk '/port /{print $2}'  /etc/redis/redis-session-${MAGENTO_ENV_SELECTED}.conf) \
+ --session-save-redis-host=redis-session-${GET_[magento_env]} \
+ --session-save-redis-port=$(awk '/port /{print $2}'  /etc/redis/redis-session-${GET_[magento_env]}.conf) \
  --session-save-redis-log-level=3 \
  --session-save-redis-db=0 \
  --session-save-redis-password='${GET_[magento_redis_password]}' \
  --session-save-redis-compression-lib=lz4 \
  --cache-backend=redis \
- --cache-backend-redis-server=redis-cache-${MAGENTO_ENV_SELECTED} \
- --cache-backend-redis-port=$(awk '/port /{print $2}' /etc/redis/redis-cache-${MAGENTO_ENV_SELECTED}.conf) \
+ --cache-backend-redis-server=redis-cache-${GET_[magento_env]} \
+ --cache-backend-redis-port=$(awk '/port /{print $2}' /etc/redis/redis-cache-${GET_[magento_env]}.conf) \
  --cache-backend-redis-db=0 \
  --cache-backend-redis-password='${GET_[magento_redis_password]}' \
  --cache-backend-redis-compress-data=1 \
  --cache-backend-redis-compression-lib=l4z \
  --amqp-host=rabbitmq \
  --amqp-port=5672 \
- --amqp-user=${MAGENTO_ENV_SELECTED} \
+ --amqp-user=${GET_[magento_env]} \
  --amqp-password='${GET_[magento_rabbitmq_password]}' \
  --amqp-virtualhost='/' \
  --consumers-wait-for-messages=0 \
  --search-engine=elasticsearch7 \
  --elasticsearch-host=elasticsearch \
  --elasticsearch-port=9200 \
- --elasticsearch-index-prefix=magento_${MAGENTO_ENV_SELECTED}_${GET_[magento_domain]} \
+ --elasticsearch-index-prefix=magento_${GET_[magento_env]}_${GET_[magento_domain]} \
  --elasticsearch-enable-auth=1 \
- --elasticsearch-username=magento_${MAGENTO_ENV_SELECTED}_indexer \
+ --elasticsearch-username=magento_${GET_[magento_env]}_indexer \
  --elasticsearch-password='${GET_[magento_indexer_password]}'"
 
  if [ "$?" != 0 ]; then
@@ -1535,7 +1535,7 @@ echo
 echo
     WHITETXT "============================================================================="
     echo
-    GREENTXT "Magento ${GET_[magento_version_installed]} installed for [ ${MAGENTO_ENV_SELECTED} ] environment"
+    GREENTXT "Magento ${GET_[magento_version_installed]} installed for [ ${GET_[magento_env]} ] environment"
     echo
     WHITETXT "============================================================================="
 echo
@@ -1752,10 +1752,16 @@ htpasswd -b -c /etc/nginx/.mysql mysql ${PHPMYADMIN_PASSWORD}  >/dev/null 2>&1
 ${SQLITE3} "UPDATE system SET phpmyadmin_password = '${PHPMYADMIN_PASSWORD}';"
 
 echo ""
-YELLOWTXT "[-] Varnish Cache configuration"
+YELLOWTXT "[-] Varnish Cache configuration file"
 systemctl enable varnish.service
 curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
 curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}devicedetect-include.vcl
+if [ "${#MAGENTO_ENV[@]}" -gt 1 ]; then
+  curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}all_3_default.vcl
+else
+  curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}default.vcl
+fi
+sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/varnish/default.vcl
 
 echo ""
 YELLOWTXT "[-] Realtime malware monitor with email alerts"
@@ -1796,11 +1802,11 @@ for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"; do
   done <<< "${QUERY}"
   echo ""
 # Use associative array here
-_echo "${YELLOW}[?]${REDBG}${BOLD}[ Configuration for ${MAGENTO_ENV_SELECTED} environment ]${RESET} ${YELLOW}${RESET}"
+_echo "${YELLOW}[?]${REDBG}${BOLD}[ Configuration for ${GET_[magento_env]} environment ]${RESET} ${YELLOW}${RESET}"
 echo ""
 echo ""
 
-YELLOWTXT "[-] Php-fpm pool configuration for ${MAGENTO_ENV_SELECTED} environment"
+YELLOWTXT "[-] Php-fpm pool configuration for ${GET_[magento_env]} environment"
 tee /etc/php/${PHP_VERSION}/fpm/pool.d/${GET_[magento_owner]}.conf <<END
 [${GET_[magento_owner]}]
 
@@ -1879,26 +1885,26 @@ END
 systemctl daemon-reload
 
 echo ""
-YELLOWTXT "[-] Nginx configuration for ${MAGENTO_ENV_SELECTED} environment"
+YELLOWTXT "[-] Nginx configuration for ${GET_[magento_env]} environment"
 cp /etc/nginx/sites-available/magento${MAGENTO_VERSION}.conf  /etc/nginx/sites-available/${GET_[magento_domain]}.conf
 ln -s /etc/nginx/sites-available/${GET_[magento_domain]}.conf /etc/nginx/sites-enabled/${GET_[magento_domain]}.conf
 sed -i "s/example.com/${GET_[magento_domain]}/g" /etc/nginx/sites-available/${GET_[magento_domain]}.conf
 
 if [ "${#MAGENTO_ENV[@]}" -gt 1 ]; then
-  if [ "${MAGENTO_ENV_SELECTED}" == "production" ]; then
+  if [ "${GET_[magento_env]}" == "production" ]; then
     sed -i "s/example.com/${GET_[magento_domain]}/g" /etc/nginx/nginx.conf
-    sed -i "s,default.*production php-fpm,${GET_[magento_domain]} unix:/var/run/${GET_[magento_owner]}.sock; # ${MAGENTO_ENV_SELECTED} php-fpm,"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
-    sed -i "s,default.*production app folder,${GET_[magento_domain]} ${GET_[magento_root_path]}; # ${MAGENTO_ENV_SELECTED} app folder," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+    sed -i "s,default.*production php-fpm,${GET_[magento_domain]} unix:/var/run/${GET_[magento_owner]}.sock; # ${GET_[magento_env]} php-fpm,"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+    sed -i "s,default.*production app folder,${GET_[magento_domain]} ${GET_[magento_root_path]}; # ${GET_[magento_env]} app folder," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
   else
     sed -i "/# production php-fpm/a\
-	${GET_[magento_domain]} unix:\/var\/run\/${GET_[magento_owner]}.sock; # ${MAGENTO_ENV_SELECTED} php-fpm"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+	${GET_[magento_domain]} unix:\/var\/run\/${GET_[magento_owner]}.sock; # ${GET_[magento_env]} php-fpm"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
     sed -i "/# production app folder/a\
-	${GET_[magento_domain]} ${GET_[magento_root_path]}; # ${MAGENTO_ENV_SELECTED} app folder"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+	${GET_[magento_domain]} ${GET_[magento_root_path]}; # ${GET_[magento_env]} app folder"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
   fi
   else
     sed -i "s/example.com/${GET_[magento_domain]}/g" /etc/nginx/nginx.conf
-    sed -i "s,default.*production php-fpm,${GET_[magento_domain]} unix:/var/run/${GET_[magento_owner]}.sock; # ${MAGENTO_ENV_SELECTED} php-fpm,"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
-    sed -i "s,default.*production app folder,${GET_[magento_domain]} ${GET_[magento_root_path]}; # ${MAGENTO_ENV_SELECTED} app folder," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+    sed -i "s,default.*production php-fpm,default unix:/var/run/${GET_[magento_owner]}.sock; # ${GET_[magento_env]} php-fpm,"  /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
+    sed -i "s,default.*production app folder,default ${GET_[magento_root_path]}; # ${GET_[magento_env]} app folder," /etc/nginx/conf_m${MAGENTO_VERSION}/maps.conf
 fi
 
 echo ""
@@ -1908,7 +1914,7 @@ ${GET_[magento_owner]} ALL=(ALL) NOPASSWD: /usr/local/bin/cacheflush
 END
 
 echo ""
-YELLOWTXT "[-] Logrotate script for Magento logs in ${MAGENTO_ENV_SELECTED} environment"
+YELLOWTXT "[-] Logrotate script for Magento logs in ${GET_[magento_env]} environment"
 tee /etc/logrotate.d/${GET_[magento_owner]} <<END
 ${GET_[magento_root_path]}/var/log/*.log
 {
@@ -1939,24 +1945,20 @@ auditctl -l
 
 echo ""
 if [ -f "${GET_[magento_root_path]}/bin/magento" ]; then
- _echo "${YELLOW}[?] Would you like to apply config optimization and settings for [ ${MAGENTO_ENV_SELECTED} ] mode installation ? [y/n][n]:${RESET} "
+ _echo "${YELLOW}[?] Apply config optimization and settings for [ ${GET_[magento_env]} ] mode installation ? [y/n][n]:${RESET} "
 read apply_config
 if [ "${apply_config}" == "y" ]; then
  echo ""
- YELLOWTXT "[-] Add Varnish Cache host to Magento env.php"
+ YELLOWTXT "[-] Enable Varnish Cache and add cache hosts to Magento env.php"
  cd ${GET_[magento_root_path]}
  chmod u+x bin/magento
  su ${GET_[magento_owner]} -s /bin/bash -c "${GET_[magento_root_path]}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
- php ${GET_[magento_root_path]}/bin/magento varnish:vcl:generate --export-version=6 --output-file=/etc/varnish/default.vcl
  su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
- sed -i "s,pub/health_,health_,g" /etc/varnish/default.vcl
- sed -i '/# Static files should/{n;s/^/\t#/}' /etc/varnish/default.vcl
- sed -i 's/#unset/unset/g' /etc/varnish/default.vcl
 
  chown -R ${GET_[magento_owner]}:${GET_[magento_php_user]} ${GET_[magento_root_path]}
  
  echo ""
- YELLOWTXT "[-] Clean Magento cache add some optimization config and enable [ ${MAGENTO_ENV_SELECTED} ] mode"
+ YELLOWTXT "[-] Clean Magento cache add some optimization config and enable [ ${GET_[magento_env]} ] mode"
  rm -rf var/*
  su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${GET_[magento_admin_email]}"
  su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento config:set web/url/catalog_media_url_format image_optimization_parameters"
@@ -1970,7 +1972,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[magento_owner]} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
  su ${GET_[magento_owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches -n"
  su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento setup:upgrade"
- su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[magento_mode]}"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[magento_env]}"
  su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento cache:flush"
 
  rm -rf var/log/*.log
@@ -1994,6 +1996,15 @@ if [ "${apply_config}" == "y" ]; then
 fi
 
 echo ""
+YELLOWTXT "[-] Varnish Cache config optimization for ${GET_[magento_env]} environment"
+if [ "${#MAGENTO_ENV[@]}" -gt 1 ]; then
+  sed -i "s/${GET_[magento_env]}.example.com/${GET_[magento_domain]}/" /etc/varnish/default.vcl
+else
+  sed -i "s/example.com/${GET_[magento_domain]}/" /etc/varnish/default.vcl
+fi
+
+
+echo ""
 YELLOWTXT "[-] Add Magento cronjob to ${GET_[magento_php_user]} user crontab"
 BP_HASH="$(echo -n "${GET_[magento_root_path]}" | openssl dgst -sha256 | awk '{print $2}')"
 crontab -l -u ${GET_[magento_php_user]} > /tmp/${GET_[magento_php_user]}_crontab
@@ -2012,8 +2023,8 @@ MAGENTO_MODE="${GET_[magento_mode]}"
 MAGENTO_DOMAIN="${GET_[magento_domain]}"
 MAGENTO_ADMIN_PATH="${GET_[magento_admin_path]}"
 MAGENTO_REDIS_PASSWORD="${GET_[magento_redis_password]}"
-MAGENTO_REDIS_SESSION_PORT="$(awk '/port /{print $2}' /etc/redis/redis-session-${MAGENTO_ENV_SELECTED}.conf)"
-MAGENTO_REDIS_CACHE_PORT="$(awk '/port /{print $2}' /etc/redis/redis-cache-${MAGENTO_ENV_SELECTED}.conf)"
+MAGENTO_REDIS_SESSION_PORT="$(awk '/port /{print $2}' /etc/redis/redis-session-${GET_[magento_env]}.conf)"
+MAGENTO_REDIS_CACHE_PORT="$(awk '/port /{print $2}' /etc/redis/redis-cache-${GET_[magento_env]}.conf)"
 MAGENTO_RABBITMQ_PASSWORD="${GET_[magento_rabbitmq_password]}"
 MAGENTO_CRYPT_KEY="${GET_[magento_crypt_key]}"
 MAGENTO_GRAPHQL_ID_SALT=""
@@ -2037,20 +2048,20 @@ chown ${GET_[magento_owner]} /home/${GET_[magento_owner]}/.mytop
 echo ""
 YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions deployment"
 mkdir .ssh
-MAGENTO_SSH_KEY="magento_private_ssh_key_${MAGENTO_ENV_SELECTED}"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY} -C "ssh for ${GET_[magento_owner]} ${MAGENTO_ENV_SELECTED}" -N ""
+MAGENTO_SSH_KEY="magento_private_ssh_key_${GET_[magento_env]}"
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY} -C "ssh for ${GET_[magento_owner]} ${GET_[magento_env]}" -N ""
 MAGENTO_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY}")
 MAGENTO_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${MAGENTO_SSH_KEY}.pub")
-${SQLITE3} "UPDATE magento SET magento_private_ssh_key = '${MAGENTO_PRIVATE_SSH_KEY}', magento_public_ssh_key = '${MAGENTO_PUBLIC_SSH_KEY}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
+${SQLITE3} "UPDATE magento SET magento_private_ssh_key = '${MAGENTO_PRIVATE_SSH_KEY}', magento_public_ssh_key = '${MAGENTO_PUBLIC_SSH_KEY}' WHERE magento_env = '${GET_[magento_env]}';"
 tee -a .ssh/authorized_keys <<END
 ${MAGENTO_PUBLIC_SSH_KEY}
 END
 
-GITHUB_ACTIONS_SSH_KEY="github_actions_private_ssh_key_${MAGENTO_ENV_SELECTED}"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY} -C "github actions for ${GET_[magento_owner]} ${MAGENTO_ENV_SELECTED}" -N ""
+GITHUB_ACTIONS_SSH_KEY="github_actions_private_ssh_key_${GET_[magento_env]}"
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY} -C "github actions for ${GET_[magento_owner]} ${GET_[magento_env]}" -N ""
 GITHUB_ACTIONS_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}")
 GITHUB_ACTIONS_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub")
-${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
+${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}' WHERE magento_env = '${GET_[magento_env]}';"
 deploy_command="command=\"build_version=\${SSH_ORIGINAL_COMMAND} /home/${GET_[magento_owner]}/deploy.sh\" "
 awk -v var="${deploy_command}" '{print var $0}' ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub >> .ssh/authorized_keys
 
@@ -2070,7 +2081,7 @@ cacheflush
 END
 
 echo ""
-YELLOWTXT "[-] Creating bash_profile for ${MAGENTO_ENV_SELECTED}"
+YELLOWTXT "[-] Creating bash_profile for ${GET_[magento_env]}"
 tee .bash_profile <<END
 # .bash_profile
 # Get the aliases and functions
@@ -2083,7 +2094,7 @@ export PATH
 END
 
 echo ""
-YELLOWTXT "[-] Creating bashrc for ${MAGENTO_ENV_SELECTED}"
+YELLOWTXT "[-] Creating bashrc for ${GET_[magento_env]}"
 tee .bashrc <<END
 # .bashrc
 # history timestamp
