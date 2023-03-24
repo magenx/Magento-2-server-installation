@@ -63,7 +63,7 @@ sub vcl_recv {
         set req.hash_always_miss = true;
     }
 	
-	  if (req.http.host == "production.example.com") {
+    if (req.http.host == "production.example.com") {
         set req.backend_hint = production;
     } else if (req.http.host == "staging.example.com") {
         set req.backend_hint = staging;
