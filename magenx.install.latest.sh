@@ -46,6 +46,8 @@ MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
 MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 
 # WebStack Packages .deb
+WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin"
+
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
 logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
@@ -350,7 +352,7 @@ fi
 # check if web stack is clean
 WEB_STACK=$(${SQLITE3} "SELECT web_stack FROM system;")
 if [ "${WEB_STACK}" != "magenx" ]; then
-  installed_packages="$(apt -qq list --installed mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
+  installed_packages="$(apt -qq list --installed ${WEB_STACK_CHECK} 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
   if [ ! -z "$installed_packages" ]; then
     REDTXT  "[!] Some webstack packages already installed"
     YELLOWTXT "[!] You need to remove them or reinstall minimal OS version"
