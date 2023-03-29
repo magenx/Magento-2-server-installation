@@ -12,7 +12,7 @@ MAGENX_BASE="https://magenx.sh"
 ###################################################################################
 
 # Github installation repository raw url
-MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master/"
+MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-server-installation/master"
 
 # Magento
 MAGENTO_VERSION="2"
@@ -46,6 +46,8 @@ MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
 MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 
 # WebStack Packages .deb
+WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin"
+
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
 logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
@@ -350,7 +352,7 @@ fi
 # check if web stack is clean
 WEB_STACK=$(${SQLITE3} "SELECT web_stack FROM system;")
 if [ "${WEB_STACK}" != "magenx" ]; then
-  installed_packages="$(apt -qq list --installed mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
+  installed_packages="$(apt -qq list --installed ${WEB_STACK_CHECK} 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
   if [ ! -z "$installed_packages" ]; then
     REDTXT  "[!] Some webstack packages already installed"
     YELLOWTXT "[!] You need to remove them or reinstall minimal OS version"
@@ -1041,8 +1043,8 @@ if [ "${varnish_install}" == "y" ];then
      echo
      GREENTXT "Varnish Cache installed  -  OK"
      echo
-     curl -sSo /etc/systemd/system/varnish.service ${MAGENX_INSTALL_GITHUB_REPO}varnish.service
-     curl -sSo /etc/varnish/varnish.params ${MAGENX_INSTALL_GITHUB_REPO}varnish.params
+     curl -sSo /etc/systemd/system/varnish.service ${MAGENX_INSTALL_GITHUB_REPO}/varnish.service
+     curl -sSo /etc/varnish/varnish.params ${MAGENX_INSTALL_GITHUB_REPO}/varnish.params
      uuidgen > /etc/varnish/secret
      systemctl daemon-reload
      PACKAGES_INSTALLED varnish*
@@ -1270,7 +1272,7 @@ for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
    su ${MAGENTO_OWNER} -s /bin/bash -c "${MAGENTO_PROJECT}=${MAGENTO_VERSION_INSTALLED} . --no-install"
 
    # composer replace bloatware
-   curl -sO ${MAGENX_INSTALL_GITHUB_REPO}composer_replace
+   curl -sO ${MAGENX_INSTALL_GITHUB_REPO}/composer_replace
    sed -i '/"conflict":/ {
    r composer_replace
    N
@@ -1581,7 +1583,7 @@ hostname
 
 echo ""
 YELLOWTXT "[-] Create motd banner"
-curl -o /etc/motd "${MAGENX_INSTALL_GITHUB_REPO}motd"
+curl -o /etc/motd "${MAGENX_INSTALL_GITHUB_REPO}/motd"
 sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
 
 echo ""
@@ -1755,11 +1757,11 @@ echo ""
 YELLOWTXT "[-] Varnish Cache configuration file"
 systemctl enable varnish.service
 curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
-curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}devicedetect-include.vcl
+curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}/devicedetect-include.vcl
 if [ "${#MAGENTO_ENV[@]}" -gt 1 ]; then
-  curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}all_3_default.vcl
+  curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/all_3_default.vcl
 else
-  curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}default.vcl
+  curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/default.vcl
 fi
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/varnish/default.vcl
 
@@ -2138,7 +2140,7 @@ WHITETXT "https://github.com/magenx/Magento-2-server-installation"
 echo ""
 echo ""
 YELLOWTXT "For Github Actions CI/CD integration:"
-WHITETXT "admin@magenx.com"
+WHITETXT "https://www.magenx.com/magento-support-and-server-management.html"
 echo ""
 echo "PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '" >> /etc/bashrc
 echo ""
@@ -2216,7 +2218,7 @@ if [ "${csf_firewall}" == "y" ]; then
   sed -i 's,CUSTOM1_LOG.*,CUSTOM1_LOG = "/var/log/nginx/access.log",' /etc/csf/csf.conf
   sed -i 's,CUSTOM2_LOG.*,CUSTOM2_LOG = "/var/log/nginx/error.log",' /etc/csf/csf.conf
   ### get custom regex template
-  curl -o /usr/local/csf/bin/regex.custom.pm ${MAGENX_INSTALL_GITHUB_REPO}regex.custom.pm
+  curl -o /usr/local/csf/bin/regex.custom.pm ${MAGENX_INSTALL_GITHUB_REPO}/regex.custom.pm
   chmod +x /usr/local/csf/bin/regex.custom.pm
   ### whitelist search bots and legit domains
 cat >> /etc/csf/csf.rignore <<END
@@ -2233,7 +2235,15 @@ cat >> /etc/csf/csf.rignore <<END
 .github.com
 END
 
-  csf -ra
+csf -ra
+curl -o /etc/csf/csf_pignore.sh ${MAGENX_INSTALL_GITHUB_REPO}/csf_pignore.sh
+crontab -l > /tmp/csf_crontab
+cat << END | tee -a /tmp/csf_crontab
+
+0 0 * * 0 /etc/csf/csf_pignore.sh && crontab -l | grep -v "csf_pignore.sh" | crontab -
+END
+crontab /tmp/csf_crontab
+rm /tmp/csf_crontab
  fi
   else
    echo
