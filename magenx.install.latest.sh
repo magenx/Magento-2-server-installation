@@ -370,49 +370,6 @@ fi
 # print path
 GREENTXT "PATH: ${PATH}"
 
-# Lets set magento mode/environment type to configure
-MAGENTO_ENV=($(${SQLITE3} "SELECT DISTINCT magento_env FROM magento;"))
-MAGENTO_LOCK="$(${SQLITE3} "SELECT magento_lock FROM magento LIMIT 1;")"
-if [ "${MAGENTO_LOCK}" == "lock" ]; then
-  echo ""
-  echo ""
-  REDTXT "Configuration lock found"
-  REDTXT "[ ${MAGENTO_ENV[@]} ] environment already configured"
-  REDTXT "You can only run one environment type configuration on this server"
-  echo ""
-  exit 1
-elif [ ${#MAGENTO_ENV[@]} -eq 0 ]; then
-  echo ""
-  echo ""
-  echo ""
-  YELLOWTXT "[?] Select magento environment type and mode:"
-  echo ""
-  _echo "${BOLD}production${RESET} - write disabled! production mode.
-  ${BOLD}staging${RESET} - write disabled! production mode.
-  ${BOLD}developer${RESET} - write enabled! developer mode.
-  ${BOLD}all_3${RESET} - configure all 3 environments on this server"
-  echo ""
-  updown_menu "production staging developer all_3" MAGENTO_ENV_SELECTED
-  if [ "${MAGENTO_ENV_SELECTED}" == "all_3" ]; then
-    MAGENTO_ENV=("production" "staging" "developer")
-  else
-    MAGENTO_ENV=("${MAGENTO_ENV_SELECTED}")
-  fi
-  for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
-    do
-    # magento mode? LOL
-    # if magento is running in production, staging, developer environment and has production mode, default mode, developer mode 
-    # and in the production environment it runs by default, should the default mode in production environment be the default mode?
-    # since having a default mode in between production and developer is kind of brain-crap...
-    # feels like the default mode should be staging mode to run in staging environment, or remove it completely 
-    # cause staging environment runs in production mode as well. maybe that would make some sense then. 
-    [[ "${MAGENTO_ENV_SELECTED}" == "staging" ]] && MAGENTO_MODE="production" || MAGENTO_MODE="${MAGENTO_ENV_SELECTED}"
-    ${SQLITE3} "INSERT INTO magento (magento_env, magento_mode) VALUES ('${MAGENTO_ENV_SELECTED}', '${MAGENTO_MODE}');"
-  done
-else
-  GREENTXT "MAGENTO ENVIRONMENT: ${MAGENTO_ENV[@]}"
-fi
-
 # configure system/magento timezone
 TIMEZONE="$(${SQLITE3} "SELECT timezone FROM system;")"
 if [ -z "${TIMEZONE}" ]; then
@@ -512,6 +469,49 @@ if [ "${ssh_test}" == "y" ]; then
    GREENTXT "SSH port has been restored  -  OK"
    ss -tlp | grep sshd
   fi
+fi
+
+# Lets set magento mode/environment type to configure
+MAGENTO_ENV=($(${SQLITE3} "SELECT DISTINCT magento_env FROM magento;"))
+MAGENTO_LOCK="$(${SQLITE3} "SELECT magento_lock FROM magento LIMIT 1;")"
+if [ "${MAGENTO_LOCK}" == "lock" ]; then
+  echo ""
+  echo ""
+  REDTXT "Configuration lock found"
+  REDTXT "[ ${MAGENTO_ENV[@]} ] environment already configured"
+  REDTXT "You can only run one environment type configuration on this server"
+  echo ""
+  exit 1
+elif [ ${#MAGENTO_ENV[@]} -eq 0 ]; then
+  echo ""
+  echo ""
+  echo ""
+  YELLOWTXT "[?] Select magento environment type and mode:"
+  echo ""
+  _echo "${BOLD}production${RESET} - write disabled! production mode.
+  ${BOLD}staging${RESET} - write disabled! production mode.
+  ${BOLD}developer${RESET} - write enabled! developer mode.
+  ${BOLD}all_3${RESET} - configure all 3 environments on this server"
+  echo ""
+  updown_menu "production staging developer all_3" MAGENTO_ENV_SELECTED
+  if [ "${MAGENTO_ENV_SELECTED}" == "all_3" ]; then
+    MAGENTO_ENV=("production" "staging" "developer")
+  else
+    MAGENTO_ENV=("${MAGENTO_ENV_SELECTED}")
+  fi
+  for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
+    do
+    # magento mode? LOL
+    # if magento is running in production, staging, developer environment and has production mode, default mode, developer mode 
+    # and in the production environment it runs by default, should the default mode in production environment be the default mode?
+    # since having a default mode in between production and developer is kind of brain-crap...
+    # feels like the default mode should be staging mode to run in staging environment, or remove it completely 
+    # cause staging environment runs in production mode as well. maybe that would make some sense then. 
+    [[ "${MAGENTO_ENV_SELECTED}" == "staging" ]] && MAGENTO_MODE="production" || MAGENTO_MODE="${MAGENTO_ENV_SELECTED}"
+    ${SQLITE3} "INSERT INTO magento (magento_env, magento_mode) VALUES ('${MAGENTO_ENV_SELECTED}', '${MAGENTO_MODE}');"
+  done
+else
+  GREENTXT "MAGENTO ENVIRONMENT: ${MAGENTO_ENV[@]}"
 fi
 echo
 echo
@@ -2102,7 +2102,7 @@ tee .bashrc <<END
 # history timestamp
 export HISTTIMEFORMAT="%d/%m/%y %T "
 # got to app root folder
-cd public_html/
+cd ~/public_html/
 # change prompt color
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
