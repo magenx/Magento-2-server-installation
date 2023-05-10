@@ -2076,7 +2076,7 @@ git fetch origin \${build_version}
 git reset origin/\${build_version} --hard
 git clean -f -d
 bin/magento setup:db:status --no-ansi -n
-if [[ $? -ne 0 ]]; then
+if [[ \$? -ne 0 ]]; then
 bin/magento setup:upgrade --keep-generated --no-ansi -n
 fi
 cacheflush
