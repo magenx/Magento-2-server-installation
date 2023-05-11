@@ -1692,7 +1692,7 @@ tee /usr/local/bin/cacheflush <<END
 #!/bin/bash
 sudo -u \${SUDO_USER} n98-magerun2 --root-dir=/home/\${SUDO_USER}/public_html cache:flush
 /usr/bin/systemctl restart php${PHP_VERSION}-fpm.service
-/usr/bin/systemctl restart nginx.service
+nginx -t && /usr/bin/systemctl restart nginx.service || echo "[!] Error: check nginx config"
 END
 
 echo ""
