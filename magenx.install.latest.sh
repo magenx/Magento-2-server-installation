@@ -1978,7 +1978,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento cache:flush"
 
  rm -rf var/log/*.log
- rm -rf ../{.config,.cache,.local,.composer}
+ rm -rf ../{.config,.cache,.local,.composer}/*
  
  echo ""
  YELLOWTXT "[-] Configure Google 2FA code for ${GET_[magento_admin_login]}"
