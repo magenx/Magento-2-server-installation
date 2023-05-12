@@ -20,11 +20,13 @@ dnf install -y epel-release; dnf install -y screen
 screen
 bash magenx.sh
 ```
-Once up and running, set up SSL with certbot (already installed) and uncomment the lines for SSL in:
-- /etc/nginx/nginx.conf
-- /etc/nginx/sites-available/magento2.conf
-- /etc/nginx/conf_m2/varnish_proxy.conf
-
+  
+## System requirements:
+*Dedicated server / Container*  
+*8Gb RAM*  
+*like [DigitalOcean cloud servers](https://m.do.co/c/ccc5d115377f)  
+   
+   
 #### MagenX ecommerce webstack - server configuration for Magento 2 Open Source  
 Get a fully pre-configured server with Magento and LEMP stack in just 10 minutes! 🚀 
 
@@ -79,21 +81,41 @@ Complete linux stack including: <br/>
 - logs rotation
 - separate permissions for nginx and php user
 - and many more
-
   
-## Get config:
+  
+## Environment / Magento mode:  
+You can select the type of environment and Magento mode respectively. By installing 3 environments on one server at the same time - developer, staging and production, or one type only if you use simple development or even different servers per environment. The script configures users, folders, and all settings for a given environment.
+  
+  
+## Get config:  
+All configuration parameters saved in sqlite database.
 ```
 sqlite3 -line /opt/magenx/config/magenx.db "SELECT * FROM magento;"
 sqlite3 -line /opt/magenx/config/magenx.db "SELECT * FROM system;"
 ```
   
+## SSL / HTTPS:
+Once up and running, set up SSL with certbot (already installed):  
+`certbot certonly --agree-tos --no-eff-email --email {EMAIL} --webroot -w /home/{USER}/public_html/pub`  
+and uncomment the lines for SSL in:  
+- /etc/nginx/nginx.conf
+- /etc/nginx/sites-available/magento2.conf
+- /etc/nginx/conf_m2/varnish_proxy.conf
+
+  
 ## DevOps idea:
 You have the opportunity to install a new Magento 2, and it is best to do this in a developer environment. Push the code to your Github repository and from there develop and deploy to production and staging environment using Github Actions.  
 This is the safest and most productive approach.
+There are few configuration files available for Github Actions [paid extra] deployments: 
+ - `~/deploy.sh` - basic script to catch Github Actions deployment input and run git and magento commands
+ - `~/.env` - magento 2 environment variables
+ - `~/.ssh/authorized_keys` - pre-configured ssh keys
+
   
-  
-**System requirements**:<br/>
-*Dedicated server / Container*<br/>
-*8Gb RAM*<br/>
-*like [DigitalOcean cloud servers](https://m.do.co/c/ccc5d115377f)
+## Tools:
+you can use the following:
+- `sudo cacheflush` - to flush magento cache and restart php-fpm / nginx
+- `mysqltuner` - to see mysql metrics and parameters
+- `mytop` - database query monitoring / management
+- `n98-magerun2` - magento 2 extented cli
 
