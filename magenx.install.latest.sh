@@ -1955,7 +1955,7 @@ if [ "${apply_config}" == "y" ]; then
  cd ${GET_[magento_root_path]}
  chmod u+x bin/magento
  su ${GET_[magento_owner]} -s /bin/bash -c "${GET_[magento_root_path]}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
- su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=127.0.0.1:8081"
+ su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=varnish:8081"
 
  chown -R ${GET_[magento_owner]}:${GET_[magento_php_user]} ${GET_[magento_root_path]}
  
@@ -1978,7 +1978,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[magento_owner]} -s /bin/bash -c "bin/magento cache:flush"
 
  rm -rf var/log/*.log
- rm -rf ../{.config,.cache,.local,.composer}
+ rm -rf ../{.config,.cache,.local,.composer}/*
  
  echo ""
  YELLOWTXT "[-] Configure Google 2FA code for ${GET_[magento_admin_login]}"
