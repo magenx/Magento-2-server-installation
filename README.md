@@ -99,7 +99,7 @@ Once up and running, set up SSL with certbot (already installed):
 `certbot certonly --agree-tos --no-eff-email --email {EMAIL} --webroot -w /home/{USER}/public_html/pub`  
 and uncomment the lines for SSL in:  
 - /etc/nginx/nginx.conf
-- /etc/nginx/sites-available/magento2.conf
+- /etc/nginx/sites-available/{DOMAIN_NAME}.conf
 - /etc/nginx/conf_m2/varnish_proxy.conf
 
   
