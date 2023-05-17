@@ -117,6 +117,8 @@ you can use the following:
 - `mysqltuner` - to see mysql metrics and parameters
 - `mytop` - database query monitoring / management
 - `n98-magerun2` - magento 2 extented cli
+- magento profiler built in nginx - `developer?xxx`  <a href="https://github.com/magenx/Magento-nginx-config/blob/99b531d847fd8d3b232adcfc11e79b6bc952a6db/magento2/conf_m2/maps.conf#L24">Magento-nginx-config/magento2/conf_m2/maps.conf</a>
+
   
   
 ## 😻 Support the project  
