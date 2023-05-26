@@ -2237,10 +2237,11 @@ END
 
 csf -ra
 curl -o /etc/csf/csf_pignore.sh ${MAGENX_INSTALL_GITHUB_REPO}/csf_pignore.sh
+chmod +x /etc/csf/csf_pignore.sh
 crontab -l > /tmp/csf_crontab
 cat << END | tee -a /tmp/csf_crontab
 
-0 0 * * 0 /etc/csf/csf_pignore.sh && crontab -l | grep -v "csf_pignore.sh" | crontab -
+0 */4 * * * /etc/csf/csf_pignore.sh && crontab -l | grep -v "csf_pignore.sh" | crontab -
 END
 crontab /tmp/csf_crontab
 rm /tmp/csf_crontab
