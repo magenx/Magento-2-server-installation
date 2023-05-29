@@ -49,7 +49,7 @@ MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin"
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
-perl openssl unzip screen inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
+perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
 logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
