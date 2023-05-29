@@ -49,7 +49,7 @@ MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin"
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
-perl openssl unzip screen inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
+perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
 logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
@@ -853,7 +853,7 @@ for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
     for SERVICE in session cache
     do
 
-cat > /etc/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.conf<<END
+cat > /etc/redis/redis_${SERVICE}_${MAGENTO_ENV_SELECTED}.conf<<END
 
 bind 127.0.0.1
 port ${PORT}
@@ -866,8 +866,8 @@ timeout 0
 requirepass ${MAGENTO_REDIS_PASSWORD}
 
 dir /var/lib/redis
-logfile /var/log/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.log
-pidfile /run/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.pid
+logfile /var/log/redis/redis_${SERVICE}_${MAGENTO_ENV_SELECTED}.log
+pidfile /run/redis/redis_${SERVICE}_${MAGENTO_ENV_SELECTED}.pid
 
 save ""
 
@@ -891,8 +891,8 @@ END
 
 ((PORT++))
 
-chown redis /etc/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.conf
-chmod 640 /etc/redis/redis-${SERVICE}-${MAGENTO_ENV_SELECTED}.conf
+chown redis /etc/redis/redis_${SERVICE}_${MAGENTO_ENV_SELECTED}.conf
+chmod 640 /etc/redis/redis_${SERVICE}_${MAGENTO_ENV_SELECTED}.conf
 
 echo "127.0.0.1 redis-${SERVICE}-${MAGENTO_ENV_SELECTED}" >> /etc/hosts
 
@@ -1006,8 +1006,8 @@ for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
   do
   MAGENTO_RABBITMQ_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)"
   ${SQLITE3} "UPDATE magento SET magento_rabbitmq_password = '${MAGENTO_RABBITMQ_PASSWORD}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
-  rabbitmqctl add_user ${MAGENTO_ENV_SELECTED} ${MAGENTO_RABBITMQ_PASSWORD}
-  rabbitmqctl set_permissions -p / ${MAGENTO_ENV_SELECTED} ".*" ".*" ".*"
+  rabbitmqctl add_user magento_rabbitmq_${MAGENTO_ENV_SELECTED} ${MAGENTO_RABBITMQ_PASSWORD}
+  rabbitmqctl set_permissions -p / magento_rabbitmq_${MAGENTO_ENV_SELECTED} ".*" ".*" ".*"
 done
    else
     echo ""
@@ -1142,7 +1142,7 @@ for MAGENTO_ENV_SELECTED in "${MAGENTO_ENV[@]}"
   ${SQLITE3} "UPDATE magento SET magento_indexer_password = '${MAGENTO_INDEXER_PASSWORD}' WHERE magento_env = '${MAGENTO_ENV_SELECTED}';"
   echo ""
 # create and check if role already created
-ROLE_CREATED=$(curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_${MAGENTO_ENV_SELECTED}_indexer" \
+ROLE_CREATED=$(curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/role/magento_indexer_${MAGENTO_ENV_SELECTED}" \
 -H 'Content-Type: application/json' -sS \
 -d @<(cat <<EOF
 {
@@ -1158,24 +1158,24 @@ EOF
 ) | jq -r ".role.created")
 
 # create and check if we have user enabled
-USER_ENABLED=$(curl -X GET -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${MAGENTO_ENV_SELECTED}_indexer" \
+USER_ENABLED=$(curl -X GET -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_indexer_${MAGENTO_ENV_SELECTED}" \
 -H 'Content-Type: application/json' -sS | jq -r ".[].enabled")
 
 if [[ ${ROLE_CREATED} == true ]] && [[ ${USER_ENABLED} != true ]]; then
 echo ""
-YELLOWTXT "[!] Create user [magento_${MAGENTO_ENV_SELECTED}_indexer]: "
-curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_${MAGENTO_ENV_SELECTED}_indexer" \
+YELLOWTXT "[!] Create user [magento_indexer_${MAGENTO_ENV_SELECTED}]: "
+curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/magento_indexer_${MAGENTO_ENV_SELECTED}" \
 -H 'Content-Type: application/json' -sS \
 -d "$(cat <<EOF
 {
   "password" : "${MAGENTO_INDEXER_PASSWORD}",
-  "roles" : [ "magento_${MAGENTO_ENV_SELECTED}_indexer"],
-  "full_name" : "ELK User for Magento 2 Indexer in ${MAGENTO_ENV_SELECTED}"
+  "roles" : [ "magento_indexer_${MAGENTO_ENV_SELECTED}"],
+  "full_name" : "Magento 2 indexer in ${MAGENTO_ENV_SELECTED} environment"
 }
 EOF
 )"
 else
-REDTXT "  [!] ELK return error for role magento_${MAGENTO_ENV_SELECTED}_indexer "
+REDTXT "  [!] ELK return error for role magento_indexer_${MAGENTO_ENV_SELECTED} "
 fi
 done
 echo ""
@@ -1501,7 +1501,7 @@ if [ -f "${GET_[magento_root_path]}/bin/magento" ]; then
  --cache-backend-redis-compression-lib=l4z \
  --amqp-host=rabbitmq \
  --amqp-port=5672 \
- --amqp-user=${GET_[magento_env]} \
+ --amqp-user=magento_rabbitmq_${GET_[magento_env]} \
  --amqp-password='${GET_[magento_rabbitmq_password]}' \
  --amqp-virtualhost='/' \
  --consumers-wait-for-messages=0 \
@@ -1510,7 +1510,7 @@ if [ -f "${GET_[magento_root_path]}/bin/magento" ]; then
  --elasticsearch-port=9200 \
  --elasticsearch-index-prefix=magento_${GET_[magento_env]}_${GET_[magento_domain]} \
  --elasticsearch-enable-auth=1 \
- --elasticsearch-username=magento_${GET_[magento_env]}_indexer \
+ --elasticsearch-username=magento_indexer_${GET_[magento_env]} \
  --elasticsearch-password='${GET_[magento_indexer_password]}'"
 
  if [ "$?" != 0 ]; then
@@ -2029,7 +2029,7 @@ MAGENTO_REDIS_SESSION_PORT="$(awk '/port /{print $2}' /etc/redis/redis-session-$
 MAGENTO_REDIS_CACHE_PORT="$(awk '/port /{print $2}' /etc/redis/redis-cache-${GET_[magento_env]}.conf)"
 MAGENTO_RABBITMQ_PASSWORD="${GET_[magento_rabbitmq_password]}"
 MAGENTO_CRYPT_KEY="${GET_[magento_crypt_key]}"
-MAGENTO_GRAPHQL_ID_SALT=""
+MAGENTO_GRAPHQL_ID_SALT="$(awk -F"'" '/id_salt/{print $4}' ${GET_[magento_root_path]}/app/etc/env.php)"
 MAGENTO_DATABASE_NAME="${GET_[magento_database_name]}"
 MAGENTO_DATABASE_USER="${GET_[magento_database_user]}"
 MAGENTO_DATABASE_PASSWORD="${GET_[magento_database_password]}"
@@ -2237,10 +2237,11 @@ END
 
 csf -ra
 curl -o /etc/csf/csf_pignore.sh ${MAGENX_INSTALL_GITHUB_REPO}/csf_pignore.sh
+chmod +x /etc/csf/csf_pignore.sh
 crontab -l > /tmp/csf_crontab
 cat << END | tee -a /tmp/csf_crontab
 
-0 0 * * 0 /etc/csf/csf_pignore.sh && crontab -l | grep -v "csf_pignore.sh" | crontab -
+0 */4 * * * /etc/csf/csf_pignore.sh && crontab -l | grep -v "csf_pignore.sh" | crontab -
 END
 crontab /tmp/csf_crontab
 rm /tmp/csf_crontab
