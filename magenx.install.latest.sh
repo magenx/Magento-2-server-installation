@@ -1420,7 +1420,7 @@ BLUEBG   "[~]    MAGENTO CONFIGURATION TO SETUP INSTALL PER ENVIRONMENT    [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo ""
 echo ""
-REDIS_PORTS="$(awk '/port /{print $2}' /etc/redis/redis*.conf)"
+REDIS_PORTS="$(awk '/port /{print $2}' /etc/redis/[case]*.conf)"
 for PORT_SELECTED in ${REDIS_PORTS} 9200 5672 3306; do nc -4zvw3 localhost ${PORT_SELECTED}; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE ${PORT_SELECTED} OFFLINE"; exit 1; fi;  done
 
 # Get the distinct Magento modes from the magento table
