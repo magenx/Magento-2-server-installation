@@ -825,8 +825,8 @@ ReadWritePaths=-/run/redis
 
 # Command-line options
 PIDFile=/run/redis/redis-%i.pid
-ExecStartPre=/usr/bin/test -f /etc/redis/redis-%i.conf
-ExecStart=/usr/bin/redis-server /etc/redis/redis-%i.conf --daemonize yes --supervised systemd
+ExecStartPre=/usr/bin/test -f /etc/redis/redis_%i.conf
+ExecStart=/usr/bin/redis-server /etc/redis/redis_%i.conf --daemonize yes --supervised systemd
 
 # Timeouts
 Restart=on-failure
