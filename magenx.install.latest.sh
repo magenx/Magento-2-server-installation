@@ -2270,8 +2270,7 @@ if [ "${webmin_install}" == "y" ];then
  echo ""
  YELLOWTXT "Webmin installation:"
  echo ""
- echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
- curl -sSL https://download.webmin.com/jcameron-key.asc | apt-key add -
+ curl -o- https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh | bash
  apt update
  apt -y install webmin
 if [ "$?" = 0 ]; then
