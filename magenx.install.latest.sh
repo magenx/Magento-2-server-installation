@@ -2270,7 +2270,8 @@ if [ "${webmin_install}" == "y" ];then
  echo ""
  YELLOWTXT "Webmin installation:"
  echo ""
- curl -o- https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh | bash
+ curl -s -O https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
+ bash setup-repos.sh
  apt update
  apt -y install webmin
 if [ "$?" = 0 ]; then
