@@ -16,17 +16,17 @@ MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-s
 
 # Magento
 VERSION_LIST=$(curl -s https://api.github.com/repos/magento/magento2/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
-PROJECT="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
+PROJECT="composer create-project --repository-url=https://mirror.mage-os.org/ magento/project-community-edition"
 
 COMPOSER_NAME="8c681734f22763b50ea0c29dff9e7af2" 
 COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974" 
 
 ## Version lock
 COMPOSER_VERSION="2.2"
-RABBITMQ_VERSION="3.9*"
+RABBITMQ_VERSION="3.11*"
 MARIADB_VERSION="10.6.12"
 ELASTICSEARCH_VERSION="7.x"
-VARNISH_VERSION="71"
+VARNISH_VERSION="73"
 REDIS_VERSION="7"
 
 # Repositories
@@ -263,7 +263,7 @@ else
     DISTRO_VERSION="${VERSION_ID}"
 
     # Check if distribution is supported
-    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ "20.04" ]]; then
+    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ ^(20.04|22.04)" ]]; then
       DISTRO_NAME="Ubuntu"
     elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [ "${DISTRO_VERSION}" == "11" ]; then
       DISTRO_NAME="Debian"
@@ -921,9 +921,8 @@ echo
 _echo "${YELLOW}[?] Install RabbitMQ ${RABBITMQ_VERSION} ? [y/n][n]:${RESET} "
 read rabbitmq_install
 if [ "${rabbitmq_install}" == "y" ];then
-  curl -L https://packages.erlang-solutions.com/${DISTRO_NAME,,}/erlang_solutions.asc | apt-key add -
-  echo "deb https://packages.erlang-solutions.com/${DISTRO_NAME,,} $(lsb_release -cs) contrib" | tee /etc/apt/sources.list.d/erlang.list
-  curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
+  curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/setup.deb.sh' | bash
+  curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/setup.deb.sh' | bash
   if [ "$?" = 0 ]; then
     echo
     GREENTXT "RabbitMQ repository installed - OK"
