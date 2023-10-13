@@ -16,7 +16,7 @@ MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-s
 
 # Magento
 VERSION_LIST=$(curl -s https://api.github.com/repos/magento/magento2/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
-PROJECT="composer create-project --repository-url=https://repo.mage-os.org/ mage-os/project-community-edition ."
+PROJECT="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
 
 COMPOSER_NAME="8c681734f22763b50ea0c29dff9e7af2" 
 COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974" 
@@ -471,7 +471,6 @@ if [ "${ssh_test}" == "y" ]; then
 fi
 
 # Lets set magento mode/environment type to configure
-ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
 LOCK="$(${SQLITE3} "SELECT lock FROM magento LIMIT 1;")"
 if [ "${LOCK}" == "lock" ]; then
   echo ""
@@ -480,7 +479,8 @@ if [ "${LOCK}" == "lock" ]; then
   REDTXT "[ ${ENV[@]} ] environment already configured"
   REDTXT "You can only run one environment type configuration on this server"
   echo ""
-  exit 1
+else
+ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
 elif [ ${#ENV[@]} -eq 0 ]; then
   echo ""
   echo ""
@@ -1093,13 +1093,14 @@ cat > /etc/elasticsearch/elasticsearch.yml <<END
 
 cluster.name: magento
 node.name: magento-node1
+discovery.type: single-node
+
 path.data: /var/lib/elasticsearch
 path.logs: /var/log/elasticsearch
 
 network.host: 127.0.0.1
 http.host: 127.0.0.1
 
-discovery.type: single-node
 xpack.security.enabled: true
 xpack.security.http.ssl.enabled: false
 xpack.security.transport.ssl.enabled: false
@@ -1128,7 +1129,7 @@ systemctl restart elasticsearch.service
 
 echo ""
 YELLOWTXT "Re-generating random password for elastic user:"
-/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b > /tmp/elasticsearch
+ELASTICSEARCH_PASSWORD="$(/usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -f -b 2>&1 | awk '/New value: /{print $3}')"
 ELASTICSEARCH_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
 ${SQLITE3} "UPDATE system SET elasticsearch_password = '${ELASTICSEARCH_PASSWORD}';"
 rm /tmp/elasticsearch
