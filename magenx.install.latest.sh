@@ -16,7 +16,7 @@ MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-s
 
 # Magento
 VERSION_LIST=$(curl -s https://api.github.com/repos/magento/magento2/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
-PROJECT="composer create-project --repository-url=https://mirror.mage-os.org/ magento/project-community-edition"
+PROJECT="composer create-project --repository-url=https://repo.mage-os.org/ mage-os/project-community-edition ."
 
 COMPOSER_NAME="8c681734f22763b50ea0c29dff9e7af2" 
 COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974" 
@@ -25,7 +25,7 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 COMPOSER_VERSION="2.2"
 RABBITMQ_VERSION="3.11*"
 MARIADB_VERSION="10.6.12"
-ELASTICSEARCH_VERSION="7.x"
+ELASTICSEARCH_VERSION="8.x"
 VARNISH_VERSION="73"
 REDIS_VERSION="7"
 
@@ -1280,6 +1280,7 @@ for ENV_SELECTED in "${ENV[@]}"
 
    ### install magento from here ###
    su ${OWNER} -s /bin/bash -c "composer install"
+   su ${OWNER} -s /bin/bash -c "composer require magento/module-elasticsearch-8 --update-with-all-dependencies"
    
     if [ "$?" != 0 ]; then
       echo ""
