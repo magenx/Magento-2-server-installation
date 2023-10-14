@@ -479,7 +479,12 @@ if [ "${LOCK}" == "lock" ]; then
   REDTXT "[ ${ENV[@]} ] environment already configured"
   REDTXT "You can only run one environment type configuration on this server"
   echo ""
-else
+  echo ""
+  pause '[] Press [Enter] key to show the menu'
+  printf "\033c"
+  ;;
+fi
+
 ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
 if [ ${#ENV[@]} -eq 0 ]; then
   echo ""
@@ -512,8 +517,8 @@ if [ ${#ENV[@]} -eq 0 ]; then
 else
   GREENTXT "MAGENTO ENVIRONMENT: ${ENV[@]}"
 fi
-echo
-echo
+echo ""
+echo ""
 ###################################################################################
 ###                                  AGREEMENT                                  ###
 ###################################################################################
