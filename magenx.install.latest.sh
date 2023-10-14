@@ -482,7 +482,7 @@ if [ "${LOCK}" == "lock" ]; then
   echo ""
   pause '[] Press [Enter] key to show the menu'
   printf "\033c"
-  ;;
+  showMenu
 fi
 
 ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
