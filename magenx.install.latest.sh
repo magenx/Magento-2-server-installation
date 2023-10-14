@@ -216,8 +216,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
    private_ssh_key           text,
    public_ssh_key            text,
    github_actions_private_ssh_key    text,
-   github_actions_public_ssh_key     text,
-   lock                      text
+   github_actions_public_ssh_key     text
    );"
    
 ${SQLITE3} "CREATE TABLE IF NOT EXISTS menu(
@@ -471,20 +470,6 @@ if [ "${ssh_test}" == "y" ]; then
 fi
 
 # Lets set magento mode/environment type to configure
-LOCK="$(${SQLITE3} "SELECT lock FROM magento LIMIT 1;")"
-if [ "${LOCK}" == "lock" ]; then
-  echo ""
-  echo ""
-  REDTXT "Configuration lock found"
-  REDTXT "[ ${ENV[@]} ] environment already configured"
-  REDTXT "You can only run one environment type configuration on this server"
-  echo ""
-  echo ""
-  pause '[] Press [Enter] key to show the menu'
-  printf "\033c"
-  showMenu
-fi
-
 ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
 if [ ${#ENV[@]} -eq 0 ]; then
   echo ""
@@ -2109,10 +2094,6 @@ END
 chmod +x /usr/local/bin/*
 find ${MAGENX_CONFIG_PATH}/ -maxdepth 1 -type f ! -name "${SQLITE3_DB}" -delete
 chmod -R 600 ${MAGENX_CONFIG_PATH}
-
-echo ""
-YELLOWTXT "[-] Locking Magento configuration"
-${SQLITE3} "UPDATE magento SET lock = 'lock';"
 
 systemctl daemon-reload
 systemctl restart nginx.service
