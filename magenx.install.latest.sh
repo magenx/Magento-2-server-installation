@@ -481,7 +481,7 @@ if [ "${LOCK}" == "lock" ]; then
   echo ""
 else
 ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-elif [ ${#ENV[@]} -eq 0 ]; then
+if [ ${#ENV[@]} -eq 0 ]; then
   echo ""
   echo ""
   echo ""
