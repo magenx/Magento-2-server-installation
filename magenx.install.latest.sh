@@ -1369,10 +1369,10 @@ do
  YELLOWTXT "[-] Settings for [ ${ENV_SELECTED} ] database:"
  read -e -p "$(echo -e ${YELLOW}"  [?] Host name: "${RESET})" -i "mariadb"  DATABASE_HOST
  read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${DOMAIN//[-.]/}_m2_${HASH}_${ENV_SELECTED}"  DATABASE_NAME
- read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${DOMAIN//[-.]/}_m2_${HASH}"  DATABASE_USER
+ read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${DOMAIN//[-.]/}_m2_${HASH}_${ENV_SELECTED}"  DATABASE_USER
  read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  DATABASE_PASSWORD
  echo ""
-for USER_HOST in ${DATABASE_HOST} 127.0.0.1
+for USER_HOST in ${DATABASE_HOST} localhost 127.0.0.1
   do
 mariadb <<EOMYSQL
  CREATE USER '${DATABASE_USER}'@'${USER_HOST}' IDENTIFIED BY '${DATABASE_PASSWORD}';
