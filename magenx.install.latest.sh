@@ -918,7 +918,8 @@ if [ "${rabbitmq_install}" == "y" ];then
     GREENTXT "RabbitMQ repository installed - OK"
     echo
     YELLOWTXT "RabbitMQ ${RABBITMQ_VERSION} installation:"
-    echo
+    echo ""
+    apt update
     apt -y install rabbitmq-server=${RABBITMQ_VERSION} 
     if [ "$?" = 0 ]; then
      echo ""
