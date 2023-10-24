@@ -23,10 +23,10 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 
 ## Version lock
 COMPOSER_VERSION="2.2"
-RABBITMQ_VERSION="3.9*"
+RABBITMQ_VERSION="3.11*"
 MARIADB_VERSION="10.6.12"
 ELASTICSEARCH_VERSION="7.x"
-VARNISH_VERSION="71"
+VARNISH_VERSION="73"
 REDIS_VERSION="7"
 
 # Repositories
@@ -45,7 +45,7 @@ MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
 MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 
 # WebStack Packages .deb
-WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin"
+WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin"
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
@@ -216,8 +216,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
    private_ssh_key           text,
    public_ssh_key            text,
    github_actions_private_ssh_key    text,
-   github_actions_public_ssh_key     text,
-   lock                      text
+   github_actions_public_ssh_key     text
    );"
    
 ${SQLITE3} "CREATE TABLE IF NOT EXISTS menu(
@@ -243,7 +242,7 @@ distro_error() {
   REDTXT "[!] ${OS_NAME} ${OS_VERSION} detected"
   echo ""
   echo " Unfortunately, your operating system distribution and version are not supported by this script"
-  echo " Supported: Ubuntu 20.04; Debian 11"
+  echo " Supported: Ubuntu 20|22.04; Debian 11|12"
   echo " Please email admin@magenx.com and let us know if you run into any issues"
   echo ""
   exit 1
@@ -263,9 +262,9 @@ else
     DISTRO_VERSION="${VERSION_ID}"
 
     # Check if distribution is supported
-    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ "20.04" ]]; then
+    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ ^(20.04|22.04) ]]; then
       DISTRO_NAME="Ubuntu"
-    elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [ "${DISTRO_VERSION}" == "11" ]; then
+    elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [[ "${DISTRO_VERSION}" =~ ^(11|12) ]]; then
       DISTRO_NAME="Debian"
     else
       distro_error
@@ -472,16 +471,7 @@ fi
 
 # Lets set magento mode/environment type to configure
 ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-LOCK="$(${SQLITE3} "SELECT lock FROM magento LIMIT 1;")"
-if [ "${LOCK}" == "lock" ]; then
-  echo ""
-  echo ""
-  REDTXT "Configuration lock found"
-  REDTXT "[ ${ENV[@]} ] environment already configured"
-  REDTXT "You can only run one environment type configuration on this server"
-  echo ""
-  exit 1
-elif [ ${#ENV[@]} -eq 0 ]; then
+if [ ${#ENV[@]} -eq 0 ]; then
   echo ""
   echo ""
   echo ""
@@ -512,8 +502,8 @@ elif [ ${#ENV[@]} -eq 0 ]; then
 else
   GREENTXT "MAGENTO ENVIRONMENT: ${ENV[@]}"
 fi
-echo
-echo
+echo ""
+echo ""
 ###################################################################################
 ###                                  AGREEMENT                                  ###
 ###################################################################################
@@ -597,9 +587,9 @@ WHITETXT "----------------------------------------------------------------------
   debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Local only'"
   apt update && apt upgrade -y
   apt -y install software-properties-common
-  apt-add-repository contrib
+  apt-add-repository -y contrib
   apt update
-  apt -y install ${EXTRA_PACKAGES} ${PERL_MODULES}
+  DEBIAN_FRONTEND=noninteractive apt -y install ${EXTRA_PACKAGES} ${PERL_MODULES}
   echo ""
  if [ "$?" != 0 ]; then
   echo ""
@@ -609,7 +599,7 @@ WHITETXT "----------------------------------------------------------------------
   echo ""
  fi
   # Set system_update to full release version
-  [ "${DISTRO_NAME}" == "Debian" ] && FULL_VERSION="$(cat /etc/debian_version )" || FULL_VERSION="$(lsb_release -d | awk '/20.04.+/{print $3}')"
+  [ "${DISTRO_NAME}" == "Debian" ] && FULL_VERSION="$(cat /etc/debian_version )" || FULL_VERSION="$(lsb_release -d | awk '/(20|22)\.04.+/{print $3}')"
   ${SQLITE3} "UPDATE system SET system_update = 'installed @ ${FULL_VERSION}';"
   echo ""
 fi
@@ -921,15 +911,15 @@ echo
 _echo "${YELLOW}[?] Install RabbitMQ ${RABBITMQ_VERSION} ? [y/n][n]:${RESET} "
 read rabbitmq_install
 if [ "${rabbitmq_install}" == "y" ];then
-  curl -L https://packages.erlang-solutions.com/${DISTRO_NAME,,}/erlang_solutions.asc | apt-key add -
-  echo "deb https://packages.erlang-solutions.com/${DISTRO_NAME,,} $(lsb_release -cs) contrib" | tee /etc/apt/sources.list.d/erlang.list
-  curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash
+  curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/setup.deb.sh' | bash
+  curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/setup.deb.sh' | bash
   if [ "$?" = 0 ]; then
     echo
     GREENTXT "RabbitMQ repository installed - OK"
     echo
     YELLOWTXT "RabbitMQ ${RABBITMQ_VERSION} installation:"
-    echo
+    echo ""
+    apt update
     apt -y install rabbitmq-server=${RABBITMQ_VERSION} 
     if [ "$?" = 0 ]; then
      echo ""
@@ -1148,7 +1138,7 @@ ROLE_CREATED=$(curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0
   "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
   "indices": [
     {
-      "names": [ "${ENV_SELECTED}*"],
+      "names": [ "indexer_${ENV_SELECTED}*"],
       "privileges": ["all"]
     }
   ]
@@ -1380,10 +1370,10 @@ do
  YELLOWTXT "[-] Settings for [ ${ENV_SELECTED} ] database:"
  read -e -p "$(echo -e ${YELLOW}"  [?] Host name: "${RESET})" -i "mariadb"  DATABASE_HOST
  read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${DOMAIN//[-.]/}_m2_${HASH}_${ENV_SELECTED}"  DATABASE_NAME
- read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${DOMAIN//[-.]/}_m2_${HASH}"  DATABASE_USER
+ read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${DOMAIN//[-.]/}_m2_${HASH}_${ENV_SELECTED}"  DATABASE_USER
  read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  DATABASE_PASSWORD
  echo ""
-for USER_HOST in ${DATABASE_HOST} 127.0.0.1
+for USER_HOST in ${DATABASE_HOST} localhost 127.0.0.1
   do
 mariadb <<EOMYSQL
  CREATE USER '${DATABASE_USER}'@'${USER_HOST}' IDENTIFIED BY '${DATABASE_PASSWORD}';
@@ -1507,7 +1497,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --search-engine=elasticsearch7 \
  --elasticsearch-host=elasticsearch \
  --elasticsearch-port=9200 \
- --elasticsearch-index-prefix=${GET_[env]}_${GET_[domain]} \
+ --elasticsearch-index-prefix=indexer_${GET_[env]}_${GET_[domain]} \
  --elasticsearch-enable-auth=1 \
  --elasticsearch-username=indexer_${GET_[env]} \
  --elasticsearch-password='${GET_[indexer_password]}'"
@@ -2118,10 +2108,6 @@ END
 chmod +x /usr/local/bin/*
 find ${MAGENX_CONFIG_PATH}/ -maxdepth 1 -type f ! -name "${SQLITE3_DB}" -delete
 chmod -R 600 ${MAGENX_CONFIG_PATH}
-
-echo ""
-YELLOWTXT "[-] Locking Magento configuration"
-${SQLITE3} "UPDATE magento SET lock = 'lock';"
 
 systemctl daemon-reload
 systemctl restart nginx.service
