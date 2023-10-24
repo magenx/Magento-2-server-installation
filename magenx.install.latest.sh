@@ -23,8 +23,8 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 
 ## Version lock
 COMPOSER_VERSION="2.2"
-RABBITMQ_VERSION="3.11*"
-MARIADB_VERSION="10.6.12"
+RABBITMQ_VERSION="3.12*"
+MARIADB_VERSION="10.6.15"
 ELASTICSEARCH_VERSION="7.x"
 VARNISH_VERSION="73"
 REDIS_VERSION="7"
@@ -49,7 +49,7 @@ WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
-logrotate git netcat patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
+logrotate git netcat-openbsd patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
