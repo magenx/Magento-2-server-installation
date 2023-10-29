@@ -600,6 +600,9 @@ chown -R ${OWNER}:${PHP_USER} ${ROOT_PATH}
 # magento root folder permissions
 chmod 2750 ${ROOT_PATH}
 echo "${ROOT_PATH}/pub/media  ${MEDIA_SERVER_IP%%.*}.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
+echo "${ROOT_PATH}/pub/static  ${MEDIA_SERVER_IP%%.*}.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
+echo "${ROOT_PATH}/var/log  ${MEDIA_SERVER_IP%%.*}.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
+echo "${ROOT_PATH}/generated  ${MEDIA_SERVER_IP%%.*}.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
 exports -ra
 systemctl restart nfs-server
 
