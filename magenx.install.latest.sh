@@ -2025,6 +2025,8 @@ DATABASE_PASSWORD="${GET_[database_password]}"
 INDEXER_PASSWORD="${GET_[indexer_password]}"
 END
 
+cp ${GET_[root_path]}/app/etc/env.php ${GET_[root_path]}/env.php
+
 echo ""
 YELLOWTXT "[-] Creating .mytop config to /home/${GET_[owner]}/.mytop"
 tee /home/${GET_[owner]}/.mytop <<END
