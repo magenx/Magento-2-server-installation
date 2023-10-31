@@ -82,7 +82,7 @@ fi
  # Check if distribution is supported
  if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ ^(20.04|22.04) ]]; then
       DISTRO_NAME="Ubuntu"
- elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [ "${DISTRO_VERSION}" == "11" ]; then
+ elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [[ "${DISTRO_VERSION}" =~ ^(11|12) ]]; then
       DISTRO_NAME="Debian"
  else
    exit 1
