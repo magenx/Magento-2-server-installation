@@ -33,7 +33,7 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 ## Version lock
 COMPOSER_VERSION="2.2"
 RABBITMQ_VERSION="3.12*"
-MARIADB_VERSION="10.6"
+MARIADB_VERSION="10.11"
 ELASTICSEARCH_VERSION="7.x"
 VARNISH_VERSION="73"
 REDIS_VERSION="7"
@@ -659,7 +659,7 @@ if [ "${DOWNLOAD_MAGENTO}" == "y" ]; then
     fi
    
    # make magento great again
-   sed -i "s/2-4/2-6/" app/etc/di.xml
+   sed -i "s/2-6/2-11/" app/etc/di.xml
  fi
   
    # reset permissions
