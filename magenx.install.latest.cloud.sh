@@ -599,10 +599,10 @@ chown -R ${OWNER}:${PHP_USER} ${ROOT_PATH}
 
 # magento root folder permissions
 chmod 2750 ${ROOT_PATH}
-echo "${ROOT_PATH}/pub/media  ${MEDIA_SERVER_IP%%.*}.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
-echo "${ROOT_PATH}/pub/static  ${MEDIA_SERVER_IP%%.*}.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
-echo "${ROOT_PATH}/var/log  ${MEDIA_SERVER_IP%%.*}.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
-echo "${ROOT_PATH}/generated  ${MEDIA_SERVER_IP%%.*}.0.0.0/24(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
+echo "${ROOT_PATH}/pub/media  ${MEDIA_SERVER_IP%\.*\.*}.0.0/16(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
+echo "${ROOT_PATH}/pub/static  ${MEDIA_SERVER_IP%\.*\.*}.0.0/16(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
+echo "${ROOT_PATH}/var/log  ${MEDIA_SERVER_IP%\.*\.*}.0.0/16(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
+echo "${ROOT_PATH}/generated  ${MEDIA_SERVER_IP%\.*\.*}.0.0/16(rw,sync,no_root_squash,no_subtree_check)" > /etc/exports
 exports -ra
 systemctl restart nfs-server
 
@@ -670,6 +670,9 @@ if [ "${DOWNLOAD_MAGENTO}" == "y" ]; then
    # check if media nfs
    if [ "${MEDIA_NFS}" == "y" ]; then
      echo "media:/${ROOT_PATH}/pub/media ${ROOT_PATH}/pub/media nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev 0 0" >> /etc/fstab
+     echo "media:/${ROOT_PATH}/pub/static ${ROOT_PATH}/pub/static nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev 0 0" >> /etc/fstab
+     echo "media:/${ROOT_PATH}/var ${ROOT_PATH}/var nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev 0 0" >> /etc/fstab
+     echo "media:/${ROOT_PATH}/generated ${ROOT_PATH}/generated nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev 0 0" >> /etc/fstab
      su ${OWNER} -s /bin/bash -c "mv ${ROOT_PATH}/pub/media /tmp/media_move"
      su ${OWNER} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/pub/media"
      mount -a
@@ -725,12 +728,15 @@ DATABASE_NAME="${OWNER}_m2_${ENV}"
 DATABASE_USER="${OWNER}_m2_${ENV}"
 DATABASE_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"
 
+for USER_HOST in ${MEDIA_SERVER_IP%\.*\.*}.% localhost 127.0.0.1
+  do
 mariadb <<EOMYSQL
- CREATE USER '${DATABASE_USER}'@'${MARIADB_SERVER_IP}' IDENTIFIED BY '${DATABASE_PASSWORD}';
+ CREATE USER '${DATABASE_USER}'@'${USER_HOST}' IDENTIFIED BY '${DATABASE_PASSWORD}';
  CREATE DATABASE IF NOT EXISTS ${DATABASE_NAME};
- GRANT ALL PRIVILEGES ON ${DATABASE_NAME}.* TO '${DATABASE_USER}'@'${MARIADB_SERVER_IP}' WITH GRANT OPTION;
+ GRANT ALL PRIVILEGES ON ${DATABASE_NAME}.* TO '${DATABASE_USER}'@'${USER_HOST}' WITH GRANT OPTION;
  exit
 EOMYSQL
+done
 
 }
 
@@ -770,7 +776,7 @@ done
  ADMIN_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%&?=' | fold -w 10 | head -n 1)${RANDOM}"
  
  echo "${MARIADB_SERVER_IP} mariadb" >> /etc/hosts
- echo "${REDIS_SERVER_IP} cache-${ENV} session-${ENV}" >> /etc/hosts
+ echo "${REDIS_SERVER_IP} cache session" >> /etc/hosts
  echo "${RABBITMQ_SERVER_IP} rabbitmq" >> /etc/hosts
  echo "${VARNISH_SERVER_IP} varnish" >> /etc/hosts
  echo "${ELASTICSEARCH_SERVER_IP} elasticsearch" >> /etc/hosts
@@ -1253,9 +1259,9 @@ Report time: $(date -R)
 Service status:
 
 END
-systemctl status mysql* nginx php${PHP_VERSION}-fpm elasticsearch rabbitmq* redis* varnish* >> /tmp/report
+systemctl status nginx php${PHP_VERSION}-fpm >> /tmp/report
 ## send email
-cat /tmp/report | mail -s "[+][MAGENX CONFIG]: New server created at $(hostname)" -r "Droplet Created<${ADMIN_EMAIL}>" ${ADMIN_EMAIL}
+cat /tmp/report | mail -s "[+][MAGENX CONFIG]: New server created at $(hostname)" -r ${PRIVATE_IP}@${DOMAIN} ${ADMIN_EMAIL}
 ###############################################
 
 echo "PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '" >> /etc/bashrc
