@@ -1,5 +1,5 @@
 # Magento 2 installation - Magenx e-commerce webstack  
-## Debian 11 | Ubuntu 20.04
+## Debian 11 12 | Ubuntu 20.04 22.04
 
 ## Production ready + AWS Graviton2 ARM support
 
@@ -15,7 +15,7 @@ https://user-images.githubusercontent.com/1591200/128596448-2bf94578-8e80-47bf-b
 you can run in `screen` to have indestructible session:
 
 ```
-dnf install -y epel-release; dnf install -y screen
+apt install -y screen
 screen
 bash magenx.sh
 ```
