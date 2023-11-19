@@ -1245,7 +1245,9 @@ for ENV_SELECTED in "${ENV[@]}"
    updown_menu "${VERSION_LIST}" VERSION_INSTALLED
    echo ""
    echo ""
-   _echo "[!] Magento [ ${VERSION_INSTALLED} ] will be downloaded to [ ${ROOT_PATH} ] for [ ${ENV_SELECTED} ] environment."
+   _echo "[!] Magento [ ${VERSION_INSTALLED} ]"
+   _echo "[!] Downloading to [ ${ROOT_PATH} ]"
+   _echo "[!] For [ ${ENV_SELECTED} ] environment"
    echo ""
    echo ""
    pause '[] Press [Enter] key to start downloading'
