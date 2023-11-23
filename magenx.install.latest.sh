@@ -1283,7 +1283,7 @@ for ENV_SELECTED in "${ENV[@]}"
     fi
    
    # make magento great again
-   sed -i "s/2-6/2-11/" app/etc/di.xml
+   sed -i "s/\[2-6\]/(1\[0-3\]\|\[2-9\])/" app/etc/di.xml
  fi
   
    # reset permissions
