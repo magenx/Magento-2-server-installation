@@ -2025,6 +2025,7 @@ DATABASE_NAME="${GET_[database_name]}"
 DATABASE_USER="${GET_[database_user]}"
 DATABASE_PASSWORD="${GET_[database_password]}"
 INDEXER_PASSWORD="${GET_[indexer_password]}"
+INSTALLATION_DATE="$(date -u "+%a, %d %b %Y %H:%M:%S %z")"
 END
 
 cp ${GET_[root_path]}/app/etc/env.php /home/${GET_[owner]}/env.php.installed
