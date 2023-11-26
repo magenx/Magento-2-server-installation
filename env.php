@@ -90,9 +90,9 @@ return [
                     'compression_lib' => 'l4z',
                     'preload_keys' => [
                                         $_ENV['MODE'].'_EAV_ENTITY_TYPES',
-										$_ENV['MODE'].'_GLOBAL_PLUGIN_LIST',
-										$_ENV['MODE'].'_DB_IS_UP_TO_DATE',
-										$_ENV['MODE'].'_SYSTEM_DEFAULT',
+                                        $_ENV['MODE'].'_GLOBAL_PLUGIN_LIST',
+                                        $_ENV['MODE'].'_DB_IS_UP_TO_DATE',
+                                        $_ENV['MODE'].'_SYSTEM_DEFAULT',
                           ]
 		]
 	]
