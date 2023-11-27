@@ -1535,7 +1535,9 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
   admin_email = '${ADMIN_EMAIL}',
   locale = '${LOCALE}',
   admin_path = '$(grep -Po "(?<='frontName' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)',
-  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)';"
+  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)';
+  WHERE
+  env = '${ENV_SELECTED}';"
 fi
 done 
 echo
