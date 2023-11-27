@@ -1260,7 +1260,7 @@ for ENV_SELECTED in "${ENV[@]}"
 
  touch ${ROOT_PATH%/*}/${ENV_SELECTED}
  cd ${ROOT_PATH}
- 
+ echo ""
  _echo "[?] Download Magento 2 for [ ${ENV_SELECTED} ] environment? [y/n][n]: "
  read download_magento
  if [ "${download_magento}" == "y" ];then
@@ -1270,9 +1270,9 @@ for ENV_SELECTED in "${ENV[@]}"
    updown_menu "${VERSION_LIST}" VERSION_INSTALLED
    echo ""
    echo ""
-   _echo "[!] Magento [ ${VERSION_INSTALLED} ]"
-   _echo "[!] Downloading to [ ${ROOT_PATH} ]"
-   _echo "[!] For [ ${ENV_SELECTED} ] environment"
+   echo "   [!] Magento [ ${VERSION_INSTALLED} ]"
+   echo "   [!] Downloading to [ ${ROOT_PATH} ]"
+   echo "   [!] For [ ${ENV_SELECTED} ] environment"
    echo ""
    echo ""
    pause '[] Press [Enter] key to start downloading'
