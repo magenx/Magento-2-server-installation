@@ -500,14 +500,40 @@ if [ ${#ENV[@]} -eq 0 ]; then
     ${SQLITE3} "INSERT INTO magento (env, mode) VALUES ('${ENV_SELECTED}', '${MODE}');"
   done
 else
-  GREENTXT "MAGENTO ENVIRONMENT: ${ENV[@]}"
+  GREENTXT "ENVIRONMENT: ${ENV[@]}"
 fi
+
+# Enter domain name and ssh user per environment
+DOMAIN=($(${SQLITE3} "SELECT DISTINCT domain FROM magento;"))
+if [ ${#DOMAIN[@]} -eq 0 ]; then
 echo ""
 echo ""
+WHITETXT "[?]  Enter domain name and ssh user per environment :"
+ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
+for ENV_SELECTED in "${ENV[@]}"
+ do
+ echo ""
+ read -e -p "$(echo -e ${YELLOW}"  [?] Store domain name for [ ${ENV_SELECTED} ]: "${RESET})" -i "yourdomain.tld" DOMAIN
+ read -e -p "$(echo -e ${YELLOW}"  [?] Files owner/SSH user for [ ${ENV_SELECTED} ]: "${RESET})" -i "${DOMAIN//[-.]/}" OWNER
+ 
+ ${SQLITE3} "UPDATE magento SET
+   domain = '${DOMAIN}',
+   owner = '${OWNER}',
+   php_user = 'php-${OWNER}',
+   root_path = '/home/${OWNER}/public_html'
+   WHERE
+   env = '${ENV_SELECTED}'
+   ;"
+ done
+ else
+   GREENTXT "DOMAINS: ${#DOMAIN[@]}"
+fi
+ echo ""
+ echo ""
 ###################################################################################
 ###                                  AGREEMENT                                  ###
 ###################################################################################
-echo
+echo ""
 TERMS=$(${SQLITE3} "SELECT terms FROM system;")
 if [ "${TERMS}" != "agreed" ]; then
 echo
@@ -841,8 +867,8 @@ for ENV_SELECTED in "${ENV[@]}"
   ${SQLITE3} "UPDATE magento SET redis_password = '${REDIS_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
     for SERVICE in session cache
     do
-
-cat > /etc/redis/${SERVICE}-${ENV_SELECTED}.conf<<END
+OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
+cat > /etc/redis/${SERVICE}-${OWNER}.conf<<END
 
 bind 127.0.0.1
 port ${PORT}
@@ -855,8 +881,8 @@ timeout 0
 requirepass ${REDIS_PASSWORD}
 
 dir /var/lib/redis
-logfile /var/log/redis/${SERVICE}-${ENV_SELECTED}.log
-pidfile /run/redis/${SERVICE}-${ENV_SELECTED}.pid
+logfile /var/log/redis/${SERVICE}-${OWNER}.log
+pidfile /run/redis/${SERVICE}-${OWNER}.pid
 
 save ""
 
@@ -880,14 +906,14 @@ END
 
 ((PORT++))
 
-chown redis /etc/redis/${SERVICE}-${ENV_SELECTED}.conf
-chmod 640 /etc/redis/${SERVICE}-${ENV_SELECTED}.conf
+chown redis /etc/redis/${SERVICE}-${OWNER}.conf
+chmod 640 /etc/redis/${SERVICE}-${OWNER}.conf
 
-echo "127.0.0.1 ${SERVICE}-${ENV_SELECTED}" >> /etc/hosts
+echo "127.0.0.1 ${SERVICE}-${OWNER}" >> /etc/hosts
 
 systemctl daemon-reload
-systemctl enable redis@${SERVICE}-${ENV_SELECTED}
-systemctl restart redis@${SERVICE}-${ENV_SELECTED}
+systemctl enable redis@${SERVICE}-${OWNER}
+systemctl restart redis@${SERVICE}-${OWNER}
 done
 done
    else
@@ -995,8 +1021,9 @@ for ENV_SELECTED in "${ENV[@]}"
   do
   RABBITMQ_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)"
   ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
-  rabbitmqctl add_user rabbitmq_${ENV_SELECTED} ${RABBITMQ_PASSWORD}
-  rabbitmqctl set_permissions -p / rabbitmq_${ENV_SELECTED} ".*" ".*" ".*"
+  OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
+  rabbitmqctl add_user rabbitmq_${OWNER} ${RABBITMQ_PASSWORD}
+  rabbitmqctl set_permissions -p / rabbitmq_${OWNER} ".*" ".*" ".*"
 done
    else
     echo ""
@@ -1074,7 +1101,8 @@ if [ "${elastic_install}" == "y" ];then
     YELLOWTXT "Elasticsearch configuration:"
     echo ""
     ## elasticsearch settings
-    if ! grep -q "magento" /etc/elasticsearch/elasticsearch.yml >/dev/null 2>&1 ; then
+    OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}' LIMIT 1;")
+    if ! grep -q "${OWNER}" /etc/elasticsearch/elasticsearch.yml >/dev/null 2>&1 ; then
       cp /etc/elasticsearch/elasticsearch.yml /etc/elasticsearch/_elasticsearch.yml_default
 cat > /etc/elasticsearch/elasticsearch.yml <<END
 #--------------------------------------------------------------------#
@@ -1082,8 +1110,8 @@ cat > /etc/elasticsearch/elasticsearch.yml <<END
 # -------------------------------------------------------------------#
 # original config saved: /etc/elasticsearch/_elasticsearch.yml_default
 
-cluster.name: magento
-node.name: magento-node1
+cluster.name: ${OWNER}
+node.name: ${OWNER}-node1
 path.data: /var/lib/elasticsearch
 path.logs: /var/log/elasticsearch
 
@@ -1129,16 +1157,17 @@ for ENV_SELECTED in "${ENV[@]}"
   do
   INDEXER_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)"
   ${SQLITE3} "UPDATE magento SET indexer_password = '${INDEXER_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
+  OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
   echo ""
 # create and check if role already created
-ROLE_CREATED=$(curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/role/indexer_${ENV_SELECTED}" \
+ROLE_CREATED=$(curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/role/indexer_${OWNER}" \
 -H 'Content-Type: application/json' -sS \
 -d @<(cat <<EOF
 {
   "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
   "indices": [
     {
-      "names": [ "indexer_${ENV_SELECTED}*"],
+      "names": [ "indexer_${OWNER}*"],
       "privileges": ["all"]
     }
   ]
@@ -1147,24 +1176,24 @@ EOF
 ) | jq -r ".role.created")
 
 # create and check if we have user enabled
-USER_ENABLED=$(curl -X GET -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/indexer_${ENV_SELECTED}" \
+USER_ENABLED=$(curl -X GET -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/indexer_${OWNER}" \
 -H 'Content-Type: application/json' -sS | jq -r ".[].enabled")
 
 if [[ ${ROLE_CREATED} == true ]] && [[ ${USER_ENABLED} != true ]]; then
 echo ""
-YELLOWTXT "[!] Create user [indexer_${ENV_SELECTED}]: "
-curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/indexer_${ENV_SELECTED}" \
+YELLOWTXT "[!] Create user [indexer_${DOMAIN//[-.]/}]: "
+curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/indexer_${OWNER}" \
 -H 'Content-Type: application/json' -sS \
 -d "$(cat <<EOF
 {
   "password" : "${INDEXER_PASSWORD}",
-  "roles" : [ "indexer_${ENV_SELECTED}"],
-  "full_name" : "Magento 2 indexer in ${ENV_SELECTED} environment"
+  "roles" : [ "indexer_${OWNER}"],
+  "full_name" : "${DOMAIN//[-.]/} indexer in ${ENV_SELECTED} environment"
 }
 EOF
 )"
 else
-REDTXT "  [!] ELK return error for role indexer_${ENV_SELECTED} "
+REDTXT "  [!] ELK return error for role indexer_${OWNER} "
 fi
 done
 echo ""
@@ -1212,18 +1241,14 @@ echo ""
 ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
 for ENV_SELECTED in "${ENV[@]}"
  do
- echo ""
- read -e -p "$(echo -e ${YELLOW}"  [?] Store domain name for [ ${ENV_SELECTED} ]: "${RESET})" -i "yourdomain.tld" DOMAIN
- read -e -p "$(echo -e ${YELLOW}"  [?] Files owner/SSH user for [ ${ENV_SELECTED} ]: "${RESET})" -i "${DOMAIN//[-.]/}" OWNER
- echo ""
-  
- ROOT_PATH="/home/${OWNER}/public_html"
-
+ DOMAIN="$(${SQLITE3} "SELECT domain FROM magento WHERE env = '${ENV_SELECTED}';")"
+ OWNER="$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")"
+ PHP_USER="$(${SQLITE3} "SELECT php_user FROM magento WHERE env = '${ENV_SELECTED}';")"
+ ROOT_PATH="$(${SQLITE3} "SELECT root_path FROM magento WHERE env = '${ENV_SELECTED}';")"
  ## create magento/ssh user
  useradd -d ${ROOT_PATH%/*} -s /bin/bash ${OWNER}
  mkdir -p ${ROOT_PATH}
  ## create magento php user
- PHP_USER="php-${OWNER}"
  useradd -M -s /sbin/nologin -d ${ROOT_PATH%/*} ${PHP_USER}
  usermod -g ${PHP_USER} ${OWNER}
  chmod 711 ${ROOT_PATH%/*}
@@ -1297,16 +1322,7 @@ for ENV_SELECTED in "${ENV[@]}"
 
    # save all the variables
    ${SQLITE3} "UPDATE menu SET magento = 'x';"
-   ${SQLITE3} "UPDATE magento SET version_installed = '${VERSION_INSTALLED}';"
-   ${SQLITE3} "UPDATE magento SET
-   domain = '${DOMAIN}',
-   owner = '${OWNER}',
-   php_user = '${PHP_USER}',
-   root_path = '${ROOT_PATH}'
-   WHERE
-   env = '${ENV_SELECTED}'
-   ;"
-  
+   ${SQLITE3} "UPDATE magento SET version_installed = '${VERSION_INSTALLED}';" 
 done
 echo
 echo
@@ -1367,12 +1383,12 @@ ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
 for ENV_SELECTED in "${ENV[@]}"
 do
  echo ""
- DOMAIN=$(${SQLITE3} "SELECT domain FROM magento WHERE env = '${ENV_SELECTED}';")
+ OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
  HASH="$(openssl rand -hex 2)"
  YELLOWTXT "[-] Settings for [ ${ENV_SELECTED} ] database:"
  read -e -p "$(echo -e ${YELLOW}"  [?] Host name: "${RESET})" -i "mariadb"  DATABASE_HOST
- read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${DOMAIN//[-.]/}_m2_${HASH}_${ENV_SELECTED}"  DATABASE_NAME
- read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${DOMAIN//[-.]/}_m2_${HASH}_${ENV_SELECTED}"  DATABASE_USER
+ read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${OWNER}_m2_${HASH}"  DATABASE_NAME
+ read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${OWNER}_m2_${HASH}"  DATABASE_USER
  read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  DATABASE_PASSWORD
  echo ""
 for USER_HOST in ${DATABASE_HOST} localhost 127.0.0.1
@@ -1449,7 +1465,6 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  read -e -p "$(echo -e ${YELLOW}"  [?] Email: "${RESET})" -i "admin@${GET_[domain]}"  ADMIN_EMAIL
  read -e -p "$(echo -e ${YELLOW}"  [?] Login name: "${RESET})" -i "admin"  ADMIN_LOGIN
  read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%&?=' | fold -w 10 | head -n 1)${RANDOM}"  ADMIN_PASSWORD
- read -e -p "$(echo -e ${YELLOW}"  [?] Store base url: "${RESET})" -i "http://${GET_[domain]}/"  BASE_URL
  echo
  YELLOWTXT "[-] Language and currency settings:"
  updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" LOCALE
@@ -1461,7 +1476,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  echo ""
  pause '[!] Press [Enter] key to run setup:install'
  echo
- su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:install --base-url=${BASE_URL} \
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:install --base-url=https://${GET_[domain]}/ \
  --db-host=${GET_[database_host]} \
  --db-name=${GET_[database_name]} \
  --db-user=${GET_[database_user]} \
@@ -1477,31 +1492,31 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --cleanup-database \
  --use-rewrites=1 \
  --session-save=redis \
- --session-save-redis-host=session-${GET_[env]} \
- --session-save-redis-port=$(awk '/port /{print $2}'  /etc/redis/session-${GET_[env]}.conf) \
+ --session-save-redis-host=session-${GET_[owner]} \
+ --session-save-redis-port=$(awk '/port /{print $2}'  /etc/redis/session-${GET_[owner]}.conf) \
  --session-save-redis-log-level=3 \
  --session-save-redis-db=0 \
  --session-save-redis-password='${GET_[redis_password]}' \
  --session-save-redis-compression-lib=lz4 \
  --cache-backend=redis \
- --cache-backend-redis-server=cache-${GET_[env]} \
- --cache-backend-redis-port=$(awk '/port /{print $2}' /etc/redis/cache-${GET_[env]}.conf) \
+ --cache-backend-redis-server=cache-${GET_[owner]} \
+ --cache-backend-redis-port=$(awk '/port /{print $2}' /etc/redis/cache-${GET_[owner]}.conf) \
  --cache-backend-redis-db=0 \
  --cache-backend-redis-password='${GET_[redis_password]}' \
  --cache-backend-redis-compress-data=1 \
  --cache-backend-redis-compression-lib=l4z \
  --amqp-host=rabbitmq \
  --amqp-port=5672 \
- --amqp-user=rabbitmq_${GET_[env]} \
+ --amqp-user=rabbitmq_${GET_[owner]} \
  --amqp-password='${GET_[rabbitmq_password]}' \
  --amqp-virtualhost='/' \
  --consumers-wait-for-messages=0 \
  --search-engine=elasticsearch7 \
  --elasticsearch-host=elasticsearch \
  --elasticsearch-port=9200 \
- --elasticsearch-index-prefix=indexer_${GET_[env]}_${GET_[domain]} \
+ --elasticsearch-index-prefix=indexer_${GET_[owner]} \
  --elasticsearch-enable-auth=1 \
- --elasticsearch-username=indexer_${GET_[env]} \
+ --elasticsearch-username=indexer_${GET_[owner]} \
  --elasticsearch-password='${GET_[indexer_password]}'"
 
  if [ "$?" != 0 ]; then
@@ -2016,8 +2031,8 @@ MODE="${GET_[mode]}"
 DOMAIN="${GET_[domain]}"
 ADMIN_PATH="${GET_[admin_path]}"
 REDIS_PASSWORD="${GET_[redis_password]}"
-REDIS_SESSION_PORT="$(awk '/port /{print $2}' /etc/redis/session-${GET_[env]}.conf)"
-REDIS_CACHE_PORT="$(awk '/port /{print $2}' /etc/redis/cache-${GET_[env]}.conf)"
+REDIS_SESSION_PORT="$(awk '/port /{print $2}' /etc/redis/session-${GET_[owner]}.conf)"
+REDIS_CACHE_PORT="$(awk '/port /{print $2}' /etc/redis/cache-${GET_[owner]}.conf)"
 RABBITMQ_PASSWORD="${GET_[rabbitmq_password]}"
 CRYPT_KEY="${GET_[crypt_key]}"
 GRAPHQL_ID_SALT="$(awk -F"'" '/id_salt/{print $4}' ${GET_[root_path]}/app/etc/env.php)"
