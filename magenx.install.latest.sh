@@ -508,7 +508,7 @@ DOMAIN=($(${SQLITE3} "SELECT DISTINCT domain FROM magento;"))
 if [ ${#DOMAIN[@]} -eq 0 ]; then
 echo ""
 echo ""
-WHITETXT "[?]  Enter domain name and ssh user per environment :"
+echo ""
 ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
 for ENV_SELECTED in "${ENV[@]}"
  do
