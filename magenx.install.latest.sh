@@ -526,7 +526,7 @@ for ENV_SELECTED in "${ENV[@]}"
    ;"
  done
  else
-   GREENTXT "DOMAINS: ${#DOMAIN[@]}"
+   GREENTXT "DOMAINS: ${DOMAIN[@]}"
 fi
  echo ""
  echo ""
