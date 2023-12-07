@@ -58,7 +58,7 @@ Extra premium options available:
 - [x] n98-magerun2 Magento 2 cli management
 - [x] PhpMyAdmin custom path with http auth
 - [x] Goaccess nginx log visualization
-- [x] Malware scanner (mwscan,maldet) with email alerts
+- [x] Malware scanner (maldet) with email alerts
 - [x] Auditd Magento 2 files monitoring
 - [x] Automatic nginx images optimization
 - [x] Magento 2 logs rotation
@@ -79,6 +79,7 @@ Complete linux stack including:
 - geoip
 - logs rotation
 - separate permissions for nginx and php user
+- nodejs for development
 - and many more
   
   
