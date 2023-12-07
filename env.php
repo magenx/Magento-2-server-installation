@@ -12,7 +12,7 @@ return [
         'amqp' => [
             'host' => 'rabbitmq',
             'port' => '5672',
-            'user' => $_ENV['MODE'],
+            'user' => 'rabbitmq_'. $_ENV['OWNER'],
             'password' => $_ENV['RABBITMQ_PASSWORD'],
             'virtualhost' => '/'
         ],
@@ -48,11 +48,11 @@ return [
     'session' => [
         'save' => 'redis',
         'redis' => [
-            'host' => 'session-'.$_ENV['MODE'],
+            'host' => 'session-'.$_ENV['OWNER'],
             'port' => $_ENV['REDIS_SESSION_PORT'],
             'password' => $_ENV['REDIS_PASSWORD'],
             'timeout' => '2.5',
-            'persistent_identifier' => $_ENV['MODE'].'_sess',
+            'persistent_identifier' => $_ENV['OWNER'].'_sess',
             'database' => '0',
             'compression_threshold' => '2048',
             'compression_library' => 'lz4',
@@ -78,21 +78,21 @@ return [
         ],
         'frontend' => [
             'default' => [
-                'id_prefix' => $_ENV['MODE'].'_',
+                'id_prefix' => $_ENV['OWNER'].'_',
                 'backend' => 'Magento\\Framework\\Cache\\Backend\\Redis',
                 'backend_options' => [
-                    'server' => 'cache-'.$_ENV['MODE'],
+                    'server' => 'cache-'.$_ENV['OWNER'],
                     'database' => '0',
-                    'persistent' => $_ENV['MODE'].'_cache',
+                    'persistent' => $_ENV['OWNER'].'_cache',
                     'port' => $_ENV['REDIS_CACHE_PORT'],
                     'password' => $_ENV['REDIS_PASSWORD'],
                     'compress_data' => '1',
                     'compression_lib' => 'l4z',
                     'preload_keys' => [
-                                        $_ENV['MODE'].'_EAV_ENTITY_TYPES',
-                                        $_ENV['MODE'].'_GLOBAL_PLUGIN_LIST',
-                                        $_ENV['MODE'].'_DB_IS_UP_TO_DATE',
-                                        $_ENV['MODE'].'_SYSTEM_DEFAULT',
+                                        $_ENV['OWNER'].'_EAV_ENTITY_TYPES',
+                                        $_ENV['OWNER'].'_GLOBAL_PLUGIN_LIST',
+                                        $_ENV['OWNER'].'_DB_IS_UP_TO_DATE',
+                                        $_ENV['OWNER'].'_SYSTEM_DEFAULT',
                           ]
 		]
 	]
@@ -138,8 +138,8 @@ return [
                     'elasticsearch7_server_hostname' => 'elasticsearch',
                     'elasticsearch7_enable_auth' => '1',
                     'elasticsearch7_server_port' => '9200',
-                    'elasticsearch7_index_prefix' => 'indexer_'.$_ENV['MODE'],
-                    'elasticsearch7_username' => 'indexer_'.$_ENV['MODE'],
+                    'elasticsearch7_index_prefix' => 'indexer_'.$_ENV['OWNER'],
+                    'elasticsearch7_username' => 'indexer_'.$_ENV['OWNER'],
                     'elasticsearch7_password' => $_ENV['INDEXER_PASSWORD']
                 ]
             ]
