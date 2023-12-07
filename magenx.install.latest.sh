@@ -1791,6 +1791,13 @@ sed -i 's/inotify_base_watches="16384"/inotify_base_watches="35384"/' /usr/local
 
 maldet --monitor /usr/local/maldetect/monitor_paths
 
+echo ""
+YELLOWTXT "[-] GoAccess real-time web log analyzer"
+curl -o- https://deb.goaccess.io/gnugpg.key | gpg --dearmor | tee /usr/share/keyrings/goaccess.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/goaccess.gpg arch=$(dpkg --print-architecture)] https://deb.goaccess.io/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/goaccess.list
+apt update
+apt -y install goaccess
+
 ##
 # Configuration per environment
 # Get the distinct Magento modes from the magento table
