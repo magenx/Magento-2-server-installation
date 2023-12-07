@@ -28,6 +28,8 @@ MARIADB_VERSION="10.11"
 ELASTICSEARCH_VERSION="7.x"
 VARNISH_VERSION="73"
 REDIS_VERSION="7"
+NODE_VERSION="18"
+NVM_VERSION="0.39.7"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
@@ -1277,11 +1279,11 @@ for ENV_SELECTED in "${ENV[@]}"
    echo ""
    pause '[] Press [Enter] key to start downloading'
    echo ""
-   ## create some temp dirs
-   COMPOSER_TMP=".config,.cache,.local,.composer"
-   mkdir -p ${ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-   chmod 2750 ${ROOT_PATH%/*}/{.config,.cache,.local,.composer}
-   chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.config,.cache,.local,.composer}
+   ## create some dirs and files
+   touch ${ROOT_PATH%/*}/{.bashrc,.bash_profile}
+   mkdir -p ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
+   chmod 2750 ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm,.bashrc,.bash_profile}
+   chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm,.bashrc,.bash_profile}
    ##
 
    su ${OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${COMPOSER_NAME} ${COMPOSER_PASSWORD}"
@@ -1980,7 +1982,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
  su ${GET_[owner]} -s /bin/bash -c "mkdir -p var/tmp"
  su ${GET_[owner]} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
- su ${GET_[owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches -n"
+ su ${GET_[owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches vlucas/phpdotenv -n"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:upgrade"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[env]}"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento cache:flush"
@@ -2117,6 +2119,14 @@ cd ~/public_html/
 # change prompt color
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
+
+if [ "${GET_[env]}" == "developer" ]; then
+YELLOWTXT "[-] Install nodejs ${NODE_VERSION} for [ developer ] environment"
+echo ""
+su ${GET_[owner]} -s /bin/bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash"
+su ${GET_[owner]} -s /bin/bash -c "nvm install ${NODE_VERSION}"
+fi
+echo ""
 
 done
 
