@@ -1281,7 +1281,8 @@ for ENV_SELECTED in "${ENV[@]}"
    ## create some dirs and files
    touch ${ROOT_PATH%/*}/{.bashrc,.bash_profile}
    mkdir -p ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
-   chmod 2750 ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm,.bashrc,.bash_profile}
+   chmod 2750 ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
+   chmod 640 ${ROOT_PATH%/*}/{.bashrc,.bash_profile}
    chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm,.bashrc,.bash_profile}
    ##
 
