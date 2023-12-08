@@ -41,7 +41,6 @@ MAGENX_NGINX_GITHUB_REPO_API="https://api.github.com/repos/magenx/Magento-nginx-
 
 # Debug Tools
 MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
-MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
 
 # Malware detector
 MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
@@ -1640,7 +1639,7 @@ sysctl -q -p
 echo ""
 YELLOWTXT "[-] Downloading mysqltuner and mytop"
 curl -o /usr/local/bin/mysqltuner ${MYSQL_TUNER}
-curl -o /usr/local/bin/mytop ${MYSQL_TOP}
+ln -s /usr/bin/mytop /usr/local/bin/mytop
 
 for dir in cli fpm
 do
