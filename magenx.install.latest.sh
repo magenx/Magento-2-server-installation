@@ -1714,8 +1714,8 @@ YELLOWTXT "[-] Generating dhparam for nginx ssl config"
 openssl dhparam -dsaparam -out /etc/ssl/certs/dhparams.pem 4096
 
 echo ""
-YELLOWTXT "[-] Generating default ssl cert for nginx"
-openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/certs/default_server.key -out /etc/ssl/certs/default_server.crt \
+YELLOWTXT "[-] Generating default selfsigned ssl cert for nginx"
+openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/private/default_server.key -out /etc/ssl/certs/default_server.crt \
 -subj "/CN=default_server" -days 3650 -subj "/C=US/ST=Oregon/L=Portland/O=default_server/OU=Org/CN=default_server"
 
 echo ""
