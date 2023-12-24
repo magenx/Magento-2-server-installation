@@ -18,6 +18,45 @@ return [
         ],
         'consumers_wait_for_messages' => 0
     ],
+    'indexer' => [
+        'batch_size' => [
+            'cataloginventory_stock' => [
+                'simple' => 650
+            ],
+            'catalog_category_product' => 1000,
+            'catalogsearch_fulltext' => [
+                'partial_reindex' => 650,
+                'mysql_get' => 850,
+                'elastic_save' => 1000
+            ],
+            'catalog_product_price' => [
+                'simple' => 650,
+                'default' => 850,
+                'configurable' => 1000
+            ],
+            'catalogpermissions_category' => 1000,
+            'inventory' => [
+                'simple' => 650,
+                'default' => 850,
+                'configurable' => 1000
+            ]
+        ]
+    ],
+    'cron_consumers_runner' => [
+    'cron_run' => true,
+    'max_messages' => 5,
+    'single_thread' => true,
+    'consumers_wait_for_messages' => 0,
+    'consumers' => [
+		'product_action_attribute.update',
+		'product_action_attribute.website.update',
+		'exportProcessor',
+		'codegeneratorProcessor',
+		'sales.rule.update.coupon.usage',
+		'sales.rule.quote.trigger.recollect',
+		'product_alert'
+         ]
+    ],
     'crypt' => [
         'key' => $_ENV['CRYPT_KEY']
     ],
@@ -130,7 +169,7 @@ return [
     'downloadable_domains' => [
         $_ENV['DOMAIN']
     ],
-	'system' => [
+    'system' => [
         'default' => [
             'catalog' => [
                 'search' => [
