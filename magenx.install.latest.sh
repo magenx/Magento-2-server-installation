@@ -1180,8 +1180,8 @@ for ENV_SELECTED in "${ENV[@]}"
   echo ""
   YELLOWTXT "Waiting for OpenSearch initialization ..."
   timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 9200
-  tail -f /var/log/opensearch/${OWNER}.log | grep '\[GREEN\].*security'
-  sleep 2
+  grep -m 1 '\[GREEN\].*security' <(tail -f /var/log/opensearch/${OWNER}.log)
+  sleep 5
   
   # Create role
   curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/roles/indexer_${OWNER}" \
@@ -1209,6 +1209,8 @@ for ENV_SELECTED in "${ENV[@]}"
 EOF
 )"
 
+echo ""
+
   # Create user
   curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/internalusers/indexer_${OWNER}" \
   -H "Content-Type: application/json" \
@@ -1220,7 +1222,7 @@ EOF
 }
 EOF
 )"
-
+echo ""
 YELLOWTXT "Created OpenSearch user: indexer_${OWNER} and role: indexer_${OWNER} for ${ENV_SELECTED}"
 done
 echo ""
@@ -1568,7 +1570,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
   admin_email = '${ADMIN_EMAIL}',
   locale = '${LOCALE}',
   admin_path = '$(grep -Po "(?<='frontName' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)',
-  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)';
+  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)'
   WHERE
   env = '${ENV_SELECTED}';"
 fi
