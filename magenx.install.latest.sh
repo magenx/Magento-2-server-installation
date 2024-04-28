@@ -1178,8 +1178,10 @@ for ENV_SELECTED in "${ENV[@]}"
   ${SQLITE3} "UPDATE magento SET indexer_password = '${INDEXER_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
   OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
   echo ""
-  
+  YELLOWTXT "Waiting for OpenSearch initialization ..."
   timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 9200
+  tail -f /var/log/opensearch/${OWNER}.log | grep '\[GREEN\].*security'
+  sleep 2
   
   # Create role
   curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/roles/indexer_${OWNER}" \
