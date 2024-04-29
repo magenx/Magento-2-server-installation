@@ -25,7 +25,7 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 COMPOSER_VERSION="2.2"
 RABBITMQ_VERSION="3.12*"
 MARIADB_VERSION="10.11"
-ELASTICSEARCH_VERSION="7.x"
+OPENSEARCH_VERSION="2.x"
 VARNISH_VERSION="73"
 REDIS_VERSION="7"
 NODE_VERSION="18"
@@ -189,7 +189,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS system(
    phpmyadmin_password    text,
    webmin_password        text,
    mysql_root_password    text,
-   elasticsearch_password text
+   opensearch_admin_password text
    );"
    
 ${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
@@ -732,7 +732,7 @@ _echo "${YELLOW}[?] Install PHP ? [y/n][n]:${RESET} "
 read php_install
 if [ "${php_install}" == "y" ]; then
   echo ""
-  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required PHP version: "${RESET})" -i "8.1" PHP_VERSION
+  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required PHP version: "${RESET})" -i "8.2" PHP_VERSION
   # Set php_version
   ${SQLITE3} "UPDATE system SET php_version = '${PHP_VERSION}';"
   echo ""
@@ -1083,143 +1083,176 @@ fi
 echo
 WHITETXT "============================================================================="
 echo
-_echo "${YELLOW}[?] Install ElasticSearch ${ELASTICSEARCH_VERSION} ? [y/n][n]:${RESET} "
-read elastic_install
-if [ "${elastic_install}" == "y" ];then
-  curl -L https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
-  echo "deb https://artifacts.elastic.co/packages/${ELASTICSEARCH_VERSION}/apt stable main" > /etc/apt/sources.list.d/elastic-${ELASTICSEARCH_VERSION}.list
+_echo "${YELLOW}[?] Install OpenSearch ${OPENSEARCH_VERSION} ? [y/n][n]:${RESET} "
+read opensearch_install
+if [ "${opensearch_install}" == "y" ];then
+   curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring
+   echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/${OPENSEARCH_VERSION}/apt stable main" > /etc/apt/sources.list.d/opensearch-${OPENSEARCH_VERSION}.list
   if [ "$?" = 0 ]; then
     echo ""
-    GREENTXT "ElasticSearch ${ELASTICSEARCH_VERSION} repository installed - OK"
+    GREENTXT "OpenSearch ${OPENSEARCH_VERSION} repository installed - OK"
     echo ""
-    YELLOWTXT "ElasticSearch ${ELASTICSEARCH_VERSION} installation:"
+    YELLOWTXT "OpenSearch ${OPENSEARCH_VERSION} installation:"
+    echo ""
+    YELLOWTXT "Re-generating random password for admin user"
+    OPENSEARCH_ADMIN_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9-#?$&' | fold -w 20 | head -n 1)"
+    echo ""
+    ${SQLITE3} "UPDATE system SET opensearch_admin_password = '${OPENSEARCH_ADMIN_PASSWORD}';"
+    
     apt update
-    apt -y install elasticsearch jq
-   if [ "$?" = 0 ]; then
+    env OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD} apt -y install opensearch
+    
+    YELLOWTXT "OpenSearch pre-configuration:"
     echo ""
-    GREENTXT "Elasticsearch ${ELASTICSEARCH_VERSION} installed  -  OK"
-    echo ""
-    YELLOWTXT "Elasticsearch configuration:"
-    echo ""
-    ## elasticsearch settings
-    OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}' LIMIT 1;")
-    if ! grep -q "${OWNER}" /etc/elasticsearch/elasticsearch.yml >/dev/null 2>&1 ; then
-      cp /etc/elasticsearch/elasticsearch.yml /etc/elasticsearch/_elasticsearch.yml_default
-cat > /etc/elasticsearch/elasticsearch.yml <<END
+    ## opensearch settings
+    OWNER=$(${SQLITE3} "SELECT owner FROM magento LIMIT 1;")
+    if ! grep -q "${OWNER}" /etc/opensearch/opensearch.yml >/dev/null 2>&1 ; then
+    cp /etc/opensearch/opensearch.yml /etc/opensearch/opensearch.yml_default
+cat > /etc/opensearch/opensearch.yml <<END
 #--------------------------------------------------------------------#
 #----------------------- MAGENX CONFIGURATION -----------------------#
 # -------------------------------------------------------------------#
-# original config saved: /etc/elasticsearch/_elasticsearch.yml_default
+# original config saved: /etc/opensearch/opensearch.yml_default
 
 cluster.name: ${OWNER}
 node.name: ${OWNER}-node1
-path.data: /var/lib/elasticsearch
-path.logs: /var/log/elasticsearch
-
-network.host: 127.0.0.1
-http.host: 127.0.0.1
+node.attr.rack: r1
+node.max_local_storage_nodes: 1
 
 discovery.type: single-node
-xpack.security.enabled: true
-xpack.security.http.ssl.enabled: false
-xpack.security.transport.ssl.enabled: false
-xpack.security.authc.api_key.enabled: true
+
+path.data: /var/lib/opensearch
+path.logs: /var/log/opensearch
+
+network.host: 127.0.0.1
+http.port: 9200
+
+# WARNING: revise all the lines below before you go into production
+plugins.security.ssl.transport.pemcert_filepath: esnode.pem
+plugins.security.ssl.transport.pemkey_filepath: esnode-key.pem
+plugins.security.ssl.transport.pemtrustedcas_filepath: root-ca.pem
+
+plugins.security.ssl.transport.enforce_hostname_verification: false
+plugins.security.ssl.http.enabled: false
+plugins.security.allow_unsafe_democertificates: true
+plugins.security.allow_default_init_securityindex: true
+
+plugins.security.audit.type: internal_opensearch
+plugins.security.enable_snapshot_restore_privilege: true
+plugins.security.check_snapshot_restore_write_privileges: true
+plugins.security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
+plugins.security.system_indices.enabled: true
+plugins.security.system_indices.indices: [".plugins-ml-config", ".plugins-ml-connector", ".plugins-ml-model-group", ".plugins-ml-model", ".plugins-ml-task", ".plugins-ml-conversation-meta", ".plugins-ml-conversation-interactions", ".opendistro-alerting-config", ".opendistro-alerting-alert*", ".opendistro-anomaly-results*", ".opendistro-anomaly-detector*", ".opendistro-anomaly-checkpoints", ".opendistro-anomaly-detection-state", ".opendistro-reports-*", ".opensearch-notifications-*", ".opensearch-notebooks", ".opensearch-observability", ".ql-datasources", ".opendistro-asynchronous-search-response*", ".replication-metadata-store", ".opensearch-knn-models", ".geospatial-ip2geo-data*"]
+
 
 END
 
-      sed -i "s/.*-Xms.*/-Xms512m/" /etc/elasticsearch/jvm.options
-      sed -i "s/.*-Xmx.*/-Xmx1024m/" /etc/elasticsearch/jvm.options
-      ## use builtin java
-      sed -i "s,#ES_JAVA_HOME=,ES_JAVA_HOME=/usr/share/elasticsearch/jdk/," /etc/default/elasticsearch
-    fi
+    ## OpenSearch settings
+    sed -i "s/.*-Xms.*/-Xms512m/" /etc/opensearch/jvm.options
+    sed -i "s/.*-Xmx.*/-Xmx1024m/" /etc/opensearch/jvm.options
+fi
+    
+   if [ "$?" = 0 ]; then
+    echo ""
+    GREENTXT "OpenSearch ${OPENSEARCH_VERSION} installed  -  OK"
+    echo ""
 
-chown -R :elasticsearch /etc/elasticsearch/*
+chown -R :opensearch /etc/opensearch/*
 systemctl daemon-reload
-systemctl enable elasticsearch.service
-systemctl restart elasticsearch.service
+systemctl enable opensearch.service
+systemctl restart opensearch.service
 
     if [ "$?" != 0 ]; then
       echo ""
-      REDTXT "[!] Elasticsearch startup error"
+      REDTXT "[!] OpenSearch startup error"
       REDTXT "[!] Please correct error above and try again"
       echo ""
       exit 1
     fi
 
-echo ""
-YELLOWTXT "Re-generating random password for elastic user:"
-/usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -b > /tmp/elasticsearch
-ELASTICSEARCH_PASSWORD="$(awk '/PASSWORD elastic/ { print $4 }' /tmp/elasticsearch)"
-${SQLITE3} "UPDATE system SET elasticsearch_password = '${ELASTICSEARCH_PASSWORD}';"
-rm /tmp/elasticsearch
-
-# generate elasticsearch password for environment
+# generate opensearch password for environment
+ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
 for ENV_SELECTED in "${ENV[@]}"
   do
   INDEXER_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)"
   ${SQLITE3} "UPDATE magento SET indexer_password = '${INDEXER_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
   OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
   echo ""
-# create and check if role already created
-ROLE_CREATED=$(curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/role/indexer_${OWNER}" \
--H 'Content-Type: application/json' -sS \
--d @<(cat <<EOF
+  YELLOWTXT "Waiting for OpenSearch initialization ..."
+  timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 9200
+  grep -m 1 '\[GREEN\].*security' <(tail -f /var/log/opensearch/${OWNER}.log)
+  sleep 5
+  
+  # Create role
+  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/roles/indexer_${OWNER}" \
+  -H "Content-Type: application/json" \
+  -d "$(cat <<EOF
 {
-  "cluster": ["manage_index_templates", "monitor", "manage_ilm"],
-  "indices": [
-    {
-      "names": [ "indexer_${OWNER}*"],
-      "privileges": ["all"]
-    }
-  ]
-}
-EOF
-) | jq -r ".role.created")
-
-# create and check if we have user enabled
-USER_ENABLED=$(curl -X GET -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/indexer_${OWNER}" \
--H 'Content-Type: application/json' -sS | jq -r ".[].enabled")
-
-if [[ ${ROLE_CREATED} == true ]] && [[ ${USER_ENABLED} != true ]]; then
-echo ""
-YELLOWTXT "[!] Create user [indexer_${DOMAIN//[-.]/}]: "
-curl -X POST -u elastic:${ELASTICSEARCH_PASSWORD} "http://127.0.0.1:9200/_security/user/indexer_${OWNER}" \
--H 'Content-Type: application/json' -sS \
--d "$(cat <<EOF
-{
-  "password" : "${INDEXER_PASSWORD}",
-  "roles" : [ "indexer_${OWNER}"],
-  "full_name" : "${DOMAIN//[-.]/} indexer in ${ENV_SELECTED} environment"
+    "cluster_permissions": [
+        "cluster_composite_ops_monitor",
+        "indices:admin/mappings/put",
+        "indices:admin/create",
+	"cluster:monitor/main"
+    ],
+    "index_permissions": [
+        {
+            "index_patterns": [
+                "indexer_${OWNER}*"
+            ],
+            "allowed_actions": [
+                "read",
+                "write"
+            ]
+        }
+    ]
 }
 EOF
 )"
-else
-REDTXT "  [!] ELK return error for role indexer_${OWNER} "
-fi
+
+echo ""
+
+  # Create user
+  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/internalusers/indexer_${OWNER}" \
+  -H "Content-Type: application/json" \
+  -d "$(cat <<EOF
+{
+    "password": "${INDEXER_PASSWORD}",
+    "opendistro_security_roles": ["indexer_${OWNER}"],
+    "backend_roles": ["indexer_${OWNER}"]
+}
+EOF
+)"
+echo ""
+YELLOWTXT "Created OpenSearch user: indexer_${OWNER} and role: indexer_${OWNER} for ${ENV_SELECTED}"
 done
 echo ""
+YELLOWTXT "Installing OpenSearch plugins:"
+/usr/share/opensearch/bin/opensearch-plugin install --batch \
+  analysis-icu \
+  analysis-phonetic
+echo ""
   echo ""
-  PACKAGES_INSTALLED elasticsearch
-  echo "127.0.0.1 elasticsearch" >> /etc/hosts
+  PACKAGES_INSTALLED opensearch
+  echo "127.0.0.1 opensearch" >> /etc/hosts
   else
   echo ""
-    REDTXT "Elasticsearch ${ELASTICSEARCH_VERSION} installation error"
+    REDTXT "OpenSearch ${OPENSEARCH_VERSION} installation error"
    exit 1
    fi
  else
 echo ""
-REDTXT "Elasticsearch ${ELASTICSEARCH_VERSION} repository installation error"
+REDTXT "OpenSearch ${OPENSEARCH_VERSION} repository installation error"
 exit 1
 fi
 else
 echo ""
-YELLOWTXT "ElasticSearch ${ELASTICSEARCH_VERSION} installation was skipped by user input. Proceeding to next step."
+YELLOWTXT "OpenSearch ${OPENSEARCH_VERSION} installation was skipped by user input. Proceeding to next step."
 fi
 echo ""
 echo ""
 ${SQLITE3} "UPDATE menu SET lemp = 'x';"
 ## keep versions for critical services to avoid issues
-apt-mark hold elasticsearch erlang rabbitmq-server
+apt-mark hold opensearch erlang rabbitmq-server
 echo ""
 echo ""
 GREENTXT "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
@@ -1513,13 +1546,13 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --amqp-password='${GET_[rabbitmq_password]}' \
  --amqp-virtualhost='/' \
  --consumers-wait-for-messages=0 \
- --search-engine=elasticsearch7 \
- --elasticsearch-host=elasticsearch \
- --elasticsearch-port=9200 \
- --elasticsearch-index-prefix=indexer_${GET_[owner]} \
- --elasticsearch-enable-auth=1 \
- --elasticsearch-username=indexer_${GET_[owner]} \
- --elasticsearch-password='${GET_[indexer_password]}'"
+ --search-engine=opensearch \
+ --opensearch-host=opensearch \
+ --opensearch-port=9200 \
+ --opensearch-index-prefix=indexer_${GET_[owner]} \
+ --opensearch-enable-auth=1 \
+ --opensearch-username=indexer_${GET_[owner]} \
+ --opensearch-password='${GET_[indexer_password]}'"
 
  if [ "$?" != 0 ]; then
    echo ""
@@ -1537,7 +1570,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
   admin_email = '${ADMIN_EMAIL}',
   locale = '${LOCALE}',
   admin_path = '$(grep -Po "(?<='frontName' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)',
-  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)';
+  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)'
   WHERE
   env = '${ENV_SELECTED}';"
 fi
