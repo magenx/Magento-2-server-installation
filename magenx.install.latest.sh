@@ -2022,7 +2022,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
  su ${GET_[owner]} -s /bin/bash -c "mkdir -p var/tmp"
  su ${GET_[owner]} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
- su ${GET_[owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches vlucas/phpdotenv -n"
+ su ${GET_[owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches vlucas/phpdotenv -n -W"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:upgrade"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[env]}"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento cache:flush"
