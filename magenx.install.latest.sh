@@ -50,7 +50,7 @@ WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
-logrotate git netcat-openbsd patch ipset postfix strace rsyslog geoipupdate moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
+logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
@@ -1095,11 +1095,13 @@ if [ "${opensearch_install}" == "y" ];then
     YELLOWTXT "OpenSearch ${OPENSEARCH_VERSION} installation:"
     echo ""
     YELLOWTXT "Re-generating random password for admin user"
-    OPENSEARCH_ADMIN_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9-#?$&' | fold -w 20 | head -n 1)"
-    echo ""
-    ${SQLITE3} "UPDATE system SET opensearch_admin_password = '${OPENSEARCH_ADMIN_PASSWORD}';"
+    if [[ -z "$(${SQLITE3} "SELECT opensearch_admin_password FROM system;")" ]]; then
+      OPENSEARCH_ADMIN_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9-#?$&' | fold -w 20 | head -n 1)"
+      ${SQLITE3} "UPDATE system SET opensearch_admin_password = '${OPENSEARCH_ADMIN_PASSWORD}';"
+    fi
     
     apt update
+    OPENSEARCH_ADMIN_PASSWORD="$(${SQLITE3} "SELECT opensearch_admin_password FROM system;")"
     env OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD} apt -y install opensearch
     
     YELLOWTXT "OpenSearch pre-configuration:"
