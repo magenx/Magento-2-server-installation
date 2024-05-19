@@ -2039,6 +2039,8 @@ if [ "${apply_config}" == "y" ]; then
  YELLOWTXT "[-] Configure Google 2FA code for ${GET_[admin_login]}"
  echo ""
  GOOGLE_TFA_CODE="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&' | fold -w 15 | head -n 1 | base32)"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set twofactorauth/general/force_providers google"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set twofactorauth/google/otp_window 29"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${GET_[admin_login]} ${GOOGLE_TFA_CODE}"
  echo "  Google Authenticator mobile app configuration:"
  echo "  - select: Enter a setup key"
