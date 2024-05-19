@@ -193,6 +193,7 @@
         "magento/module-aws-s3-page-builder": "*",
         "magento/module-catalog-page-builder-analytics": "*",
         "magento/module-cms-page-builder-analytics": "*",
+        "magento/module-payment-services-base": "*",
         "temando/module-shipping": "*",
         "temando/module-shipping-m2": "*",
         "temando/module-shipping-remover": "*",
