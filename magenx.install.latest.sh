@@ -1191,22 +1191,26 @@ for ENV_SELECTED in "${ENV[@]}"
   -d "$(cat <<EOF
 {
     "cluster_permissions": [
-        "cluster_composite_ops_monitor",
-        "indices:admin/mappings/put",
-        "indices:admin/create",
-	"cluster:monitor/main"
+      "cluster_composite_ops_monitor",
+      "cluster:monitor/main",
+      "cluster:monitor/state",
+      "cluster:monitor/health"
     ],
     "index_permissions": [
-        {
-            "index_patterns": [
-                "indexer_${OWNER}*"
-            ],
-            "allowed_actions": [
-                "read",
-                "write"
-            ]
-        }
-    ]
+      {
+        "index_patterns": ["indexer_${OWNER}*"],
+        "fls": [],
+        "masked_fields": [],
+        "allowed_actions": ["*"]
+      },
+      {
+        "index_patterns": ["*"],
+        "fls": [],
+        "masked_fields": [],
+        "allowed_actions": ["indices:admin/aliases/get"]
+      }
+    ],
+    "tenant_permissions": []
 }
 EOF
 )"
@@ -1219,8 +1223,7 @@ echo ""
   -d "$(cat <<EOF
 {
     "password": "${INDEXER_PASSWORD}",
-    "opendistro_security_roles": ["indexer_${OWNER}"],
-    "backend_roles": ["indexer_${OWNER}"]
+    "opendistro_security_roles": ["indexer_${OWNER}", "own_index"]
 }
 EOF
 )"
