@@ -34,7 +34,7 @@ Get a fully pre-configured server with Magento and LEMP stack in just 10 minutes
 - [x] Varnish HTTPS cache setup
 - [x] MariaDB my.cnf optimization
 - [x] Nginx optimized config with security
-- [x] ELK 7.x stack - Elasticsearch latest (log4j2 fixed)
+- [x] OpenSearch 2.x latest
 - [x] PHP-FPM (apcu, opcache, lzf, snappy, redis)
 - [x] Redis Magento Cache and Sessions (2 instances)
 - [x] RabbitMQ message queue
