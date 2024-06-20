@@ -158,7 +158,6 @@
         "magento/module-wishlist-graph-ql": "*",
         "magento/module-worldpay": "*",
         "magento/module-elasticsearch-6": "*",
-        "magento/module-csp": "*",
         "magento/module-admin-analytics": "*",
         "magento/module-paypal-captcha": "*",
         "magento/module-release-notification": "*",
