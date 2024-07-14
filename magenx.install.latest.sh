@@ -1794,9 +1794,9 @@ sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PHPMYADMIN_FOLDER}/g" /etc/nginx/conf_m
            auth_basic \$authentication; \\
            auth_basic_user_file .mysql;"  /etc/nginx/conf_m2/phpmyadmin.conf
 	 	   
-sed -i "s|^listen =.*|listen = /var/run/php${PHP_VERSION}-fpm.sock|" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
+sed -i "s|^listen =.*|listen = /var/run/php/php${PHP_VERSION}-fpm.sock|" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
 sed -i "s/^listen.owner.*/listen.owner = nginx/" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
-sed -i "s|127.0.0.1:9000|unix:/var/run/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
+sed -i "s|127.0.0.1:9000|unix:/var/run/php/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
 
 htpasswd -b -c /etc/nginx/.mysql mysql ${PHPMYADMIN_PASSWORD}  >/dev/null 2>&1
 ${SQLITE3} "UPDATE system SET phpmyadmin_password = '${PHPMYADMIN_PASSWORD}';"
@@ -1872,7 +1872,7 @@ tee /etc/php/${PHP_VERSION}/fpm/pool.d/${GET_[owner]}.conf <<END
 user = php-\$pool
 group = php-\$pool
 
-listen = /var/run/\$pool.sock
+listen = /var/run/php/\$pool.sock
 listen.owner = nginx
 listen.group = php-\$pool
 listen.mode = 0660
@@ -1950,17 +1950,17 @@ sed -i "s/example.com/${GET_[domain]}/g" /etc/nginx/sites-available/${GET_[domai
 if [ "${#ENV[@]}" -gt 1 ]; then
   if [ "${GET_[env]}" == "production" ]; then
     sed -i "s/example.com/${GET_[domain]}/g" /etc/nginx/nginx.conf
-    sed -i "s,default.*production php-fpm,${GET_[domain]} unix:/var/run/${GET_[owner]}.sock; # ${GET_[env]} php-fpm,"  /etc/nginx/conf_m2/maps.conf
+    sed -i "s,default.*production php-fpm,${GET_[domain]} unix:/var/run/php/${GET_[owner]}.sock; # ${GET_[env]} php-fpm,"  /etc/nginx/conf_m2/maps.conf
     sed -i "s,default.*production app folder,${GET_[domain]} ${GET_[root_path]}; # ${GET_[env]} app folder," /etc/nginx/conf_m2/maps.conf
   else
     sed -i "/# production php-fpm/a\
-	${GET_[domain]} unix:\/var\/run\/${GET_[owner]}.sock; # ${GET_[env]} php-fpm"  /etc/nginx/conf_m2/maps.conf
+	${GET_[domain]} unix:\/var\/run\/php\/${GET_[owner]}.sock; # ${GET_[env]} php-fpm"  /etc/nginx/conf_m2/maps.conf
     sed -i "/# production app folder/a\
 	${GET_[domain]} ${GET_[root_path]}; # ${GET_[env]} app folder"  /etc/nginx/conf_m2/maps.conf
   fi
   else
     sed -i "s/example.com/${GET_[domain]}/g" /etc/nginx/nginx.conf
-    sed -i "s,default.*production php-fpm,default unix:/var/run/${GET_[owner]}.sock; # ${GET_[env]} php-fpm,"  /etc/nginx/conf_m2/maps.conf
+    sed -i "s,default.*production php-fpm,default unix:/var/run/php/${GET_[owner]}.sock; # ${GET_[env]} php-fpm,"  /etc/nginx/conf_m2/maps.conf
     sed -i "s,default.*production app folder,default ${GET_[root_path]}; # ${GET_[env]} app folder," /etc/nginx/conf_m2/maps.conf
 fi
 
