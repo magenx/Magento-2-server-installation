@@ -1207,7 +1207,10 @@ for ENV_SELECTED in "${ENV[@]}"
         "index_patterns": ["*"],
         "fls": [],
         "masked_fields": [],
-        "allowed_actions": ["indices:admin/aliases/get"]
+        "allowed_actions": [
+	        "indices:admin/aliases/get",
+		"indices:data/read/search",
+		"indices:admin/get"]
       }
     ],
     "tenant_permissions": []
