@@ -640,7 +640,7 @@ WHITETXT "----------------------------------------------------------------------
   read mariadb_install
 if [ "${mariadb_install}" == "y" ]; then
   echo
-  curl -sS ${MARIADB_REPO_CONFIG} | bash -s -- --mariadb-server-version="mariadb-${MARIADB_VERSION}" --skip-verify --skip-eol-check
+  curl -sS ${MARIADB_REPO_CONFIG} | bash -s -- --mariadb-server-version="mariadb-${MARIADB_VERSION}" --skip-maxscale --skip-verify --skip-eol-check
   echo
  if [ "$?" = 0 ] # if repository installed then install package
    then
