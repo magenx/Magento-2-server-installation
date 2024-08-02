@@ -693,9 +693,9 @@ WHITETXT "======================================================================
   _echo "${YELLOW}[?] Install Nginx ${NGINX_VERSION} ? [y/n][n]:${RESET} "
   read nginx_install
 if [ "${nginx_install}" == "y" ]; then
-  echo
-  echo "deb http://nginx.org/packages/mainline/${DISTRO_NAME,,} $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
-  curl -fL https://nginx.org/keys/nginx_signing.key | apt-key add -
+  echo ""
+  echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/${DISTRO_NAME,,} `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
+  curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
   echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
    if [ "$?" = 0 ]; then # if repository installed then install package
     echo
