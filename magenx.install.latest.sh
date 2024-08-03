@@ -1949,6 +1949,7 @@ YELLOWTXT "[-] Nginx configuration for ${GET_[env]} environment"
 cp /etc/nginx/sites-available/magento2.conf  /etc/nginx/sites-available/${GET_[domain]}.conf
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
 sed -i "s/example.com/${GET_[domain]}/g" /etc/nginx/sites-available/${GET_[domain]}.conf
+sed -i "s/ADMIN_PLACEHOLDER/${GET_[admin_path]}/" /etc/nginx/conf_m2/extra_protect.conf
 
 if [ "${#ENV[@]}" -gt 1 ]; then
   if [ "${GET_[env]}" == "production" ]; then
