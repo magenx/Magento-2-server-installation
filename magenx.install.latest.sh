@@ -869,6 +869,22 @@ for ENV_SELECTED in "${ENV[@]}"
     for SERVICE in session cache
     do
 OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
+
+if [ "${SERVICE}" = "session" ]; then
+# Perfect options for sessions
+CONFIG_OPTIONS="
+save 900 1
+save 300 10
+save 60 10000
+
+appendonly yes
+appendfsync everysec
+"
+else
+# Default options for cache
+CONFIG_OPTIONS="save \"\""
+fi
+
 cat > /etc/redis/${SERVICE}-${OWNER}.conf<<END
 
 bind 127.0.0.1
@@ -885,7 +901,7 @@ dir /var/lib/redis
 logfile /var/log/redis/${SERVICE}-${OWNER}.log
 pidfile /run/redis/${SERVICE}-${OWNER}.pid
 
-save ""
+${CONFIG_OPTIONS}
 
 maxmemory 1024mb
 maxmemory-policy allkeys-lru
