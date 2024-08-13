@@ -2226,6 +2226,11 @@ echo ""
 YELLOWTXT "For Github Actions CI/CD integration:"
 WHITETXT "https://www.magenx.com/magento-support-and-server-management.html"
 echo ""
+echo ""
+YELLOWTXT "Write a review:"
+WHITETXT "https://trustpilot.com/review/www.magenx.com"
+echo ""
+echo ""
 echo "PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '" >> /etc/bashrc
 echo ""
 ## simple installation stats
