@@ -127,7 +127,8 @@ You can use this for free. But its not free to create it. This takes time and re
 If you are using this project, there are few ways you can support it:
 - [x] Star and sharing the project
 - [x] Open an issue to help make it better
-- [x] Donate  
+- [x] Donate
+- [x] Write a review https://trustpilot.com/review/www.magenx.com  
  
 ![deniszokov_paypal_qrcode](https://github.com/magenx/Magento-2-aws-cluster-terraform/assets/1591200/3175c8a5-7786-4056-87c0-b4e0727f4ede)  
   
