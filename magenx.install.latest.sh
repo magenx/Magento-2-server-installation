@@ -1198,7 +1198,7 @@ for ENV_SELECTED in "${ENV[@]}"
   echo ""
   YELLOWTXT "Waiting for OpenSearch initialization ..."
   timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 9200
-  grep -m 1 '\[GREEN\].*security' <(tail -f /var/log/opensearch/${OWNER}.log)
+  curl -XGET -u admin:${OPENSEARCH_ADMIN_PASSWORD} "http://127.0.0.1:9200/_cluster/health?wait_for_status=green&timeout=60s"
   sleep 5
   
   # Create role
