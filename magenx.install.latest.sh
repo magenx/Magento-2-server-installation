@@ -1165,9 +1165,15 @@ plugins.security.system_indices.indices: [".plugins-ml-config", ".plugins-ml-con
 
 END
 
-    ## OpenSearch settings
-    sed -i "s/.*-Xms.*/-Xms512m/" /etc/opensearch/jvm.options
-    sed -i "s/.*-Xmx.*/-Xmx1024m/" /etc/opensearch/jvm.options
+## OpenSearch jvm options
+HEAP_SIZE=$(echo "0.30*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
+if [ "${HEAP_SIZE}" == "0" ]; then HEAP_SIZE=1; fi
+
+cat <<END > /etc/opensearch/jvm.options.d/${parameter["BRAND"]}.options
+-Xms${HEAP_SIZE}g
+-Xmx${HEAP_SIZE}g
+END
+
 fi
     
    if [ "$?" = 0 ]; then
