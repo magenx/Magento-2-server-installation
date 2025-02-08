@@ -2204,9 +2204,12 @@ echo ""
 done
 
 echo ""
-YELLOWTXT "[-] Add timestamp to bash history:"
+YELLOWTXT "[-] Add timestamp to bash history and config alias:"
 tee -a  ~/.bashrc <<END
+### magenx
 export HISTTIMEFORMAT="%d/%m/%y %T "
+alias magenx_magento='sqlite3 -line /opt/magenx/config/magenx.db "select * from magento;"'
+alias magenx_system='sqlite3 -line /opt/magenx/config/magenx.db "select * from system;"'
 END
 
 # clean config directory and set permissions
