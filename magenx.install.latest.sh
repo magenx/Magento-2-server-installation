@@ -22,14 +22,14 @@ COMPOSER_NAME="8c681734f22763b50ea0c29dff9e7af2"
 COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974" 
 
 ## Version lock
-COMPOSER_VERSION="2.2"
-RABBITMQ_VERSION="3.12*"
+COMPOSER_VERSION="2.7"
+RABBITMQ_VERSION="3.13*"
 MARIADB_VERSION="10.11"
 OPENSEARCH_VERSION="2.x"
-VARNISH_VERSION="73"
+VARNISH_VERSION="75"
 REDIS_VERSION="7"
 NODE_VERSION="20"
-NVM_VERSION="0.40.0"
+NVM_VERSION="0.40.1"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
@@ -732,7 +732,7 @@ _echo "${YELLOW}[?] Install PHP ? [y/n][n]:${RESET} "
 read php_install
 if [ "${php_install}" == "y" ]; then
   echo ""
-  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required PHP version: "${RESET})" -i "8.2" PHP_VERSION
+  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required PHP version: "${RESET})" -i "8.3" PHP_VERSION
   # Set php_version
   ${SQLITE3} "UPDATE system SET php_version = '${PHP_VERSION}';"
   echo ""
