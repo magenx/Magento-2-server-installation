@@ -2055,7 +2055,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[owner]} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
  su ${GET_[owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches vlucas/phpdotenv -n -W"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:upgrade"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[env]}"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento :mode:set ${GET_[env]}"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento cache:flush"
 
  rm -rf var/log/*.log
@@ -2134,7 +2134,7 @@ cd /home/${GET_[owner]}/
 chown ${GET_[owner]} /home/${GET_[owner]}/.mytop
 
 echo ""
-YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions deployment"
+YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions ment"
 mkdir .ssh
 SSH_KEY="private_ssh_key_${GET_[env]}"
 ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${SSH_KEY} -C "ssh for ${GET_[domain]} ${GET_[env]}" -N ""
@@ -2150,23 +2150,7 @@ ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KE
 GITHUB_ACTIONS_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}")
 GITHUB_ACTIONS_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub")
 ${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}' WHERE env = '${GET_[env]}';"
-deploy_command="command=\"build_version=\${SSH_ORIGINAL_COMMAND} /home/${GET_[owner]}/deploy.sh\" "
-awk -v var="${deploy_command}" '{print var $0}' ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub >> .ssh/authorized_keys
-
-echo ""
-YELLOWTXT "[-] Creating Github Actions deployment script deploy.sh"
-tee deploy.sh <<END
-#!/bin/bash
-cd public_html/
-git fetch origin \${build_version}
-git reset origin/\${build_version} --hard
-git clean -f -d
-bin/magento setup:db:status --no-ansi -n
-if [[ \$? -ne 0 ]]; then
-bin/magento setup:upgrade --keep-generated --no-ansi -n
-fi
-cacheflush
-END
+cat ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub >> .ssh/authorized_keys
 
 echo ""
 YELLOWTXT "[-] Creating bash_profile for ${GET_[env]}"
