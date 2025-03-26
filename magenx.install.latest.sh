@@ -24,15 +24,16 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 ## Version lock
 COMPOSER_VERSION="2.7"
 RABBITMQ_VERSION="3.13*"
+ERLANG_VERSION="1:26.2.5.9-1"
 MARIADB_VERSION="10.11"
 OPENSEARCH_VERSION="2.x"
-VARNISH_VERSION="75"
+VARNISH_VERSION="76"
 REDIS_VERSION="7"
 NODE_VERSION="20"
 NVM_VERSION="0.40.1"
 
 # Repositories
-MARIADB_REPO_CONFIG="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
+MARIADB_REPO_CONFIG="https://r.mariadb.com/downloads/mariadb_repo_setup"
 
 # Nginx configuration
 NGINX_VERSION=$(curl -s http://nginx.org/en/download.html | grep -oP '(?<=gz">nginx-).*?(?=</a>)' | head -1)
@@ -640,7 +641,7 @@ WHITETXT "----------------------------------------------------------------------
   read mariadb_install
 if [ "${mariadb_install}" == "y" ]; then
   echo
-  curl -sS ${MARIADB_REPO_CONFIG} | bash -s -- --mariadb-server-version="mariadb-${MARIADB_VERSION}" --skip-maxscale --skip-verify --skip-eol-check
+  curl -LsS "${MARIADB_REPO_CONFIG}" | bash -s -- --mariadb-server-version="mariadb-${MARIADB_VERSION}" --skip-maxscale --skip-verify --skip-eol-check
   echo
  if [ "$?" = 0 ] # if repository installed then install package
    then
@@ -958,7 +959,7 @@ if [ "${rabbitmq_install}" == "y" ];then
   curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/setup.deb.sh' | bash
  cat > /etc/apt/preferences.d/erlang <<END
 Package: erlang*
-Pin: version 1:26*
+Pin: version ${ERLANG_VERSION}
 Pin-Priority: 999
 END
   if [ "$?" = 0 ]; then
@@ -968,7 +969,7 @@ END
     YELLOWTXT "RabbitMQ ${RABBITMQ_VERSION} installation:"
     echo ""
     apt update
-    apt -y install rabbitmq-server=${RABBITMQ_VERSION} 
+    apt -y install rabbitmq-server=${RABBITMQ_VERSION}  --fix-missing
     if [ "$?" = 0 ]; then
      echo ""
      GREENTXT "RabbitMQ ${RABBITMQ_VERSION} installed  -  OK"
