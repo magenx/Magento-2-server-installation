@@ -110,33 +110,6 @@ GREENTXT "Installed: "
 apt -qq list --installed $@ 2>/dev/null | awk '{print "   " $0}'
 }
 ###################################################################################
-###                            ARROW KEYS UP/DOWN MENU                          ###
-###################################################################################
-updown_menu () {
-i=1;for items in $(echo $1); do item[$i]="${items}"; let i=$i+1; done
-i=1
-echo -e "\n  Use up/down arrow keys then press [ Enter ] to select $2"
-while [ 0 ]; do
-  if [ "$i" -eq 0 ]; then i=1; fi
-  if [ ! "${item[$i]}" ]; then let i=i-1; fi
-  echo -en "\r                                 " 
-  echo -en "\r${item[$i]}"
-  read -sn 1 selector
-  case "${selector}" in
-    "B") let i=i+1;;
-    "A") let i=i-1;;
-    "") echo; read -sn 1 -p "  [?] To confirm [ "$(echo -e $BOLD${item[$i]}$RESET)" ] press "$(echo -e $BOLD$GREEN"y"$RESET)" or "$(echo -e $BOLD$RED"n"$RESET)" for new selection" confirm
-      if [[ "${confirm}" =~ ^[Yy]$  ]]; then
-        printf -v "$2" '%s' "${item[$i]}"
-        break
-      else
-        echo
-        echo -e "\n  Use up/down arrow keys then press [ Enter ] to select $2"
-      fi
-      ;;
-  esac
-done }
-###################################################################################
 ###           CHECK IF ROOT AND CREATE DATABASE TO SAVE ALL SETTINGS            ###
 ###################################################################################
 echo ""
@@ -306,7 +279,7 @@ if [[ ${RESULT} == up ]]; then
 fi
 
 # install packages to run CPU and HDD test
-dpkg-query -l curl time bc bzip2 tar >/dev/null || { echo; echo; apt update -o Acquire::ForceIPv4=true; apt -y install curl time bc bzip2 tar; }
+dpkg-query -l fzf curl time bc bzip2 tar >/dev/null || { echo; echo; apt update -o Acquire::ForceIPv4=true; apt -y install fzf curl time bc bzip2 tar; }
 
 # check if you need self update
 MD5_NEW=$(curl -sL ${MAGENX_BASE} > ${SELF}.new && md5sum ${SELF}.new | awk '{print $1}')
@@ -483,7 +456,9 @@ if [ ${#ENV[@]} -eq 0 ]; then
   ${BOLD}developer${RESET} - write enabled! developer mode.
   ${BOLD}all_3${RESET} - configure all 3 environments on this server"
   echo ""
-  updown_menu "production staging developer all_3" ENV_SELECTED
+  echo ""
+  ENVIRONMENTS=("production" "staging" "developer" "all_3")
+  ENV_SELECTED=$(printf "%s\n" "${ENVIRONMENTS[@]}" | fzf --height=40% --reverse --prompt="Select environment: ")
   if [ "${ENV_SELECTED}" == "all_3" ]; then
     ENV=("production" "staging" "developer")
   else
@@ -566,34 +541,26 @@ fi
 showMenu () {
 MENU_CHECK=($(${SQLITE3} -list -separator '  ' "SELECT lemp, magento, database, install, config, csf, webmin FROM menu;"))
 printf "\033c"
-    echo ""
-      echo ""
-        echo -e "${DGREYBG}${BOLD}  MAGENTO SERVER CONFIGURATION v.${MAGENX_VERSION}  ${RESET}"
-        BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        echo ""
-        WHITETXT "[${MENU_CHECK[0]}] Install repository and LEMP packages :  ${YELLOW}\tlemp"
-        WHITETXT "[${MENU_CHECK[1]}] Download Magento latest version      :  ${YELLOW}\tmagento"
-        WHITETXT "[${MENU_CHECK[2]}] Setup Magento database               :  ${YELLOW}\tdatabase"
-        WHITETXT "[${MENU_CHECK[3]}] Install Magento no sample data       :  ${YELLOW}\tinstall"
-        WHITETXT "[${MENU_CHECK[4]}] Post-Installation config             :  ${YELLOW}\tconfig"
-        echo ""
-        BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        echo ""
-        WHITETXT "[${MENU_CHECK[5]}] Install CSF Firewall                 :  ${YELLOW}\tfirewall"
-        WHITETXT "[${MENU_CHECK[6]}] Install Webmin control panel         :  ${YELLOW}\twebmin"
-        echo ""
-        BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        echo ""
-        WHITETXT "[-] To quit and exit                     :  ${RED}\texit"
-      echo ""
-    echo ""
+  echo ""
+  MENU_ITEMS=(
+  "[${MENU_CHECK[0]}] Install packages for lemp"
+  "[${MENU_CHECK[1]}] Download magento"
+  "[${MENU_CHECK[2]}] Setup magento database"
+  "[${MENU_CHECK[3]}] Magento no sample data install"
+  "[${MENU_CHECK[4]}] Post-Installation config"
+  "[${MENU_CHECK[5]}] Install CSF firewall"
+  "[${MENU_CHECK[6]}] Install webmin"
+  "[x] exit"
+  )
+  # Display the menu using fzf
+  SELECTED=$(printf "%s\n" "${MENU_ITEMS[@]}" | fzf --height=40% --reverse --prompt="Select an option: ")
+  # Extract the selected option
+  SELECTED_OPTION=$(echo "${SELECTED}" | awk '{print $NF}')
+  echo ""
 }
-while [ 1 ]
-do
-  showMenu
-  read CHOICE
-  case "${CHOICE}" in
-  "lemp")
+showMenu
+case "${SELECTED_OPTION}" in
+"lemp")
 echo ""
 echo ""
 ###################################################################################
@@ -956,11 +923,6 @@ read rabbitmq_install
 if [ "${rabbitmq_install}" == "y" ];then
   curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/setup.deb.sh' | bash
   curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/setup.deb.sh' | bash
- cat > /etc/apt/preferences.d/erlang <<END
-Package: erlang*
-Pin: version 1:26*
-Pin-Priority: 999
-END
   if [ "$?" = 0 ]; then
     echo
     GREENTXT "RabbitMQ repository installed - OK"
@@ -1296,6 +1258,7 @@ echo ""
 echo ""
 pause '[] Press [Enter] key to show the menu'
 printf "\033c"
+showMenu
 ;;
 ###################################################################################
 ###                                  MAGENTO DOWNLOAD                           ###
@@ -1336,7 +1299,7 @@ for ENV_SELECTED in "${ENV[@]}"
    echo ""
    echo ""
    YELLOWTXT "[?] Select Magento full version: "
-   updown_menu "${VERSION_LIST}" VERSION_INSTALLED
+   VERSION_INSTALLED=$(echo "${VERSION_LIST}" | fzf --height=40% --reverse --prompt="Select Magento version: ")
    echo ""
    echo ""
    echo "   [!] Magento [ ${VERSION_INSTALLED} ]"
@@ -1402,6 +1365,7 @@ WHITETXT "--------------------------------------------------------------------"
 echo
 echo
 pause '[] Press [Enter] key to show menu'
+showMenu
 printf "\033c"
 ;;
 ###################################################################################
@@ -1486,6 +1450,7 @@ echo
 echo
 echo
 pause '[] Press [Enter] key to show menu'
+showMenu
 printf "\033c"
 ;;
 ###################################################################################
@@ -1537,9 +1502,9 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%&?=' | fold -w 10 | head -n 1)${RANDOM}"  ADMIN_PASSWORD
  echo
  YELLOWTXT "[-] Language and currency settings:"
- updown_menu "$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" LOCALE
+ LOCALE=$(bin/magento info:language:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort | fzf --height=40% --reverse --prompt="Select Magento locale: ")
  echo ""
- updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" CURRENCY
+ CURRENCY=$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort | fzf --height=40% --reverse --prompt="Select Magento currency: ")
  echo ""
  echo ""
  YELLOWTXT "[-] Magento ${GET_[version_installed]} ready to be installed for ${GET_[env]} environment"
@@ -1621,6 +1586,7 @@ echo
 echo
 
 pause '[] Press [Enter] key to show menu'
+showMenu
 printf "\033c"
 ;;
 ###################################################################################
@@ -2060,7 +2026,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[owner]} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
  su ${GET_[owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches vlucas/phpdotenv -n -W"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:upgrade"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento :mode:set ${GET_[env]}"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[env]}"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento cache:flush"
 
  rm -rf var/log/*.log
@@ -2139,7 +2105,7 @@ cd /home/${GET_[owner]}/
 chown ${GET_[owner]} /home/${GET_[owner]}/.mytop
 
 echo ""
-YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions ment"
+YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions deployment"
 mkdir .ssh
 SSH_KEY="private_ssh_key_${GET_[env]}"
 ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${SSH_KEY} -C "ssh for ${GET_[domain]} ${GET_[env]}" -N ""
@@ -2155,7 +2121,23 @@ ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KE
 GITHUB_ACTIONS_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}")
 GITHUB_ACTIONS_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub")
 ${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}' WHERE env = '${GET_[env]}';"
-cat ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub >> .ssh/authorized_keys
+deploy_command="command=\"build_version=\${SSH_ORIGINAL_COMMAND} /home/${GET_[owner]}/deploy.sh\" "
+awk -v var="${deploy_command}" '{print var $0}' ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub >> .ssh/authorized_keys
+
+echo ""
+YELLOWTXT "[-] Creating Github Actions deployment script deploy.sh"
+tee deploy.sh <<END
+#!/bin/bash
+cd public_html/
+git fetch origin \${build_version}
+git reset origin/\${build_version} --hard
+git clean -f -d
+bin/magento setup:db:status --no-ansi -n
+if [[ \$? -ne 0 ]]; then
+bin/magento setup:upgrade --keep-generated --no-ansi -n
+fi
+cacheflush
+END
 
 echo ""
 YELLOWTXT "[-] Creating bash_profile for ${GET_[env]}"
@@ -2243,6 +2225,7 @@ echo ""
 ${SQLITE3} "UPDATE menu SET config = 'x';"
 echo ""
 pause '[] Press [Enter] key to show menu'
+showMenu
 ;;
 ###################################################################################
 ###                               FIREWALL INSTALLATION                         ###
@@ -2341,6 +2324,7 @@ fi
 echo
 echo
 pause '[] Press [Enter] key to show menu'
+showMenu
 printf "\033c"
 ;;
 ###################################################################################
@@ -2406,6 +2390,7 @@ fi
 echo
 echo
 pause '[] Press [Enter] key to show menu'
+showMenu
 echo
 ;;
 "exit")
@@ -2419,6 +2404,6 @@ exit
 
 *)
 printf "\033c"
+showMenu
 ;;
 esac
-done
