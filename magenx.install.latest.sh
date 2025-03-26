@@ -2060,7 +2060,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[owner]} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
  su ${GET_[owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches vlucas/phpdotenv -n -W"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:upgrade"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento :mode:set ${GET_[env]}"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[env]}"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento cache:flush"
 
  rm -rf var/log/*.log
@@ -2139,7 +2139,7 @@ cd /home/${GET_[owner]}/
 chown ${GET_[owner]} /home/${GET_[owner]}/.mytop
 
 echo ""
-YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions ment"
+YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions"
 mkdir .ssh
 SSH_KEY="private_ssh_key_${GET_[env]}"
 ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${SSH_KEY} -C "ssh for ${GET_[domain]} ${GET_[env]}" -N ""
