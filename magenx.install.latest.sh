@@ -956,6 +956,11 @@ read rabbitmq_install
 if [ "${rabbitmq_install}" == "y" ];then
   curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/setup.deb.sh' | bash
   curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/setup.deb.sh' | bash
+ cat > /etc/apt/preferences.d/erlang <<END
+Package: erlang*
+Pin: version 1:26*
+Pin-Priority: 999
+END
   if [ "$?" = 0 ]; then
     echo
     GREENTXT "RabbitMQ repository installed - OK"
