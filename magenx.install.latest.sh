@@ -1912,10 +1912,7 @@ listen.mode = 0660
 ;; Pool size and settings
 pm = ondemand
 pm.max_children = 100
-pm.start_servers = 2
-pm.min_spare_servers = 1
-pm.max_spare_servers = 3
-pm.max_requests = 10000
+pm.max_requests = 1000
 
 ;;
 ;; [php ini] settings
