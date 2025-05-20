@@ -51,7 +51,7 @@ WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
-logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp"
+logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp ssl-cert-check"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
@@ -187,6 +187,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS system(
    terms                  text,
    system_update          text,
    php_version            text,
+   mariadb_version        text,
    phpmyadmin_password    text,
    webmin_password        text,
    mysql_root_password    text,
@@ -607,7 +608,7 @@ DISTRO_NAME=$(${SQLITE3} "SELECT distro_name FROM system;")
 SYSTEM_UPDATE=$(${SQLITE3} "SELECT system_update FROM system;")
 if [ -z "${SYSTEM_UPDATE}" ]; then
   ## install all extra packages
-  echo
+  echo ""
 BLUEBG "[~]    SYSTEM UPDATE AND PACKAGES INSTALLATION   [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
   echo ""
@@ -640,47 +641,51 @@ WHITETXT "----------------------------------------------------------------------
   _echo "${YELLOW}[?] Install MariaDB ${MARIADB_VERSION} database ? [y/n][n]:${RESET} "
   read mariadb_install
 if [ "${mariadb_install}" == "y" ]; then
-  echo
+  echo ""
+  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required MARIADB version: "${RESET})" -i "${MARIADB_VERSION}" MARIADB_VERSION
+  # Set mariadb-server-version
+  ${SQLITE3} "UPDATE system SET mariadb_version = '${MARIADB_VERSION}';"
   curl -LsS "${MARIADB_REPO_CONFIG}" | bash -s -- --mariadb-server-version="mariadb-${MARIADB_VERSION}" --skip-maxscale --skip-verify --skip-eol-check
-  echo
+  echo ""
  if [ "$?" = 0 ] # if repository installed then install package
    then
-    echo
+    echo ""
     GREENTXT "MariaDB repository installed  -  OK"
-    echo
+    echo ""
     YELLOWTXT "MariaDB ${MARIADB_VERSION} database installation:"
-    echo
+    echo ""
     apt update
+    systemctl stop mariadb
     apt install -y mariadb-server
   if [ "$?" = 0 ] # if package installed then configure
     then
-     echo
+     echo ""
      GREENTXT "MariaDB installed  -  OK"
-     echo
+     echo ""
      systemctl enable mariadb
-     echo
+     echo ""
      PACKAGES_INSTALLED mariadb*
      echo "127.0.0.1 mariadb" >> /etc/hosts
-     echo
+     echo ""
      WHITETXT "Downloading my.cnf file from MagenX Github repository"
      curl -sSo /etc/my.cnf https://raw.githubusercontent.com/magenx/magento-mysql/master/my.cnf/my.cnf
-     echo
+     echo ""
      WHITETXT "[?] Calculating [innodb_buffer_pool_size]:"
      INNODB_BUFFER_POOL_SIZE=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
      if [ "${INNODB_BUFFER_POOL_SIZE}" == "0" ]; then IBPS=1; fi
      sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${INNODB_BUFFER_POOL_SIZE}G/" /etc/my.cnf
      ##sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${INNODB_BUFFER_POOL_SIZE}/" /etc/my.cnf
-     echo
+     echo ""
      WHITETXT "innodb_buffer_pool_size = ${INNODB_BUFFER_POOL_SIZE}G"
      WHITETXT "innodb_buffer_pool_instances = ${INNODB_BUFFER_POOL_SIZE}"
-     echo
+     echo ""
     else
-     echo
+     echo ""
      REDTXT "MariaDB installation error"
     exit # if package is not installed then exit
   fi
     else
-     echo
+     echo ""
      REDTXT "MariaDB repository installation error"
     exit # if repository is not installed then exit
    fi
@@ -695,6 +700,9 @@ WHITETXT "======================================================================
   read nginx_install
 if [ "${nginx_install}" == "y" ]; then
   echo ""
+  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required NGINX version: "${RESET})" -i "${NGINX_VERSION}" NGINX_VERSION
+  # Set nginx version
+  ${SQLITE3} "UPDATE system SET nginx_version = '${NGINX_VERSION}';"
   echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/${DISTRO_NAME,,} `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
   curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
   echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
@@ -1046,7 +1054,7 @@ for ENV_SELECTED in "${ENV[@]}"
   ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
   OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
   rabbitmqctl add_user rabbitmq_${OWNER} ${RABBITMQ_PASSWORD}
-  rabbitmqctl set_permissions -p / rabbitmq_${OWNER} ".*" ".*" ".*"
+  rabbitmqctl set_permissions -p /${ENV_SELECTED} rabbitmq_${OWNER} ".*" ".*" ".*"
 done
    else
     echo ""
@@ -1580,7 +1588,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --amqp-port=5672 \
  --amqp-user=rabbitmq_${GET_[owner]} \
  --amqp-password='${GET_[rabbitmq_password]}' \
- --amqp-virtualhost='/' \
+ --amqp-virtualhost='/${GET_[env]}' \
  --consumers-wait-for-messages=0 \
  --search-engine=opensearch \
  --opensearch-host=opensearch \
