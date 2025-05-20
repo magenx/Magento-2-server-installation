@@ -187,6 +187,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS system(
    terms                  text,
    system_update          text,
    php_version            text,
+   nginx_version          text,
    mariadb_version        text,
    phpmyadmin_password    text,
    webmin_password        text,
