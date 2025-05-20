@@ -1054,7 +1054,7 @@ for ENV_SELECTED in "${ENV[@]}"
   ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
   OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
   rabbitmqctl add_user rabbitmq_${OWNER} ${RABBITMQ_PASSWORD}
-  rabbitmqctl set_permissions -p / rabbitmq_${OWNER} ".*" ".*" ".*"
+  rabbitmqctl set_permissions -p /${ENV_SELECTED} rabbitmq_${OWNER} ".*" ".*" ".*"
 done
    else
     echo ""
@@ -1588,7 +1588,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --amqp-port=5672 \
  --amqp-user=rabbitmq_${GET_[owner]} \
  --amqp-password='${GET_[rabbitmq_password]}' \
- --amqp-virtualhost='/' \
+ --amqp-virtualhost='/${GET_[env]}' \
  --consumers-wait-for-messages=0 \
  --search-engine=opensearch \
  --opensearch-host=opensearch \
