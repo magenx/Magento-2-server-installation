@@ -2262,6 +2262,7 @@ _echo "[?] Install CSF firewall [y/n][n]: "
 read csf_firewall
 if [ "${csf_firewall}" == "y" ]; then
   DOMAIN=$(${SQLITE3} "SELECT domain FROM magento LIMIT 1;")
+  OWNER=$(${SQLITE3} "SELECT owner FROM magento LIMIT 1;")
   ADMIN_EMAIL=$(${SQLITE3} "SELECT admin_email FROM magento LIMIT 1;")
  echo ""
  YELLOWTXT "Downloading CSF Firewall:"
@@ -2306,12 +2307,28 @@ if [ "${csf_firewall}" == "y" ]; then
   sed -i 's/^DENY_IP_LIMIT =.*/DENY_IP_LIMIT = "500000"/' /etc/csf/csf.conf
   sed -i 's/^DENY_TEMP_IP_LIMIT =.*/DENY_TEMP_IP_LIMIT = "2000"/' /etc/csf/csf.conf
   sed -i 's/^LF_IPSET =.*/LF_IPSET = "1"/' /etc/csf/csf.conf
+  sed -i 's/^LF_DIRWATCH_FILE =.*/LF_DIRWATCH_FILE = "600"/' /etc/csf/csf.conf
+  ### this config for directory monitoring alert on file changes and malware
+  echo "/home/${OWNER}/public_html" >> /etc/csf/csf.dirwatch
+  echo "/home/${OWNER}/public_html/pub" >> /etc/csf/csf.dirwatch
+  echo "/home/${OWNER}/public_html/bin" >> /etc/csf/csf.dirwatch
+  echo "/home/${OWNER}/public_html/app" >> /etc/csf/csf.dirwatch
+  ### this config for directory monitoring ignore
+  echo "/home/${OWNER}/public_html/dev/.*" >> /etc/csf/csf.fignore
+  echo "/home/${OWNER}/public_html/generated/.*" >> /etc/csf/csf.fignore
+  echo "/home/${OWNER}/public_html/lib/.*" >> /etc/csf/csf.fignore
+  echo "/home/${OWNER}/public_html/phpserver/.*" >> /etc/csf/csf.fignore
+  echo "/home/${OWNER}/public_html/pub/errors/.*" >> /etc/csf/csf.fignore
+  echo "/home/${OWNER}/public_html/pub/media/.*" >> /etc/csf/csf.fignore
+  echo "/home/${OWNER}/public_html/pub/static/.*" >> /etc/csf/csf.fignore
+  echo "/home/${OWNER}/public_html/setup/.*" >> /etc/csf/csf.fignore
+  echo "/home/${OWNER}/public_html/var/.*" >> /etc/csf/csf.fignore
   ### this line will block every blacklisted ip address
   sed -i "/|0|/s/^#//g" /etc/csf/csf.blocklists
   ### scan custom nginx log
   sed -i 's,CUSTOM1_LOG.*,CUSTOM1_LOG = "/var/log/nginx/access.log",' /etc/csf/csf.conf
   sed -i 's,CUSTOM2_LOG.*,CUSTOM2_LOG = "/var/log/nginx/error.log",' /etc/csf/csf.conf
-  ### get custom regex template
+  ### get custom regex template to ban from nginx log
   curl -o /usr/local/csf/bin/regex.custom.pm ${MAGENX_INSTALL_GITHUB_REPO}/regex.custom.pm
   chmod +x /usr/local/csf/bin/regex.custom.pm
   ### whitelist search bots and legit domains
