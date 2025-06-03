@@ -23,9 +23,10 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 
 ## Version lock
 COMPOSER_VERSION="2.7"
-RABBITMQ_VERSION="3.13*"
-ERLANG_VERSION="1:26.2.5.9-1"
-MARIADB_VERSION="10.11"
+RABBITMQ_VERSION="4*"
+ERLANG_VERSION="1:26.0*"
+MARIADB_VERSION="11.7"
+PHP_VERSION="8.4"
 OPENSEARCH_VERSION="2.x"
 VARNISH_VERSION="76"
 REDIS_VERSION="7"
@@ -742,7 +743,7 @@ _echo "${YELLOW}[?] Install PHP ? [y/n][n]:${RESET} "
 read php_install
 if [ "${php_install}" == "y" ]; then
   echo ""
-  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required PHP version: "${RESET})" -i "8.3" PHP_VERSION
+  read -e -p "$(echo -e ${YELLOW}"  [?] Enter required PHP version: "${RESET})" -i "${PHP_VERSION}" PHP_VERSION
   # Set php_version
   ${SQLITE3} "UPDATE system SET php_version = '${PHP_VERSION}';"
   echo ""
@@ -804,7 +805,7 @@ if [ "${redis_install}" == "y" ]; then
      YELLOWTXT "Redis installation:"
      echo
      apt update
-     apt -y install redis
+     apt -y install redis=${REDIS_VERSION}
      echo ""
      if [ "$?" = 0 ]; then
       echo ""
