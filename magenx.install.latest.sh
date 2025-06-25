@@ -24,14 +24,14 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 ## Version lock
 COMPOSER_VERSION="2.7"
 RABBITMQ_VERSION="4*"
-ERLANG_VERSION="1:26.0*"
-MARIADB_VERSION="11.7"
+ERLANG_VERSION="1:27*"
+MARIADB_VERSION="11.4"
 PHP_VERSION="8.4"
 OPENSEARCH_VERSION="2.x"
 VARNISH_VERSION="76"
-REDIS_VERSION="7"
+REDIS_VERSION="8"
 NODE_VERSION="20"
-NVM_VERSION="0.40.1"
+NVM_VERSION="0.40.3"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://r.mariadb.com/downloads/mariadb_repo_setup"
@@ -805,7 +805,7 @@ if [ "${redis_install}" == "y" ]; then
      YELLOWTXT "Redis installation:"
      echo
      apt update
-     apt -y install redis=${REDIS_VERSION}
+     apt -y install redis
      echo ""
      if [ "$?" = 0 ]; then
       echo ""
