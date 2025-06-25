@@ -173,13 +173,13 @@ return [
         'default' => [
             'catalog' => [
                 'search' => [
-                    'engine' => 'elasticsearch7',
-                    'elasticsearch7_server_hostname' => 'elasticsearch',
-                    'elasticsearch7_enable_auth' => '1',
-                    'elasticsearch7_server_port' => '9200',
-                    'elasticsearch7_index_prefix' => 'indexer_'.$_ENV['OWNER'],
-                    'elasticsearch7_username' => 'indexer_'.$_ENV['OWNER'],
-                    'elasticsearch7_password' => $_ENV['INDEXER_PASSWORD']
+                    'engine' => 'opensearch',
+                    'opensearch_server_hostname' => 'opensearch',
+                    'opensearch_enable_auth' => '1',
+                    'opensearch_server_port' => '9200',
+                    'opensearch_index_prefix' => 'indexer_'.$_ENV['OWNER'],
+                    'opensearch_username' => 'indexer_'.$_ENV['OWNER'],
+                    'opensearch_password' => $_ENV['INDEXER_PASSWORD']
                 ]
             ]
         ]
