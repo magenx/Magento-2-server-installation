@@ -423,26 +423,37 @@ echo
 SSH_PORT=$(${SQLITE3} "SELECT ssh_port FROM system;")
 if [ -z "${SSH_PORT}" ]; then
  echo
- sed -i "s/.*LoginGraceTime.*/LoginGraceTime 30/" /etc/ssh/sshd_config
- sed -i "s/.*MaxAuthTries.*/MaxAuthTries 6/" /etc/ssh/sshd_config     
- sed -i "s/.*X11Forwarding.*/X11Forwarding no/" /etc/ssh/sshd_config
- sed -i "s/.*PrintLastLog.*/PrintLastLog yes/" /etc/ssh/sshd_config
- sed -i "s/.*TCPKeepAlive.*/TCPKeepAlive yes/" /etc/ssh/sshd_config
- sed -i "s/.*ClientAliveInterval.*/ClientAliveInterval 600/" /etc/ssh/sshd_config
- sed -i "s/.*ClientAliveCountMax.*/ClientAliveCountMax 3/" /etc/ssh/sshd_config
- sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
- sed -i "s/.*PrintMotd.*/PrintMotd no/" /etc/ssh/sshd_config
- echo
- SSH_PORT="$(awk '/#?Port [0-9]/ {print $2}' /etc/ssh/sshd_config)"
-  if [ "${SSH_PORT}" == "22" ]; then
-    REDTXT "[!] Default ssh port :22 detected"
-    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.BACK
-    SSH_PORT_NEW=$(shuf -i 9537-9554 -n 1)
-    sed -i "s/.*Port 22/Port ${SSH_PORT_NEW}/g" /etc/ssh/sshd_config
-    SSH_PORT=${SSH_PORT_NEW}
-  fi
+OVERRIDE_DIR="/etc/ssh/sshd_config.d"
+
+tee ${OVERRIDE_DIR}/10-magenx-security.conf << 'EOF'
+LoginGraceTime 30
+MaxAuthTries 6
+X11Forwarding no
+PrintLastLog yes
+TCPKeepAlive yes
+ClientAliveInterval 600
+ClientAliveCountMax 3
+UseDNS no
+PrintMotd no
+Subsystem sftp /usr/lib/openssh/sftp-server -l INFO
+EOF
+
+echo ""
+echo ""
+CURRENT_PORT=$(sshd -T | grep '^port ' | awk '{print $2}')
+if [ "${CURRENT_PORT}" = "22" ]; then
+  SSH_PORT=$(shuf -i 9537-9554 -n 1)
+tee ${OVERRIDE_DIR}/20-magenx-custom-port.conf << EOF
+Port ${SSH_PORT}
+EOF
+  echo "Changed SSH port from 22 to ${SSH_PORT}"
+fi
+
+chmod 600 ${OVERRIDE_DIR}/*magenx*.conf
+
+systemctl restart sshd.service
   echo
-  GREENTXT "SSH port and settings were updated  -  OK"
+  GREENTXT "SSH configurations were updated - OK"
   echo
   GREENTXT "[!] SSH Port: ${SSH_PORT}"
   echo
@@ -465,11 +476,11 @@ if [ "${ssh_test}" == "y" ]; then
    pause "[] Press [Enter] key to proceed"
   else
    echo
-   mv /etc/ssh/sshd_config.BACK /etc/ssh/sshd_config
+   rm ${OVERRIDE_DIR}/*magenx*.conf
    REDTXT "Restoring sshd_config file back to defaults ${GREEN} [ok]"
    systemctl restart sshd.service
    echo
-   GREENTXT "SSH port has been restored  -  OK"
+   GREENTXT "SSH configuration has been restored - OK"
    ss -tlp | grep sshd
   fi
 fi
@@ -1358,11 +1369,11 @@ for ENV_SELECTED in "${ENV[@]}"
    pause '[] Press [Enter] key to start downloading'
    echo ""
    ## create some dirs and files
-   touch ${ROOT_PATH%/*}/{.bashrc,.bash_profile}
+   touch ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
    mkdir -p ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
-   chmod 2750 ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
-   chmod 640 ${ROOT_PATH%/*}/{.bashrc,.bash_profile}
-   chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm,.bashrc,.bash_profile}
+   chmod 2700 ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
+   chmod 600 ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
+   chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm,.bashrc,.bash_profile,.bash_history}
    ##
 
    su ${OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${COMPOSER_NAME} ${COMPOSER_PASSWORD}"
@@ -2189,6 +2200,10 @@ cd ~/public_html/
 # change prompt color
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
+
+touch ${ROOT_PATH%/*}/.bash_history
+chmod 600 ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
+chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
 
 if [ "${GET_[env]}" == "developer" ]; then
 YELLOWTXT "[-] Install nodejs ${NODE_VERSION} for [ developer ] environment"
