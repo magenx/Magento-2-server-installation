@@ -435,6 +435,7 @@ ClientAliveInterval 600
 ClientAliveCountMax 3
 UseDNS no
 PrintMotd no
+Subsystem sftp /usr/lib/openssh/sftp-server -l INFO
 EOF
 
 echo ""
@@ -1368,11 +1369,11 @@ for ENV_SELECTED in "${ENV[@]}"
    pause '[] Press [Enter] key to start downloading'
    echo ""
    ## create some dirs and files
-   touch ${ROOT_PATH%/*}/{.bashrc,.bash_profile}
+   touch ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
    mkdir -p ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
-   chmod 2750 ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
-   chmod 640 ${ROOT_PATH%/*}/{.bashrc,.bash_profile}
-   chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm,.bashrc,.bash_profile}
+   chmod 2700 ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm}
+   chmod 600 ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
+   chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.config,.cache,.local,.composer,.nvm,.bashrc,.bash_profile,.bash_history}
    ##
 
    su ${OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${COMPOSER_NAME} ${COMPOSER_PASSWORD}"
@@ -2199,6 +2200,10 @@ cd ~/public_html/
 # change prompt color
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
+
+touch ${ROOT_PATH%/*}/.bash_history
+chmod 600 ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
+chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
 
 if [ "${GET_[env]}" == "developer" ]; then
 YELLOWTXT "[-] Install nodejs ${NODE_VERSION} for [ developer ] environment"
