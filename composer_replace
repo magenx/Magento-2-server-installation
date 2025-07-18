@@ -128,7 +128,6 @@
         "magento/module-inventory-bundle-product-indexer": "*",
         "magento/module-marketplace": "*",
         "magento/module-paypal-graph-ql": "*",
-        "magento/module-admin-adobe-ims": "*",
         "magento/module-quote-analytics": "*",
         "magento/module-quote-graph-ql": "*",
         "magento/module-related-product-graph-ql": "*",
