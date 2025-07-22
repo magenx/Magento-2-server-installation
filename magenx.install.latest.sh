@@ -1477,11 +1477,10 @@ for ENV_SELECTED in "${ENV[@]}"
 do
  echo ""
  OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
- HASH="$(openssl rand -hex 2)"
  YELLOWTXT "[-] Settings for [ ${ENV_SELECTED} ] database:"
  read -e -p "$(echo -e ${YELLOW}"  [?] Host name: "${RESET})" -i "mariadb"  DATABASE_HOST
- read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${OWNER}_m2_${HASH}"  DATABASE_NAME
- read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${OWNER}_m2_${HASH}"  DATABASE_USER
+ read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${OWNER}_${ENV_SELECTED}"  DATABASE_NAME
+ read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${OWNER}"  DATABASE_USER
  read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  DATABASE_PASSWORD
  echo ""
 for USER_HOST in ${DATABASE_HOST} localhost 127.0.0.1
