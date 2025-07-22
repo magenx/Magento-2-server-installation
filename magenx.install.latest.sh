@@ -1067,6 +1067,7 @@ for ENV_SELECTED in "${ENV[@]}"
   ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
   OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
   rabbitmqctl add_user rabbitmq_${OWNER} ${RABBITMQ_PASSWORD}
+  rabbitmqctl add_vhost /${ENV_SELECTED}
   rabbitmqctl set_permissions -p /${ENV_SELECTED} rabbitmq_${OWNER} ".*" ".*" ".*"
 done
    else
