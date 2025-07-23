@@ -1817,6 +1817,8 @@ curl ${MAGENX_NGINX_GITHUB_REPO_API}/sites-available 2>&1 | awk -F'"' '/download
 ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
 mkdir -p /etc/nginx/conf_m2 && cd /etc/nginx/conf_m2/
 curl ${MAGENX_NGINX_GITHUB_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -O "$4)}' >/dev/null
+mkdir -p /etc/nginx/ipset && cd /etc/nginx/ipset/
+curl ${MAGENX_NGINX_GITHUB_REPO_API}/ipset 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -O "$4)}' >/dev/null
 
 echo ""
 YELLOWTXT "[-] Magento profiler configuration in nginx"
