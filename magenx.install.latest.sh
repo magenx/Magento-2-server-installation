@@ -190,7 +190,6 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS system(
    php_version            text,
    nginx_version          text,
    mariadb_version        text,
-   phpmyadmin_password    text,
    webmin_password        text,
    mysql_root_password    text,
    opensearch_admin_password text
@@ -1828,7 +1827,6 @@ echo "  Magento profiler query => ${PROFILER_PLACEHOLDER}"
 echo ""
 YELLOWTXT "[-] phpMyAdmin installation and configuration"
 PHPMYADMIN_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
-PHPMYADMIN_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
 BLOWFISH_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 echo "  phpMyAdmin location => ${PHPMYADMIN_FOLDER}"
 echo ""
@@ -1840,18 +1838,10 @@ sed -i "s|.*UploadDir.*|\$cfg['UploadDir'] = '/tmp/';|"  config.inc.php
 sed -i "s|.*SaveDir.*|\$cfg['SaveDir'] = '/tmp/';|"  config.inc.php
 sed -i "/SaveDir/a\
 \$cfg['TempDir'] = '\/tmp\/';"  config.inc.php
-
-sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PHPMYADMIN_FOLDER}/g" /etc/nginx/conf_m2/phpmyadmin.conf
-     sed -i "5i \\
-           auth_basic \$authentication; \\
-           auth_basic_user_file .mysql;"  /etc/nginx/conf_m2/phpmyadmin.conf
 	 	   
 sed -i "s|^listen =.*|listen = /var/run/php/php${PHP_VERSION}-fpm.sock|" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
 sed -i "s/^listen.owner.*/listen.owner = nginx/" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
 sed -i "s|127.0.0.1:9000|unix:/var/run/php/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
-
-htpasswd -b -c /etc/nginx/.mysql mysql ${PHPMYADMIN_PASSWORD}  >/dev/null 2>&1
-${SQLITE3} "UPDATE system SET phpmyadmin_password = '${PHPMYADMIN_PASSWORD}';"
 
 echo ""
 YELLOWTXT "[-] Varnish Cache configuration file"
@@ -1995,7 +1985,7 @@ YELLOWTXT "[-] Nginx configuration for ${GET_[env]} environment"
 cp /etc/nginx/sites-available/magento2.conf  /etc/nginx/sites-available/${GET_[domain]}.conf
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
 sed -i "s/example.com/${GET_[domain]}/g" /etc/nginx/sites-available/${GET_[domain]}.conf
-sed -i "s/ADMIN_PLACEHOLDER/${GET_[admin_path]}/" /etc/nginx/conf_m2/extra_protect.conf
+sed -i "s/ADMIN_PLACEHOLDER/${GET_[admin_path]}/" /etc/nginx/conf_m2/admin_protect.conf
 
 if [ "${#ENV[@]}" -gt 1 ]; then
   if [ "${GET_[env]}" == "production" ]; then
