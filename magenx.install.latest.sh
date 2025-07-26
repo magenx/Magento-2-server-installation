@@ -419,9 +419,10 @@ echo
 # ssh port test
 SSH_PORT=$(${SQLITE3} "SELECT ssh_port FROM system;")
 if [ -z "${SSH_PORT}" ]; then
- echo
+echo ""
 OVERRIDE_DIR="/etc/ssh/sshd_config.d"
-
+echo ""
+YELLOWTXT "SSH config optimization:"
 tee ${OVERRIDE_DIR}/10-magenx-security.conf << 'EOF'
 LoginGraceTime 30
 MaxAuthTries 6
@@ -682,7 +683,7 @@ if [ "${nginx_install}" == "y" ]; then
     YELLOWTXT "Nginx ${NGINX_VERSION} installation:"
     echo
     apt update
-    apt -y install nginx nginx-module-perl nginx-module-image-filter nginx-module-geoip
+    apt -y install nginx nginx-module-perl nginx-module-image-filter
     if [ "$?" = 0 ]; then
      echo
      GREENTXT "Nginx ${NGINX_VERSION} installed  -  OK"
