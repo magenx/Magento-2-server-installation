@@ -1834,6 +1834,7 @@ echo "  phpMyAdmin location => ${PHPMYADMIN_FOLDER}"
 echo ""
 mkdir -p /usr/share/phpMyAdmin && cd $_
 composer -n create-project phpmyadmin/phpmyadmin .
+
 tee config.inc.php <<'END'
 <?php
 declare(strict_types=1);
@@ -2000,13 +2001,13 @@ echo ""
 YELLOWTXT "[-] Nginx configuration for ${GET_[env]} environment"
 cp /etc/nginx/sites-available/magento2.conf  /etc/nginx/sites-available/${GET_[domain]}.conf
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
+
 sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/g" /etc/nginx/sites-available/${GET_[domain]}.conf
 sed -i "s/ADMIN_PLACEHOLDER/${GET_[admin_path]}/" /etc/nginx/conf_m2/admin_protect.conf
 
 sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/g" /etc/nginx/conf_m2/maps.conf
 sed -i "s,PHP_FPM_PLACEHOLDER,unix:/var/run/php/${GET_[owner]}.sock,"  /etc/nginx/conf_m2/maps.conf
 sed -i "s,MAGE_ROOT_PLACEHOLDER,${GET_[root_path]}," /etc/nginx/conf_m2/maps.conf
-
 
 echo ""
 YELLOWTXT "[-] Add user ${GET_[owner]} to sudo to execute cacheflush"
