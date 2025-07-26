@@ -1834,27 +1834,42 @@ echo "  phpMyAdmin location => ${PHPMYADMIN_FOLDER}"
 echo ""
 mkdir -p /usr/share/phpMyAdmin && cd $_
 composer -n create-project phpmyadmin/phpmyadmin .
-cp config.sample.inc.php config.inc.php
-sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISH_SECRET}';/" config.inc.php
-sed -i "s|.*UploadDir.*|\$cfg['UploadDir'] = '/tmp/';|"  config.inc.php
-sed -i "s|.*SaveDir.*|\$cfg['SaveDir'] = '/tmp/';|"  config.inc.php
-sed -i "/SaveDir/a\
-\$cfg['TempDir'] = '\/tmp\/';"  config.inc.php
-	 	   
-sed -i "s|^listen =.*|listen = /var/run/php/php${PHP_VERSION}-fpm.sock|" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
-sed -i "s/^listen.owner.*/listen.owner = nginx/" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
-sed -i "s|127.0.0.1:9000|unix:/var/run/php/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
+
+tee config.inc.php <<'END'
+<?php
+declare(strict_types=1);
+$cfg['blowfish_secret'] = 'BLOWFISH_SECRET_PLACEHOLDER';
+$i = 0;
+$i++;
+$cfg['Servers'][$i]['auth_type'] = 'cookie';
+$cfg['Servers'][$i]['host'] = 'localhost';
+$cfg['Servers'][$i]['compress'] = false;
+$cfg['Servers'][$i]['AllowNoPassword'] = false;
+$cfg['UploadDir'] = '/tmp/';
+$cfg['SaveDir'] = '/tmp/';
+$cfg['TempDir'] = '/tmp/';
+END
+sed -i "s|BLOWFISH_SECRET_PLACEHOLDER|${BLOWFISH_SECRET}|" config.inc.php
+
+tee /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf <<END
+[www]
+user = www-data
+group = www-data
+listen = /var/run/php/php${PHP_VERSION}-fpm.sock
+listen.owner = nginx
+listen.group = www-data
+pm = ondemand
+pm.max_children = 5
+END
+
+sed -i "s|PHP_FPM_PLACEHOLDER|unix:/var/run/php/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
 
 echo ""
 YELLOWTXT "[-] Varnish Cache configuration file"
 systemctl enable varnish.service
 curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
 curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}/devicedetect-include.vcl
-if [ "${#ENV[@]}" -gt 1 ]; then
-  curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/all_3_default.vcl
-else
-  curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/default.vcl
-fi
+curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/default.vcl
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/varnish/default.vcl
 
 echo ""
@@ -1986,25 +2001,13 @@ echo ""
 YELLOWTXT "[-] Nginx configuration for ${GET_[env]} environment"
 cp /etc/nginx/sites-available/magento2.conf  /etc/nginx/sites-available/${GET_[domain]}.conf
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
-sed -i "s/example.com/${GET_[domain]}/g" /etc/nginx/sites-available/${GET_[domain]}.conf
+
+sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/g" /etc/nginx/sites-available/${GET_[domain]}.conf
 sed -i "s/ADMIN_PLACEHOLDER/${GET_[admin_path]}/" /etc/nginx/conf_m2/admin_protect.conf
 
-if [ "${#ENV[@]}" -gt 1 ]; then
-  if [ "${GET_[env]}" == "production" ]; then
-    sed -i "s/example.com/${GET_[domain]}/g" /etc/nginx/nginx.conf
-    sed -i "s,default.*production php-fpm,${GET_[domain]} unix:/var/run/php/${GET_[owner]}.sock; # ${GET_[env]} php-fpm,"  /etc/nginx/conf_m2/maps.conf
-    sed -i "s,default.*production app folder,${GET_[domain]} ${GET_[root_path]}; # ${GET_[env]} app folder," /etc/nginx/conf_m2/maps.conf
-  else
-    sed -i "/# production php-fpm/a\
-	${GET_[domain]} unix:\/var\/run\/php\/${GET_[owner]}.sock; # ${GET_[env]} php-fpm"  /etc/nginx/conf_m2/maps.conf
-    sed -i "/# production app folder/a\
-	${GET_[domain]} ${GET_[root_path]}; # ${GET_[env]} app folder"  /etc/nginx/conf_m2/maps.conf
-  fi
-  else
-    sed -i "s/example.com/${GET_[domain]}/g" /etc/nginx/nginx.conf
-    sed -i "s,default.*production php-fpm,default unix:/var/run/php/${GET_[owner]}.sock; # ${GET_[env]} php-fpm,"  /etc/nginx/conf_m2/maps.conf
-    sed -i "s,default.*production app folder,default ${GET_[root_path]}; # ${GET_[env]} app folder," /etc/nginx/conf_m2/maps.conf
-fi
+sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/g" /etc/nginx/conf_m2/maps.conf
+sed -i "s,PHP_FPM_PLACEHOLDER,unix:/var/run/php/${GET_[owner]}.sock,"  /etc/nginx/conf_m2/maps.conf
+sed -i "s,MAGE_ROOT_PLACEHOLDER,${GET_[root_path]}," /etc/nginx/conf_m2/maps.conf
 
 echo ""
 YELLOWTXT "[-] Add user ${GET_[owner]} to sudo to execute cacheflush"
@@ -2098,12 +2101,7 @@ fi
 
 echo ""
 YELLOWTXT "[-] Varnish Cache config optimization for ${GET_[env]} environment"
-if [ "${#ENV[@]}" -gt 1 ]; then
-  sed -i "s/${GET_[env]}.example.com/${GET_[domain]}/" /etc/varnish/default.vcl
-else
-  sed -i "s/example.com/${GET_[domain]}/" /etc/varnish/default.vcl
-fi
-
+sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/" /etc/varnish/default.vcl
 
 echo ""
 YELLOWTXT "[-] Add Magento cronjob to ${GET_[php_user]} user crontab"
