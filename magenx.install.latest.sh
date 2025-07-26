@@ -1177,7 +1177,7 @@ systemctl restart opensearch.service
   sleep 5
   
   # Create role
-  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/roles/indexer_${OWNER}" \
+  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/roles/${OWNER}" \
   -H "Content-Type: application/json" \
   -d "$(cat <<EOF
 {
@@ -1189,7 +1189,7 @@ systemctl restart opensearch.service
     ],
     "index_permissions": [
       {
-        "index_patterns": ["indexer_${OWNER}*"],
+        "index_patterns": ["${OWNER}*"],
         "fls": [],
         "masked_fields": [],
         "allowed_actions": ["*"]
@@ -1212,17 +1212,17 @@ EOF
 echo ""
 
   # Create user
-  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/internalusers/indexer_${OWNER}" \
+  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/internalusers/${OWNER}" \
   -H "Content-Type: application/json" \
   -d "$(cat <<EOF
 {
     "password": "${INDEXER_PASSWORD}",
-    "opendistro_security_roles": ["indexer_${OWNER}", "own_index"]
+    "opendistro_security_roles": ["${OWNER}", "own_index"]
 }
 EOF
 )"
 echo ""
-YELLOWTXT "Created OpenSearch user: indexer_${OWNER} and role: indexer_${OWNER}"
+YELLOWTXT "Created OpenSearch user: ${OWNER} and role: ${OWNER}"
 echo ""
 YELLOWTXT "Installing OpenSearch plugins:"
 /usr/share/opensearch/bin/opensearch-plugin install --batch \
@@ -1528,9 +1528,9 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --search-engine=opensearch \
  --opensearch-host=opensearch \
  --opensearch-port=9200 \
- --opensearch-index-prefix=indexer_${GET_[owner]} \
+ --opensearch-index-prefix=${GET_[owner]} \
  --opensearch-enable-auth=1 \
- --opensearch-username=indexer_${GET_[owner]} \
+ --opensearch-username=${GET_[owner]} \
  --opensearch-password='${GET_[indexer_password]}'"
 
  if [ "$?" != 0 ]; then
@@ -1990,7 +1990,9 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
  su ${GET_[owner]} -s /bin/bash -c "mkdir -p var/tmp"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:upgrade"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set production"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set -s production"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:di:compile"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:static-content:deploy -j $(nproc)"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento cache:flush"
 
  rm -rf var/log/*.log
