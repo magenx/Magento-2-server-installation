@@ -196,8 +196,6 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS system(
    );"
    
 ${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
-   env                       text,
-   mode                      text,
    redis_password            text,
    rabbitmq_password         text,
    indexer_password          text,
@@ -246,7 +244,7 @@ distro_error() {
   REDTXT "[!] ${OS_NAME} ${OS_VERSION} detected"
   echo ""
   echo " Unfortunately, your operating system distribution and version are not supported by this script"
-  echo " Supported: Ubuntu 20|22.04; Debian 11|12"
+  echo " Supported: Ubuntu 22|24; Debian 12|13"
   echo " Please email admin@magenx.com and let us know if you run into any issues"
   echo ""
   exit 1
@@ -266,9 +264,9 @@ else
     DISTRO_VERSION="${VERSION_ID}"
 
     # Check if distribution is supported
-    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ ^(20.04|22.04) ]]; then
+    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ ^(22.04|24.04) ]]; then
       DISTRO_NAME="Ubuntu"
-    elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [[ "${DISTRO_VERSION}" =~ ^(11|12) ]]; then
+    elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [[ "${DISTRO_VERSION}" =~ ^(12|13) ]]; then
       DISTRO_NAME="Debian"
     else
       distro_error
@@ -434,7 +432,7 @@ ClientAliveInterval 600
 ClientAliveCountMax 3
 UseDNS no
 PrintMotd no
-Subsystem sftp /usr/lib/openssh/sftp-server -l INFO
+#Subsystem sftp /usr/lib/openssh/sftp-server -l INFO
 EOF
 
 echo ""
@@ -484,62 +482,21 @@ if [ "${ssh_test}" == "y" ]; then
   fi
 fi
 
-# Lets set magento mode/environment type to configure
-ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-if [ ${#ENV[@]} -eq 0 ]; then
-  echo ""
-  echo ""
-  echo ""
-  YELLOWTXT "[?] Select magento environment type and mode:"
-  echo ""
-  _echo "${BOLD}production${RESET} - write disabled! production mode.
-  ${BOLD}staging${RESET} - write disabled! production mode.
-  ${BOLD}developer${RESET} - write enabled! developer mode.
-  ${BOLD}all_3${RESET} - configure all 3 environments on this server"
-  echo ""
-  updown_menu "production staging developer all_3" ENV_SELECTED
-  if [ "${ENV_SELECTED}" == "all_3" ]; then
-    ENV=("production" "staging" "developer")
-  else
-    ENV=("${ENV_SELECTED}")
-  fi
-  for ENV_SELECTED in "${ENV[@]}"
-    do
-    # magento mode? LOL
-    # if magento is running in production, staging, developer environment and has production mode, default mode, developer mode 
-    # and in the production environment it runs by default, should the default mode in production environment be the default mode?
-    # since having a default mode in between production and developer is kind of brain-crap...
-    # feels like the default mode should be staging mode to run in staging environment, or remove it completely 
-    # cause staging environment runs in production mode as well. maybe that would make some sense then. 
-    [[ "${ENV_SELECTED}" == "staging" ]] && MODE="production" || MODE="${ENV_SELECTED}"
-    ${SQLITE3} "INSERT INTO magento (env, mode) VALUES ('${ENV_SELECTED}', '${MODE}');"
-  done
-else
-  GREENTXT "ENVIRONMENT: ${ENV[@]}"
-fi
-
 # Enter domain name and ssh user per environment
-DOMAIN=($(${SQLITE3} "SELECT DISTINCT domain FROM magento;"))
+DOMAIN=($(${SQLITE3} "SELECT domain FROM magento;"))
 if [ ${#DOMAIN[@]} -eq 0 ]; then
 echo ""
 echo ""
 echo ""
-ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-for ENV_SELECTED in "${ENV[@]}"
- do
- echo ""
- read -e -p "$(echo -e ${YELLOW}"  [?] Store domain name for [ ${ENV_SELECTED} ]: "${RESET})" -i "yourdomain.tld" DOMAIN
- read -e -p "$(echo -e ${YELLOW}"  [?] Files owner/SSH user for [ ${ENV_SELECTED} ]: "${RESET})" -i "${DOMAIN//[-.]/}" OWNER
+ read -e -p "$(echo -e ${YELLOW}"  [?] Store domain name: "${RESET})" -i "yourdomain.tld" DOMAIN
+ read -e -p "$(echo -e ${YELLOW}"  [?] Files owner/SSH user: "${RESET})" -i "${DOMAIN//[-.]/}" OWNER
  
  ${SQLITE3} "UPDATE magento SET
    domain = '${DOMAIN}',
    owner = '${OWNER}',
    php_user = 'php-${OWNER}',
    root_path = '/home/${OWNER}/public_html'
-   WHERE
-   env = '${ENV_SELECTED}'
    ;"
- done
  else
    GREENTXT "DOMAINS: ${DOMAIN[@]}"
 fi
@@ -882,14 +839,12 @@ mkdir -p /etc/redis/
 rm /etc/redis/redis.conf
 
 PORT=6379
-# Loop through the environments and services to create redis config
-for ENV_SELECTED in "${ENV[@]}"
+# Loop through services to create redis config
+REDIS_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%&?' | fold -w 32 | head -n 1)"
+${SQLITE3} "UPDATE magento SET redis_password = '${REDIS_PASSWORD}';"
+for SERVICE in session cache
   do
-  REDIS_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%&?' | fold -w 32 | head -n 1)"
-  ${SQLITE3} "UPDATE magento SET redis_password = '${REDIS_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
-    for SERVICE in session cache
-    do
-OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
+  OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
 
 if [ "${SERVICE}" = "session" ]; then
 # Perfect options for sessions
@@ -952,7 +907,6 @@ echo "127.0.0.1 ${SERVICE}-${OWNER}" >> /etc/hosts
 systemctl daemon-reload
 systemctl enable redis@${SERVICE}-${OWNER}
 systemctl restart redis@${SERVICE}-${OWNER}
-done
 done
    else
     echo
@@ -1059,16 +1013,13 @@ sleep 5
 # delete guest user
 rabbitmqctl delete_user guest
 
-# generate rabbitmq password for environment
-for ENV_SELECTED in "${ENV[@]}"
-  do
+# generate rabbitmq password
   RABBITMQ_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)"
-  ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
-  OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
+  ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}';"
+  OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
   rabbitmqctl add_user rabbitmq_${OWNER} ${RABBITMQ_PASSWORD}
-  rabbitmqctl add_vhost /${ENV_SELECTED}
-  rabbitmqctl set_permissions -p /${ENV_SELECTED} rabbitmq_${OWNER} ".*" ".*" ".*"
-done
+  rabbitmqctl add_vhost /${OWNER}
+  rabbitmqctl set_permissions -p /${OWNER} rabbitmq_${OWNER} ".*" ".*" ".*"
    else
     echo ""
     REDTXT "RabbitMQ ${RABBITMQ_VERSION} installation error"
@@ -1221,13 +1172,10 @@ systemctl restart opensearch.service
       exit 1
     fi
 
-# generate opensearch password for environment
-ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-for ENV_SELECTED in "${ENV[@]}"
-  do
+# generate opensearch password
   INDEXER_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)"
-  ${SQLITE3} "UPDATE magento SET indexer_password = '${INDEXER_PASSWORD}' WHERE env = '${ENV_SELECTED}';"
-  OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
+  ${SQLITE3} "UPDATE magento SET indexer_password = '${INDEXER_PASSWORD}';"
+  OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
   echo ""
   YELLOWTXT "Waiting for OpenSearch initialization ..."
   timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 9200
@@ -1280,8 +1228,7 @@ echo ""
 EOF
 )"
 echo ""
-YELLOWTXT "Created OpenSearch user: indexer_${OWNER} and role: indexer_${OWNER} for ${ENV_SELECTED}"
-done
+YELLOWTXT "Created OpenSearch user: indexer_${OWNER} and role: indexer_${OWNER}"
 echo ""
 YELLOWTXT "Installing OpenSearch plugins:"
 /usr/share/opensearch/bin/opensearch-plugin install --batch \
@@ -1325,17 +1272,14 @@ printf "\033c"
 "magento")
 printf "\033c"
 echo
-BLUEBG "[~]    MAGENTO 2 CONFIGURATION PER ENVIRONMENT  [~]"
+BLUEBG "[~]  MAGENTO 2 CONFIGURATION  [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo ""
-# get mode to configure
-ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-for ENV_SELECTED in "${ENV[@]}"
- do
- DOMAIN="$(${SQLITE3} "SELECT domain FROM magento WHERE env = '${ENV_SELECTED}';")"
- OWNER="$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")"
- PHP_USER="$(${SQLITE3} "SELECT php_user FROM magento WHERE env = '${ENV_SELECTED}';")"
- ROOT_PATH="$(${SQLITE3} "SELECT root_path FROM magento WHERE env = '${ENV_SELECTED}';")"
+# configure
+ DOMAIN="$(${SQLITE3} "SELECT domain FROM magento;")"
+ OWNER="$(${SQLITE3} "SELECT owner FROM magento;")"
+ PHP_USER="$(${SQLITE3} "SELECT php_user FROM magento;")"
+ ROOT_PATH="$(${SQLITE3} "SELECT root_path FROM magento;")"
  ## create magento/ssh user
  useradd -d ${ROOT_PATH%/*} -s /bin/bash ${OWNER}
  mkdir -p ${ROOT_PATH}
@@ -1349,10 +1293,9 @@ for ENV_SELECTED in "${ENV[@]}"
  setfacl -R -m m:r-X,u:${OWNER}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${OWNER}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}
  setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}
 
- touch ${ROOT_PATH%/*}/${ENV_SELECTED}
  cd ${ROOT_PATH}
  echo ""
- _echo "[?] Download Magento 2 for [ ${ENV_SELECTED} ] environment? [y/n][n]: "
+ _echo "[?] Download Magento 2 ? [y/n][n]: "
  read download_magento
  if [ "${download_magento}" == "y" ];then
    echo ""
@@ -1363,7 +1306,6 @@ for ENV_SELECTED in "${ENV[@]}"
    echo ""
    echo "   [!] Magento [ ${VERSION_INSTALLED} ]"
    echo "   [!] Downloading to [ ${ROOT_PATH} ]"
-   echo "   [!] For [ ${ENV_SELECTED} ] environment"
    echo ""
    echo ""
    pause '[] Press [Enter] key to start downloading'
@@ -1404,21 +1346,18 @@ for ENV_SELECTED in "${ENV[@]}"
  fi
   
    # reset permissions
-   if [ "${ENV_SELECTED}" == "developer" ]; then
-     DEVELOPER_MODE="generated pub/static"
-   fi
    su ${OWNER} -s /bin/bash -c "echo 007 > umask"
    su ${OWNER} -s /bin/bash -c "mkdir -p  generated pub/static var pub/media"
    su ${OWNER} -s /bin/bash -c "mkdir -p var/tmp"
-   setfacl -R -m u:${OWNER}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${OWNER}:rwX,d:g:${PHP_USER}:rwX,d:o::- ${DEVELOPER_MODE} var pub/media
+   setfacl -R -m u:${OWNER}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${OWNER}:rwX,d:g:${PHP_USER}:rwX,d:o::- var pub/media
 
    # save all the variables
    ${SQLITE3} "UPDATE menu SET magento = 'x';"
    ${SQLITE3} "UPDATE magento SET version_installed = '${VERSION_INSTALLED}';" 
-done
-echo
-echo
-echo
+
+echo ""
+echo ""
+echo ""
 GREENTXT "[~]    MAGENTO ${VERSION_INSTALLED} DOWNLOADED AND READY FOR SETUP    [~]"
 WHITETXT "--------------------------------------------------------------------"
 echo
@@ -1470,15 +1409,12 @@ fi
 
 chmod 600 /root/.my.cnf /root/.mytop
 
-# get mode to configure database
-ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-for ENV_SELECTED in "${ENV[@]}"
-do
+# configure database
  echo ""
- OWNER=$(${SQLITE3} "SELECT owner FROM magento WHERE env = '${ENV_SELECTED}';")
- YELLOWTXT "[-] Settings for [ ${ENV_SELECTED} ] database:"
+ OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
+ YELLOWTXT "[-] Settings for database:"
  read -e -p "$(echo -e ${YELLOW}"  [?] Host name: "${RESET})" -i "mariadb"  DATABASE_HOST
- read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${OWNER}_${ENV_SELECTED}"  DATABASE_NAME
+ read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${OWNER}"  DATABASE_NAME
  read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${OWNER}"  DATABASE_USER
  read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  DATABASE_PASSWORD
  echo ""
@@ -1498,14 +1434,11 @@ done
   database_host = '${DATABASE_HOST}',
   database_name = '${DATABASE_NAME}',
   database_user = '${DATABASE_USER}',
-  database_password = '${DATABASE_PASSWORD}'
-  WHERE
-  env = '${ENV_SELECTED}';"
-done
+  database_password = '${DATABASE_PASSWORD}';"
 
-echo
-echo
-echo
+echo ""
+echo ""
+echo ""
 pause '[] Press [Enter] key to show menu'
 printf "\033c"
 ;;
@@ -1515,21 +1448,17 @@ printf "\033c"
 "install")
 printf "\033c"
 echo
-BLUEBG   "[~]    MAGENTO CONFIGURATION TO SETUP INSTALL PER ENVIRONMENT    [~]"
+BLUEBG   "[~]    MAGENTO CONFIGURATION TO SETUP   [~]"
 WHITETXT "-------------------------------------------------------------------------------------"
 echo ""
 echo ""
 REDIS_PORTS="$(awk '/port /{print $2}' /etc/redis/[case]*.conf)"
 for PORT_SELECTED in ${REDIS_PORTS} 9200 5672 3306; do nc -4zvw3 localhost ${PORT_SELECTED}; if [ "$?" != 0 ]; then REDTXT "  [!] SERVICE ${PORT_SELECTED} OFFLINE"; exit 1; fi;  done
 
-# Get the distinct Magento modes from the magento table
-ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-# Loop through the Magento modes
-for ENV_SELECTED in "${ENV[@]}"; do
   # Create an associative array
   declare -A GET_
   # Get the data for the Magento mode from the magento table | sqlite .mode line key=value
-  QUERY=$(${SQLITE3} -line "SELECT * FROM magento WHERE env = '${ENV_SELECTED}';")
+  QUERY=$(${SQLITE3} -line "SELECT * FROM magento;")
   # Loop through the lines of the query output and add the key=value pairs to the associative array
   while IFS='=' read -r KEY VALUE; do
     # Extract the key and value from the line separated by ' = '
@@ -1544,7 +1473,7 @@ for ENV_SELECTED in "${ENV[@]}"; do
 # Use associative array here
 if [ -f "${GET_[root_path]}/bin/magento" ]; then
  echo ""
- YELLOWTXT "[-] Configuration for Magento ${GET_[version_installed]} installed in [ ${GET_[env]} ] environment."
+ YELLOWTXT "[-] Configuration for Magento ${GET_[version_installed]}"
  echo ""
  TIMEZONE=$(${SQLITE3} "SELECT timezone FROM system;")
  cd ${GET_[root_path]}
@@ -1563,7 +1492,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  updown_menu "$(bin/magento info:currency:list | sed "s/[|+-]//g" | awk 'NR > 3 {print $NF}' | sort )" CURRENCY
  echo ""
  echo ""
- YELLOWTXT "[-] Magento ${GET_[version_installed]} ready to be installed for ${GET_[env]} environment"
+ YELLOWTXT "[-] Magento ${GET_[version_installed]} ready to be installed"
  echo ""
  pause '[!] Press [Enter] key to run setup:install'
  echo
@@ -1600,7 +1529,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --amqp-port=5672 \
  --amqp-user=rabbitmq_${GET_[owner]} \
  --amqp-password='${GET_[rabbitmq_password]}' \
- --amqp-virtualhost='/${GET_[env]}' \
+ --amqp-virtualhost='/${GET_[owner]}' \
  --consumers-wait-for-messages=0 \
  --search-engine=opensearch \
  --opensearch-host=opensearch \
@@ -1626,17 +1555,15 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
   admin_email = '${ADMIN_EMAIL}',
   locale = '${LOCALE}',
   admin_path = '$(grep -Po "(?<='frontName' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)',
-  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)'
-  WHERE
-  env = '${ENV_SELECTED}';"
+  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)';"
 fi
-done 
-echo
-echo
-echo
+
+echo ""
+echo ""
+echo ""
     WHITETXT "============================================================================="
     echo
-    GREENTXT "Magento ${GET_[version_installed]} installed for [ ${GET_[env]} ] environment"
+    GREENTXT "Magento ${GET_[version_installed]} installed"
     echo
     WHITETXT "============================================================================="
 echo
@@ -1896,15 +1823,11 @@ apt update
 apt -y install goaccess
 
 ##
-# Configuration per environment
-# Get the distinct Magento modes from the magento table
-ENV=($(${SQLITE3} "SELECT DISTINCT env FROM magento;"))
-# Loop through the Magento modes
-for ENV_SELECTED in "${ENV[@]}"; do
-  # Create an associative array
+# Configuration
+# Create an associative array
   declare -A GET_
   # Get the data for the Magento mode from the magento table | sqlite .mode line key=value
-  QUERY=$(${SQLITE3} -line "SELECT * FROM magento WHERE env = '${ENV_SELECTED}';")
+  QUERY=$(${SQLITE3} -line "SELECT * FROM magento;")
   # Loop through the lines of the query output and add the key=value pairs to the associative array
   while IFS='=' read -r KEY VALUE; do
     # Extract the key and value from the line separated by ' = '
@@ -1918,11 +1841,11 @@ for ENV_SELECTED in "${ENV[@]}"; do
   done <<< "${QUERY}"
   echo ""
 # Use associative array here
-_echo "${YELLOW}[?]${REDBG}${BOLD}[ Configuration for ${GET_[env]} environment ]${RESET} ${YELLOW}${RESET}"
+_echo "${YELLOW}[?]${REDBG}${BOLD}[ Configuration ]${RESET} ${YELLOW}${RESET}"
 echo ""
 echo ""
 
-YELLOWTXT "[-] Php-fpm pool configuration for ${GET_[env]} environment"
+YELLOWTXT "[-] Php-fpm pool configuration"
 tee /etc/php/${PHP_VERSION}/fpm/pool.d/${GET_[owner]}.conf <<END
 [${GET_[owner]}]
 
@@ -1998,7 +1921,7 @@ END
 systemctl daemon-reload
 
 echo ""
-YELLOWTXT "[-] Nginx configuration for ${GET_[env]} environment"
+YELLOWTXT "[-] Nginx configuration"
 cp /etc/nginx/sites-available/magento2.conf  /etc/nginx/sites-available/${GET_[domain]}.conf
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
 
@@ -2016,7 +1939,7 @@ ${GET_[owner]} ALL=(ALL) NOPASSWD: /usr/local/bin/cacheflush
 END
 
 echo ""
-YELLOWTXT "[-] Logrotate script for Magento logs in ${GET_[env]} environment"
+YELLOWTXT "[-] Logrotate script for Magento logs"
 tee /etc/logrotate.d/${GET_[owner]} <<END
 ${GET_[root_path]}/var/log/*.log
 {
@@ -2047,7 +1970,7 @@ auditctl -l
 
 echo ""
 if [ -f "${GET_[root_path]}/bin/magento" ]; then
- _echo "${YELLOW}[?] Apply config optimization and settings for [ ${GET_[env]} ] mode installation ? [y/n][n]:${RESET} "
+ _echo "${YELLOW}[?] Apply config optimization and settings ? [y/n][n]:${RESET} "
 read apply_config
 if [ "${apply_config}" == "y" ]; then
  echo ""
@@ -2060,7 +1983,7 @@ if [ "${apply_config}" == "y" ]; then
  chown -R ${GET_[owner]}:${GET_[php_user]} ${GET_[root_path]}
  
  echo ""
- YELLOWTXT "[-] Clean Magento cache add some optimization config and enable [ ${GET_[env]} ] mode"
+ YELLOWTXT "[-] Clean Magento cache add some optimization config"
  rm -rf var/*
  su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${GET_[admin_email]}"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set web/url/catalog_media_url_format image_optimization_parameters"
@@ -2071,10 +1994,8 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
  su ${GET_[owner]} -s /bin/bash -c "mkdir -p var/tmp"
- su ${GET_[owner]} -s /bin/bash -c "composer config --no-plugins allow-plugins.cweagans/composer-patches true"
- su ${GET_[owner]} -s /bin/bash -c "composer require magento/quality-patches cweagans/composer-patches vlucas/phpdotenv -n -W"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:upgrade"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set ${GET_[env]}"
+ su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set production"
  su ${GET_[owner]} -s /bin/bash -c "bin/magento cache:flush"
 
  rm -rf var/log/*.log
@@ -2100,7 +2021,7 @@ if [ "${apply_config}" == "y" ]; then
 fi
 
 echo ""
-YELLOWTXT "[-] Varnish Cache config optimization for ${GET_[env]} environment"
+YELLOWTXT "[-] Varnish Cache config optimization"
 sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/" /etc/varnish/default.vcl
 
 echo ""
@@ -2150,24 +2071,24 @@ chown ${GET_[owner]} /home/${GET_[owner]}/.mytop
 echo ""
 YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions"
 mkdir .ssh
-SSH_KEY="private_ssh_key_${GET_[env]}"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${SSH_KEY} -C "ssh for ${GET_[domain]} ${GET_[env]}" -N ""
+SSH_KEY="private_ssh_key"
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${SSH_KEY} -C "ssh for ${GET_[domain]}" -N ""
 PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${SSH_KEY}")
 PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${SSH_KEY}.pub")
-${SQLITE3} "UPDATE magento SET private_ssh_key = '${PRIVATE_SSH_KEY}', public_ssh_key = '${PUBLIC_SSH_KEY}' WHERE env = '${GET_[env]}';"
+${SQLITE3} "UPDATE magento SET private_ssh_key = '${PRIVATE_SSH_KEY}', public_ssh_key = '${PUBLIC_SSH_KEY}';"
 tee -a .ssh/authorized_keys <<END
 ${PUBLIC_SSH_KEY}
 END
 
-GITHUB_ACTIONS_SSH_KEY="github_actions_private_ssh_key_${GET_[env]}"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY} -C "github actions for ${GET_[domain]} ${GET_[env]}" -N ""
+GITHUB_ACTIONS_SSH_KEY="github_actions_private_ssh_key"
+ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY} -C "github actions for ${GET_[domain]}" -N ""
 GITHUB_ACTIONS_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}")
 GITHUB_ACTIONS_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub")
-${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}' WHERE env = '${GET_[env]}';"
+${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}';"
 cat ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub >> .ssh/authorized_keys
 
 echo ""
-YELLOWTXT "[-] Creating bash_profile for ${GET_[env]}"
+YELLOWTXT "[-] Creating bash_profile"
 tee .bash_profile <<END
 # .bash_profile
 # Get the aliases and functions
@@ -2180,7 +2101,7 @@ export PATH
 END
 
 echo ""
-YELLOWTXT "[-] Creating bashrc for ${GET_[env]}"
+YELLOWTXT "[-] Creating bashrc"
 tee .bashrc <<END
 # .bashrc
 # history timestamp
@@ -2195,16 +2116,7 @@ touch ${ROOT_PATH%/*}/.bash_history
 chmod 600 ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
 chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
 
-if [ "${GET_[env]}" == "developer" ]; then
-YELLOWTXT "[-] Install nodejs ${NODE_VERSION} for [ developer ] environment"
 echo ""
-su ${GET_[owner]} -s /bin/bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash"
-su ${GET_[owner]} -s /bin/bash -c "nvm install ${NODE_VERSION}"
-fi
-echo ""
-
-done
-
 echo ""
 YELLOWTXT "[-] Add timestamp to bash history and config alias:"
 tee -a  ~/.bashrc <<END
