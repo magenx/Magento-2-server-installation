@@ -485,21 +485,16 @@ fi
 
 # Enter domain name and ssh user per environment
 DOMAIN=($(${SQLITE3} "SELECT domain FROM magento;"))
-if [ ${#DOMAIN[@]} -eq 0 ]; then
-echo ""
-echo ""
-echo ""
+if [ "${DOMAIN}" = "" ]; then
+ echo ""
+ echo ""
+ echo ""
  read -e -p "$(echo -e ${YELLOW}"  [?] Store domain name: "${RESET})" -i "yourdomain.tld" DOMAIN
  read -e -p "$(echo -e ${YELLOW}"  [?] Files owner/SSH user: "${RESET})" -i "${DOMAIN//[-.]/}" OWNER
  
- ${SQLITE3} "UPDATE magento SET
-   domain = '${DOMAIN}',
-   owner = '${OWNER}',
-   php_user = 'php-${OWNER}',
-   root_path = '/home/${OWNER}/public_html'
-   ;"
+ ${SQLITE3} "INSERT INTO magento (domain, owner, php_user, root_path) VALUES ( '${DOMAIN}', '${OWNER}', 'php-${OWNER}', '/home/${OWNER}/public_html' );"
  else
-   GREENTXT "DOMAINS: ${DOMAIN[@]}"
+   GREENTXT "DOMAIN: ${DOMAIN}"
 fi
  echo ""
  echo ""
@@ -844,9 +839,7 @@ PORT=6379
 REDIS_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@%&?' | fold -w 32 | head -n 1)"
 ${SQLITE3} "UPDATE magento SET redis_password = '${REDIS_PASSWORD}';"
 for SERVICE in session cache
-  do
-  OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
-
+do
 if [ "${SERVICE}" = "session" ]; then
 # Perfect options for sessions
 CONFIG_OPTIONS="
@@ -862,7 +855,7 @@ else
 CONFIG_OPTIONS="save \"\""
 fi
 
-cat > /etc/redis/${SERVICE}-${OWNER}.conf<<END
+cat > /etc/redis/${SERVICE}.conf<<END
 
 bind 127.0.0.1
 port ${PORT}
@@ -875,8 +868,8 @@ timeout 0
 requirepass ${REDIS_PASSWORD}
 
 dir /var/lib/redis
-logfile /var/log/redis/${SERVICE}-${OWNER}.log
-pidfile /run/redis/${SERVICE}-${OWNER}.pid
+logfile /var/log/redis/${SERVICE}.log
+pidfile /run/redis/${SERVICE}.pid
 
 ${CONFIG_OPTIONS}
 
@@ -900,14 +893,14 @@ END
 
 ((PORT++))
 
-chown redis /etc/redis/${SERVICE}-${OWNER}.conf
-chmod 640 /etc/redis/${SERVICE}-${OWNER}.conf
+chown redis /etc/redis/${SERVICE}.conf
+chmod 640 /etc/redis/${SERVICE}.conf
 
-echo "127.0.0.1 ${SERVICE}-${OWNER}" >> /etc/hosts
+echo "127.0.0.1 ${SERVICE}" >> /etc/hosts
 
 systemctl daemon-reload
-systemctl enable redis@${SERVICE}-${OWNER}
-systemctl restart redis@${SERVICE}-${OWNER}
+systemctl enable redis@${SERVICE}
+systemctl restart redis@${SERVICE}
 done
    else
     echo
@@ -1018,7 +1011,7 @@ rabbitmqctl delete_user guest
   RABBITMQ_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)"
   ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}';"
   OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
-  rabbitmqctl add_user rabbitmq_${OWNER} ${RABBITMQ_PASSWORD}
+  rabbitmqctl add_user rabbitmq ${RABBITMQ_PASSWORD}
   rabbitmqctl add_vhost /${OWNER}
   rabbitmqctl set_permissions -p /${OWNER} rabbitmq_${OWNER} ".*" ".*" ".*"
    else
