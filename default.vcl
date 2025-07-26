@@ -11,7 +11,7 @@ backend default {
     .first_byte_timeout = 600s;
     .probe = {
         .request = "GET /health_check.php HTTP/1.1"
-                   "Host: example.com"
+                   "Host: DOMAIN_PLACEHOLDER"
                    "X-Probe: Varnish backend health check"
                    "Connection: close";
         .timeout = 2s;
