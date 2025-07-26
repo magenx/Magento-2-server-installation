@@ -12,9 +12,9 @@ return [
         'amqp' => [
             'host' => 'rabbitmq',
             'port' => '5672',
-            'user' => 'rabbitmq_'. $_ENV['OWNER'],
+            'user' => $_ENV['OWNER'],
             'password' => $_ENV['RABBITMQ_PASSWORD'],
-            'virtualhost' => '/'
+            'virtualhost' => '/'.$_ENV['OWNER']
         ],
         'consumers_wait_for_messages' => 0
     ],
@@ -87,7 +87,7 @@ return [
     'session' => [
         'save' => 'redis',
         'redis' => [
-            'host' => 'session-'.$_ENV['OWNER'],
+            'host' => 'session',
             'port' => $_ENV['REDIS_SESSION_PORT'],
             'password' => $_ENV['REDIS_PASSWORD'],
             'timeout' => '2.5',
@@ -120,7 +120,7 @@ return [
                 'id_prefix' => $_ENV['OWNER'].'_',
                 'backend' => 'Magento\\Framework\\Cache\\Backend\\Redis',
                 'backend_options' => [
-                    'server' => 'cache-'.$_ENV['OWNER'],
+                    'server' => 'cache',
                     'database' => '0',
                     'persistent' => $_ENV['OWNER'].'_cache',
                     'port' => $_ENV['REDIS_CACHE_PORT'],
@@ -177,8 +177,8 @@ return [
                     'opensearch_server_hostname' => 'opensearch',
                     'opensearch_enable_auth' => '1',
                     'opensearch_server_port' => '9200',
-                    'opensearch_index_prefix' => 'indexer_'.$_ENV['OWNER'],
-                    'opensearch_username' => 'indexer_'.$_ENV['OWNER'],
+                    'opensearch_index_prefix' => $_ENV['OWNER'],
+                    'opensearch_username' => $_ENV['OWNER'],
                     'opensearch_password' => $_ENV['INDEXER_PASSWORD']
                 ]
             ]
