@@ -1506,15 +1506,15 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --cleanup-database \
  --use-rewrites=1 \
  --session-save=redis \
- --session-save-redis-host=session-${GET_[owner]} \
- --session-save-redis-port=$(awk '/port /{print $2}'  /etc/redis/session-${GET_[owner]}.conf) \
+ --session-save-redis-host=session \
+ --session-save-redis-port=$(awk '/port /{print $2}'  /etc/redis/session.conf) \
  --session-save-redis-log-level=3 \
  --session-save-redis-db=0 \
  --session-save-redis-password='${GET_[redis_password]}' \
  --session-save-redis-compression-lib=lz4 \
  --cache-backend=redis \
- --cache-backend-redis-server=cache-${GET_[owner]} \
- --cache-backend-redis-port=$(awk '/port /{print $2}' /etc/redis/cache-${GET_[owner]}.conf) \
+ --cache-backend-redis-server=cache \
+ --cache-backend-redis-port=$(awk '/port /{print $2}' /etc/redis/cache.conf) \
  --cache-backend-redis-db=0 \
  --cache-backend-redis-password='${GET_[redis_password]}' \
  --cache-backend-redis-compress-data=1 \
@@ -1542,7 +1542,6 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  fi
  
  # save config variables
- ${SQLITE3} "UPDATE menu SET install = 'x';"
  ${SQLITE3} "UPDATE magento SET
   admin_login = '${ADMIN_LOGIN}',
   admin_password = '${ADMIN_PASSWORD}',
@@ -1550,6 +1549,8 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
   locale = '${LOCALE}',
   admin_path = '$(grep -Po "(?<='frontName' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)',
   crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/app/etc/env.php)';"
+  
+  ${SQLITE3} "UPDATE menu SET install = 'x';"
 fi
 
 echo ""
