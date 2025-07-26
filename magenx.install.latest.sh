@@ -196,8 +196,6 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS system(
    );"
    
 ${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
-   env                       text,
-   mode                      text,
    redis_password            text,
    rabbitmq_password         text,
    indexer_password          text,
