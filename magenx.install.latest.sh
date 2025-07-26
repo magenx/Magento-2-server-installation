@@ -1011,9 +1011,9 @@ rabbitmqctl delete_user guest
   RABBITMQ_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)"
   ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}';"
   OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
-  rabbitmqctl add_user rabbitmq ${RABBITMQ_PASSWORD}
+  rabbitmqctl add_user ${OWNER} ${RABBITMQ_PASSWORD}
   rabbitmqctl add_vhost /${OWNER}
-  rabbitmqctl set_permissions -p /${OWNER} rabbitmq_${OWNER} ".*" ".*" ".*"
+  rabbitmqctl set_permissions -p /${OWNER} ${OWNER} ".*" ".*" ".*"
    else
     echo ""
     REDTXT "RabbitMQ ${RABBITMQ_VERSION} installation error"
@@ -1521,7 +1521,7 @@ if [ -f "${GET_[root_path]}/bin/magento" ]; then
  --cache-backend-redis-compression-lib=l4z \
  --amqp-host=rabbitmq \
  --amqp-port=5672 \
- --amqp-user=rabbitmq_${GET_[owner]} \
+ --amqp-user=${GET_[owner]} \
  --amqp-password='${GET_[rabbitmq_password]}' \
  --amqp-virtualhost='/${GET_[owner]}' \
  --consumers-wait-for-messages=0 \
