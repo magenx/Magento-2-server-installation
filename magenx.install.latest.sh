@@ -1745,7 +1745,7 @@ curl ${MAGENX_NGINX_GITHUB_REPO_API}/ipset 2>&1 | awk -F'"' '/download_url/ {pri
 echo ""
 YELLOWTXT "[-] Magento profiler configuration in nginx"
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
-sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/nginx/conf_m2/maps.conf
+sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/g" /etc/nginx/conf_m2/maps.conf
 echo "  Magento profiler query => ${PROFILER_PLACEHOLDER}"
 
 echo ""
@@ -1792,7 +1792,7 @@ systemctl enable varnish.service
 curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
 curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}/devicedetect-include.vcl
 curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/default.vcl
-sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/" /etc/varnish/default.vcl
+sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/g" /etc/varnish/default.vcl
 
 echo ""
 YELLOWTXT "[-] Realtime malware monitor with email alerts"
