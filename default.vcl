@@ -74,7 +74,15 @@ sub vcl_recv {
     if (req.url ~ "^/(pub/)?(health_check.php)$") {
         return (pass);
     }
-    
+
+    # Bypass cache if profiler headers are present
+    if (req.http.X-Mage-Profiler == "PROFILER_PLACEHOLDER" || req.http.X-Mage-Db-Profiler == "PROFILER_PLACEHOLDER") {
+        return (pass);
+    } else {
+        unset req.http.X-Mage-Profiler;
+        unset req.http.X-Mage-Db-Profiler;
+    }
+
     # Bypass profiler query
     if (req.url ~ "\?PROFILER_PLACEHOLDER") {
         return (pass);
