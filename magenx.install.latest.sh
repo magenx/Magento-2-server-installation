@@ -1340,7 +1340,7 @@ echo ""
  fi
   
    # reset permissions
-   su ${OWNER} -s /bin/bash -c "echo 007 > umask"
+   su ${OWNER} -s /bin/bash -c "echo 007 > magento_umask"
    su ${OWNER} -s /bin/bash -c "mkdir -p  generated pub/static var pub/media"
    su ${OWNER} -s /bin/bash -c "mkdir -p var/tmp"
    setfacl -R -m u:${OWNER}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${OWNER}:rwX,d:g:${PHP_USER}:rwX,d:o::- var pub/media
