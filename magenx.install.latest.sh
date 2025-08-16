@@ -1750,9 +1750,9 @@ echo "  Magento profiler query => ${PROFILER_PLACEHOLDER}"
 
 echo ""
 YELLOWTXT "[-] phpMyAdmin installation and configuration"
-PHPMYADMIN_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
+PHPMYADMIN_LOCATION=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
 BLOWFISH_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-echo "  phpMyAdmin location => ${PHPMYADMIN_FOLDER}"
+echo "  phpMyAdmin location => ${PHPMYADMIN_LOCATION}"
 echo ""
 mkdir -p /usr/share/phpMyAdmin && cd $_
 composer -n create-project phpmyadmin/phpmyadmin .
@@ -1784,6 +1784,7 @@ pm = ondemand
 pm.max_children = 5
 END
 
+sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PHPMYADMIN_LOCATION}/"  /etc/nginx/conf_m2/phpmyadmin.conf
 sed -i "s|PHP_FPM_PLACEHOLDER|unix:/var/run/php/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
 
 echo ""
