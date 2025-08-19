@@ -1,10 +1,10 @@
-# git clone --branch main --recursive https://github.com/varnishcache-friends/libvmod-geoip2
+# git clone --recursive https://github.com/varnishcache-friends/libvmod-geoip2
 # ./autogen.sh
 # ./configure
 # make
 # make check
 # make install
-# git clone --branch master --recursive https://github.com/nigoroll/libvmod-dynamic
+# git clone --recursive https://github.com/nigoroll/libvmod-dynamic
 # ./bootstrap
 # ./configure
 # make
