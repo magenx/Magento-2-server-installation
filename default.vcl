@@ -1,9 +1,7 @@
-# VCL version 5.0 is not supported so it should be 4.0 even though actually used Varnish version is 6
+# Varnish version 7
 vcl 4.0;
 
 import std;
-# The minimal Varnish version is 6.0
-# For SSL offloading, pass the following header in your proxy server or load balancer: 'X-Forwarded-Proto: https'
 
 backend default {
     .host = "localhost";
@@ -71,7 +69,7 @@ sub vcl_recv {
     }
 
     # Bypass health check requests
-    if (req.url ~ "^/(pub/)?(health_check.php)$") {
+    if (req.url ~ "^/health_check.php") {
         return (pass);
     }
 
@@ -81,11 +79,6 @@ sub vcl_recv {
     } else {
         unset req.http.X-Mage-Profiler;
         unset req.http.X-Mage-Db-Profiler;
-    }
-
-    # Bypass profiler query
-    if (req.url ~ "\?PROFILER_PLACEHOLDER") {
-        return (pass);
     }
 
     # Set initial grace period usage status
@@ -113,16 +106,15 @@ sub vcl_recv {
     }
 
     # Remove all marketing get parameters to minimize the cache objects
-    if (req.url ~ "(\?|&)(gclid|cx|ie|cof|siteurl|zanpid|origin|fbclid|mc_[a-z]+|utm_[a-z]+|_bta_[a-z]+)=") {
-        set req.url = regsuball(req.url, "(gclid|cx|ie|cof|siteurl|zanpid|origin|fbclid|mc_[a-z]+|utm_[a-z]+|_bta_[a-z]+)=[-_A-z0-9+()%.]+&?", "");
+    if (req.url ~ "(\?|&)(gad_source|gbraid|wbraid|_gl|dclid|gclsrc|srsltid|msclkid|gclid|cx|_kx|ie|cof|siteurl|zanpid|origin|fbclid|mc_[a-z]+|utm_[a-z]+|_bta_[a-z]+)=") {
+        set req.url = regsuball(req.url, "(gad_source|gbraid|wbraid|_gl|dclid|gclsrc|srsltid|msclkid|gclid|cx|_kx|ie|cof|siteurl|zanpid|origin|fbclid|mc_[a-z]+|utm_[a-z]+|_bta_[a-z]+)=[-_A-z0-9+()%.]+&?", "");
         set req.url = regsub(req.url, "[?|&]+$", "");
     }
 
     # Static files caching
-    if (req.url ~ "^/(pub/)?(media|static)/") {
+    if (req.url ~ "^/(media|static)/") {
         # Static files should not be cached by default
         #return (pass);
-
         # But if you use a few locales and don't use CDN you can enable caching static files by commenting previous line (#return (pass);) and uncommenting next 3 lines
         unset req.http.Https;
         unset req.http.X-Forwarded-Proto;
@@ -146,6 +138,7 @@ sub vcl_hash {
     if (req.http.X-Forwarded-Proto) {
         hash_data(req.http.X-Forwarded-Proto);
     }
+									  
     
 
     if (req.url ~ "/graphql") {
@@ -189,9 +182,7 @@ sub vcl_backend_response {
     }
 
     # cache only successfully responses and 404s that are not marked as private
-    if (beresp.status != 200 &&
-        beresp.status != 404 &&
-        beresp.http.Cache-Control ~ "private") {
+    if ((beresp.status != 200 && beresp.status != 404) || beresp.http.Cache-Control ~ "private") {
         set beresp.uncacheable = true;
         set beresp.ttl = 86400s;
         return (deliver);
@@ -199,6 +190,18 @@ sub vcl_backend_response {
 
     # validate if we need to cache it and prevent from setting cookie
     if (beresp.ttl > 0s && (bereq.method == "GET" || bereq.method == "HEAD")) {
+		# Collapse beresp.http.set-cookie in order to merge multiple set-cookie headers
+        # Although it is not recommended to collapse set-cookie header,
+        # it is safe to do it here as the set-cookie header is removed below
+        std.collect(beresp.http.set-cookie);
+        # Do not cache the response under current cache key (hash),
+        # if the response has X-Magento-Vary but the request does not.
+        if ((bereq.url !~ "/graphql" || !bereq.http.X-Magento-Cache-Id)
+         && bereq.http.cookie !~ "X-Magento-Vary="
+         && beresp.http.set-cookie ~ "X-Magento-Vary=") {
+           set beresp.ttl = 0s;
+           set beresp.uncacheable = true;
+        }																			   
         unset beresp.http.set-cookie;
     }
 
@@ -223,7 +226,10 @@ sub vcl_backend_response {
 }
 
 sub vcl_deliver {
-    if (resp.http.x-varnish ~ " ") {
+						  
+    if (obj.uncacheable) {
+        set resp.http.X-Magento-Cache-Debug = "UNCACHEABLE";
+    } else if (obj.hits) {		  
         set resp.http.X-Magento-Cache-Debug = "HIT";
         set resp.http.Grace = req.http.grace;
     } else {
@@ -231,7 +237,7 @@ sub vcl_deliver {
     }
 
     # Not letting browser to cache non-static files.
-    if (resp.http.Cache-Control !~ "private" && req.url !~ "^/(pub/)?(media|static)/") {
+    if (resp.http.Cache-Control !~ "private" && req.url !~ "^/(media|static)/") {
         set resp.http.Pragma = "no-cache";
         set resp.http.Expires = "-1";
         set resp.http.Cache-Control = "no-store, no-cache, must-revalidate, max-age=0";
