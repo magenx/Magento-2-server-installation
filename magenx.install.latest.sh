@@ -952,6 +952,14 @@ END
      systemctl stop epmd*
      epmd -kill
 
+cat > /etc/rabbitmq/rabbitmq.conf <<END
+# AMQP listener - localhost only
+listeners.tcp.default = 127.0.0.1:5672
+# Management UI - localhost only  
+management.tcp.ip = 127.0.0.1
+management.tcp.port = 15672
+END
+
 cat > /etc/rabbitmq/rabbitmq-env.conf <<END
 NODENAME=rabbit@localhost
 NODE_IP_ADDRESS=127.0.0.1
@@ -959,7 +967,16 @@ ERL_EPMD_ADDRESS=127.0.0.1
 PID_FILE=/var/lib/rabbitmq/mnesia/rabbitmq_pid
 END
 
-echo '[{kernel, [{inet_dist_use_interface, {127,0,0,1}}]},{rabbit, [{tcp_listeners, [{"127.0.0.1", 5672}]}]}].' > /etc/rabbitmq/rabbitmq.config
+cat > /etc/rabbitmq/advanced.config <<'END'
+[{kernel, [
+    % Bind Erlang distribution to localhost only
+    {inet_dist_use_interface, {127,0,0,1}},
+    % Fix Erlang distribution port range
+    {inet_dist_listen_min, 25672},
+    {inet_dist_listen_max, 25672}
+  ]}
+].
+END
 
 cat >> /etc/sysctl.conf <<END
 net.ipv6.conf.lo.disable_ipv6 = 0
