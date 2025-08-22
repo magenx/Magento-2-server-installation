@@ -1773,6 +1773,11 @@ sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PHPMYADMIN_LOCATION}/"  /etc/nginx/conf
 sed -i "s|PHP_FPM_PLACEHOLDER|unix:/var/run/php/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
 
 _space 1
+YELLOWTXT "[-] RabbitMQ management UI configuration"
+RABBITMQ_LOCATION=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
+sed -i "s/RABBITMQ_PLACEHOLDER/rabbitmq_${RABBITMQ_LOCATION}/"  /etc/nginx/conf_m2/rabbitmq.conf
+
+_space 1
 YELLOWTXT "[-] Varnish Cache configuration file"
 systemctl enable varnish.service
 curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
