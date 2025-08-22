@@ -1,5 +1,5 @@
 # Magento 2 installation - Magenx e-commerce webstack  
-## Debian 11 12 | Ubuntu 20.04 22.04
+## Debian 12 13 | Ubuntu 22.04 24.04
 
 ## Production ready + AWS Graviton2 ARM support
 
@@ -84,7 +84,7 @@ Complete linux stack including:
   
   
 ## 🔡 Environment / Magento mode:  
-You can select the type of environment and Magento mode respectively. By installing 3 environments on one server at the same time - developer, staging and production, or one type only if you use simple development or even different servers per environment. The script configures users, folders, and all settings for a given environment.
+The script configures webstack, users, folders, and all settings for a given environment. Productions mode. Read-only. Linux ACL
   
   
 ## 📄 Get config:  
@@ -103,7 +103,7 @@ and uncomment the lines for SSL in:
 
   
 ## :hammer_and_wrench: DevOps idea:
-You have the opportunity to install a new Magento 2, and it is best to do this in a developer environment. Push the code to your Github repository and from there develop and deploy to production and staging environment using Github Actions.  
+You have the opportunity to install a new Magento 2, and it is best to do this in a staging environment. Push the code to your Github repository and from there develop and deploy to production and staging environment using Github Actions.  
 This is the safest and most productive approach.
 There are few configuration files available for Github Actions [paid extra] deployments: 
  - `/opt/deploy/deploy.py` - basic script to catch Github Actions deployment input and run zero-downtime deployment
