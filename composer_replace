@@ -228,6 +228,8 @@
         "paypal/module-braintree-customer-balance": "*",
         "paypal/module-braintree-gift-card-account": "*",
         "paypal/module-braintree-gift-wrapping": "*",
+        "paypal/module-braintree-gift-card": "*",
+        "paypal/module-braintree-reward": "*",
         "temando/module-shipping": "*",
         "temando/module-shipping-m2": "*",
         "temando/module-shipping-remover": "*",
