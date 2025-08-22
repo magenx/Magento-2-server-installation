@@ -72,6 +72,10 @@ return [
                 'engine' => 'innodb',
                 'initStatements' => 'SET NAMES utf8;',
                 'active' => '1',
+                'profiler' => [
+                  'class' => '\Magento\Framework\DB\Profiler',
+                  'enabled' => (bool)($_SERVER['MAGE_DB_PROFILER'] ?? false),
+                   ],
                 'driver_options' => [
                     1014 => false
                 ]
@@ -88,7 +92,7 @@ return [
         'save' => 'redis',
         'redis' => [
             'host' => 'session',
-            'port' => $_ENV['REDIS_SESSION_PORT'],
+            'port' => '6379',
             'password' => $_ENV['REDIS_PASSWORD'],
             'timeout' => '2.5',
             'persistent_identifier' => $_ENV['OWNER'].'_sess',
@@ -96,7 +100,7 @@ return [
             'compression_threshold' => '2048',
             'compression_library' => 'lz4',
             'log_level' => '3',
-            'max_concurrency' => '6',
+            'max_concurrency' => '20',
             'break_after_frontend' => '5',
             'break_after_adminhtml' => '30',
             'first_lifetime' => '600',
@@ -123,20 +127,22 @@ return [
                     'server' => 'cache',
                     'database' => '0',
                     'persistent' => $_ENV['OWNER'].'_cache',
-                    'port' => $_ENV['REDIS_CACHE_PORT'],
+                    'port' => '6380',
                     'password' => $_ENV['REDIS_PASSWORD'],
                     'compress_data' => '1',
                     'compression_lib' => 'l4z',
+                    '_useLua' => true,
+                    'use_lua' => true,
                     'preload_keys' => [
-                                        $_ENV['OWNER'].'_EAV_ENTITY_TYPES',
-                                        $_ENV['OWNER'].'_GLOBAL_PLUGIN_LIST',
-                                        $_ENV['OWNER'].'_DB_IS_UP_TO_DATE',
-                                        $_ENV['OWNER'].'_SYSTEM_DEFAULT',
-                          ]
-		]
-	]
+                      $_ENV['OWNER'].'_EAV_ENTITY_TYPES',
+                      $_ENV['OWNER'].'_GLOBAL_PLUGIN_LIST',
+                      $_ENV['OWNER'].'_DB_IS_UP_TO_DATE',
+                      $_ENV['OWNER'].'_SYSTEM_DEFAULT',
+               ]
+		   ]
+	   ]
     ],
-        'allow_parallel_generation' => false
+      'allow_parallel_generation' => false
     ],
     'lock' => [
         'provider' => 'db'
@@ -146,8 +152,8 @@ return [
     ],
     'http_cache_hosts' => [
         [
-            'host' => 'varnish',
-            'port' => '8081'
+          'host' => 'varnish',
+          'port' => '8081'
         ]
     ],
     'cache_types' => [
