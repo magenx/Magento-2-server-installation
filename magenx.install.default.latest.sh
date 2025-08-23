@@ -1763,7 +1763,6 @@ echo ""
 YELLOWTXT "[-] Magento profiler configuration in nginx"
 PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/g" /etc/nginx/conf_m2/maps.conf
-echo "  Magento profiler query => ${PROFILER_PLACEHOLDER}"
 
 echo ""
 YELLOWTXT "[-] phpMyAdmin installation and configuration"
@@ -1803,6 +1802,11 @@ END
 
 sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PHPMYADMIN_LOCATION}/"  /etc/nginx/conf_m2/phpmyadmin.conf
 sed -i "s|PHP_FPM_PLACEHOLDER|unix:/var/run/php/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
+
+echo ""
+YELLOWTXT "[-] RabbitMQ management UI configuration"
+RABBITMQ_LOCATION=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
+sed -i "s/RABBITMQ_PLACEHOLDER/rabbitmq_${RABBITMQ_LOCATION}/"  /etc/nginx/conf_m2/rabbitmq.conf
 
 echo ""
 YELLOWTXT "[-] Varnish Cache configuration file"
