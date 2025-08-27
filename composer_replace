@@ -1,4 +1,5 @@
 "replace": {
+        "adobe-commerce/os-extensions-metapackage": "*",
         "amzn/amazon-pay-and-login-magento-2-module": "*",
         "amzn/amazon-pay-and-login-with-amazon-core-module": "*",
         "amzn/amazon-pay-module": "*",
