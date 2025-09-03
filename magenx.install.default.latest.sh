@@ -2128,8 +2128,8 @@ PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[
 END
 
 touch ${ROOT_PATH%/*}/.bash_history
-chmod 600 ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
-chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history}
+chmod 600 ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history,.ssh}
+chown -R ${OWNER}:${OWNER} ${ROOT_PATH%/*}/{.bashrc,.bash_profile,.bash_history,.ssh}
 
 echo ""
 echo ""
