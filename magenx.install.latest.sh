@@ -2092,7 +2092,7 @@ END
 
 touch ${GET_[root_path]}/.bash_history
 chmod 600 ${GET_[root_path]}/{.bashrc,.bash_profile,.bash_history}
-chown -R ${OWNER}:${OWNER} ${GET_[root_path]}/{.bashrc,.bash_profile,.bash_history}
+chown -R ${OWNER}:${OWNER} ${GET_[root_path]}/{.bashrc,.bash_profile,.bash_history,.ssh}
 
 _space 2
 YELLOWTXT "[-] Add timestamp to bash history and config alias:"
