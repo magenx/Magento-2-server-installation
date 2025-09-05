@@ -2157,7 +2157,7 @@ if [ "${csf_firewall}" == "y" ]; then
  YELLOWTXT "Downloading CSF Firewall:"
  _space 1
  cd /usr/local/src/
- curl -sSL https://download.configserver.com/csf.tgz | tar -xz
+ curl -sSL https://github.com/waytotheweb/scripts/raw/refs/heads/main/csf.tgz | tar -xz
   _space 1
   cd csf
   YELLOWTXT "Testing if you have required iptables modules:"
