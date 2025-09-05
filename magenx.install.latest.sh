@@ -1505,7 +1505,7 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
  --cache-backend-redis-db=0 \
  --cache-backend-redis-password='${GET_[redis_password]}' \
  --cache-backend-redis-compress-data=1 \
- --cache-backend-redis-compression-lib=l4z \
+ --cache-backend-redis-compression-lib=lz4 \
  --amqp-host=rabbitmq \
  --amqp-port=5672 \
  --amqp-user=${GET_[owner]} \

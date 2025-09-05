@@ -130,7 +130,7 @@ return [
                     'port' => '6380',
                     'password' => $_ENV['REDIS_PASSWORD'],
                     'compress_data' => '1',
-                    'compression_lib' => 'l4z',
+                    'compression_lib' => 'lz4',
                     '_useLua' => true,
                     'use_lua' => true,
                     'preload_keys' => [
