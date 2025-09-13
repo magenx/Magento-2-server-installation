@@ -1,7 +1,7 @@
 # Magento 2 installation with Ansible - WIP MVP
 ## Debian 12 13 | Ubuntu 22.04 24.04
 
-<img width="731" height="138" alt="magenx_aws_ec2_set" src="https://github.com/user-attachments/assets/f7929220-73f0-4de4-8cee-c8d8bd8158d8" />
+<img width="731" height="138" alt="magenx magento ansible" src="https://github.com/user-attachments/assets/b605f3a0-1eb9-4340-9835-b332e4aeefe9" />
 
 ## Production ready + AWS Graviton2 ARM support
 
