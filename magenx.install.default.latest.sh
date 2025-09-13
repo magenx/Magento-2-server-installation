@@ -48,7 +48,7 @@ MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysq
 MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 
 # WebStack Packages .deb
-WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria* php* nginx* ufw varnish* certbot* redis* webmin"
+WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria* php* nginx* varnish* certbot* redis* webmin"
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
@@ -227,11 +227,10 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS menu(
    database    text,
    install     text,
    config      text,
-   csf         text,
    webmin      text
    );"
    
-${SQLITE3} "INSERT INTO menu (lemp, magento, database, install, config, csf, webmin)
+${SQLITE3} "INSERT INTO menu (lemp, magento, database, install, config, webmin)
  VALUES('-', '-', '-', '-', '-', '-', '-');"
 fi
 ###################################################################################
@@ -531,7 +530,7 @@ fi
 ###                                  MAIN MENU                                  ###
 ###################################################################################
 showMenu () {
-MENU_CHECK=($(${SQLITE3} -list -separator '  ' "SELECT lemp, magento, database, install, config, csf, webmin FROM menu;"))
+MENU_CHECK=($(${SQLITE3} -list -separator '  ' "SELECT lemp, magento, database, install, config, webmin FROM menu;"))
 printf "\033c"
     echo ""
       echo ""
@@ -546,7 +545,6 @@ printf "\033c"
         echo ""
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         echo ""
-        WHITETXT "[${MENU_CHECK[5]}] Install CSF Firewall                 :  ${YELLOW}\tfirewall"
         WHITETXT "[${MENU_CHECK[6]}] Install Webmin control panel         :  ${YELLOW}\twebmin"
         echo ""
         BLUETXT ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
@@ -2187,122 +2185,6 @@ echo ""
 pause '[] Press [Enter] key to show menu'
 ;;
 ###################################################################################
-###                               FIREWALL INSTALLATION                         ###
-###################################################################################
-"firewall")
-WHITETXT "============================================================================="
-echo ""
-echo ""
-_echo "[?] Install CSF firewall [y/n][n]: "
-read csf_firewall
-if [ "${csf_firewall}" == "y" ]; then
-  DOMAIN=$(${SQLITE3} "SELECT domain FROM magento LIMIT 1;")
-  OWNER=$(${SQLITE3} "SELECT owner FROM magento LIMIT 1;")
-  ADMIN_EMAIL=$(${SQLITE3} "SELECT admin_email FROM magento LIMIT 1;")
- echo ""
- YELLOWTXT "Downloading CSF Firewall:"
- echo ""
- cd /usr/local/src/
- curl -sSL https://download.configserver.com/csf.tgz | tar -xz
-  echo ""
-  cd csf
-  YELLOWTXT "Testing if you have required iptables modules:"
-  echo ""
- if perl csftest.pl | grep "FATAL" ; then
-  perl csftest.pl
-  echo
-  REDTXT "CSF Firewall fatal errors"
-  echo
-  pause '[] Press [Enter] key to show menu'
- else
-  echo
-  YELLOWTXT "CSF Firewall installation: "
-  echo
-  sh install.sh
-  echo
-  GREENTXT "CSF Firewall installed - OK"
-  echo
-  YELLOWTXT "Add ip addresses to whitelist/ignore (paypal,api,erp,backup,github,etc)"
-  echo
-  read -e -p "   [?] Enter ip address/cidr each after space: " -i "${SSH_CLIENT%% *} 169.254.169.254" IP_ADDR_IGNORE
-  for ip_addr_ignore in ${IP_ADDR_IGNORE}; do csf -a ${ip_addr_ignore}; done
-  ### csf firewall optimization
-  sed -i 's/^TESTING = "1"/TESTING = "0"/' /etc/csf/csf.conf
-  sed -i 's/^CT_LIMIT =.*/CT_LIMIT = "60"/' /etc/csf/csf.conf
-  sed -i 's/^CT_INTERVAL =.*/CT_INTERVAL = "30"/' /etc/csf/csf.conf
-  sed -i 's/^PORTFLOOD =.*/PORTFLOOD = "443;tcp;100;5"/' /etc/csf/csf.conf
-  sed -i 's/^PS_INTERVAL =.*/PS_INTERVAL = "120"/' /etc/csf/csf.conf
-  sed -i 's/^PS_LIMIT =.*/PS_LIMIT = "5"/' /etc/csf/csf.conf
-  sed -i 's/^PS_PERMANENT =.*/PS_PERMANENT = "1"/' /etc/csf/csf.conf
-  sed -i 's/^PS_BLOCK_TIME =.*/PS_BLOCK_TIME = "86400"/' /etc/csf/csf.conf
-  sed -i 's/^LF_WEBMIN =.*/LF_WEBMIN = "5"/' /etc/csf/csf.conf
-  sed -i 's/^LF_WEBMIN_EMAIL_ALERT =.*/LF_WEBMIN_EMAIL_ALERT = "1"/' /etc/csf/csf.conf
-  sed -i "s/^LF_ALERT_TO =.*/LF_ALERT_TO = \"${ADMIN_EMAIL}\"/" /etc/csf/csf.conf
-  sed -i "s/^LF_ALERT_FROM =.*/LF_ALERT_FROM = \"firewall@${DOMAIN}\"/" /etc/csf/csf.conf
-  sed -i 's/^DENY_IP_LIMIT =.*/DENY_IP_LIMIT = "500000"/' /etc/csf/csf.conf
-  sed -i 's/^DENY_TEMP_IP_LIMIT =.*/DENY_TEMP_IP_LIMIT = "2000"/' /etc/csf/csf.conf
-  sed -i 's/^LF_IPSET =.*/LF_IPSET = "1"/' /etc/csf/csf.conf
-  sed -i 's/^LF_DIRWATCH_FILE =.*/LF_DIRWATCH_FILE = "600"/' /etc/csf/csf.conf
-  ### this config for directory monitoring alert on file changes and malware
-  echo "/home/${OWNER}/public_html" >> /etc/csf/csf.dirwatch
-  echo "/home/${OWNER}/public_html/pub" >> /etc/csf/csf.dirwatch
-  echo "/home/${OWNER}/public_html/bin" >> /etc/csf/csf.dirwatch
-  echo "/home/${OWNER}/public_html/app" >> /etc/csf/csf.dirwatch
-  ### this config for directory monitoring ignore
-  echo "/home/${OWNER}/public_html/dev/.*" >> /etc/csf/csf.fignore
-  echo "/home/${OWNER}/public_html/generated/.*" >> /etc/csf/csf.fignore
-  echo "/home/${OWNER}/public_html/lib/.*" >> /etc/csf/csf.fignore
-  echo "/home/${OWNER}/public_html/phpserver/.*" >> /etc/csf/csf.fignore
-  echo "/home/${OWNER}/public_html/pub/errors/.*" >> /etc/csf/csf.fignore
-  echo "/home/${OWNER}/public_html/pub/media/.*" >> /etc/csf/csf.fignore
-  echo "/home/${OWNER}/public_html/pub/static/.*" >> /etc/csf/csf.fignore
-  echo "/home/${OWNER}/public_html/setup/.*" >> /etc/csf/csf.fignore
-  echo "/home/${OWNER}/public_html/var/.*" >> /etc/csf/csf.fignore
-  ### this line will block every blacklisted ip address
-  sed -i "/|0|/s/^#//g" /etc/csf/csf.blocklists
-  ### scan custom nginx log
-  sed -i 's,CUSTOM1_LOG.*,CUSTOM1_LOG = "/var/log/nginx/access.log",' /etc/csf/csf.conf
-  sed -i 's,CUSTOM2_LOG.*,CUSTOM2_LOG = "/var/log/nginx/error.log",' /etc/csf/csf.conf
-  ### get custom regex template to ban from nginx log
-  curl -o /usr/local/csf/bin/regex.custom.pm ${MAGENX_INSTALL_GITHUB_REPO}/regex.custom.pm
-  chmod +x /usr/local/csf/bin/regex.custom.pm
-  ### whitelist search bots and legit domains
-cat >> /etc/csf/csf.rignore <<END
-.googlebot.com
-.google.com
-.crawl.yahoo.net
-.bing.com
-.search.msn.com
-.yandex.ru
-.yandex.net
-.yandex.com
-.crawl.baidu.com
-.crawl.baidu.jp
-.github.com
-END
-
-csf -ra
-curl -o /etc/csf/csf_pignore.sh ${MAGENX_INSTALL_GITHUB_REPO}/csf_pignore.sh
-chmod +x /etc/csf/csf_pignore.sh
-crontab -l > /tmp/csf_crontab
-cat << END | tee -a /tmp/csf_crontab
-
-0 */4 * * * /etc/csf/csf_pignore.sh && crontab -l | grep -v "csf_pignore.sh" | crontab -
-END
-crontab /tmp/csf_crontab
-rm /tmp/csf_crontab
- fi
-  else
-   echo
-   YELLOWTXT "CSF Firewall installation was skipped by user input."
-  exit 1
-fi
-echo
-echo
-pause '[] Press [Enter] key to show menu'
-printf "\033c"
-;;
-###################################################################################
 ###                                  WEBMIN INSTALLATION                        ###
 ###################################################################################
 "webmin")
@@ -2330,11 +2212,6 @@ if [ "$?" = 0 ]; then
  sed -i '/keyfile=\|certfile=/d' /etc/webmin/miniserv.conf
  echo "keyfile=/etc/letsencrypt/live/${DOMAIN}/privkey.pem" >> /etc/webmin/miniserv.conf
  echo "certfile=/etc/letsencrypt/live/${DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
- 
-  if [ -f "/usr/local/csf/csfwebmin.tgz" ]; then
-    perl /usr/share/webmin/install-module.pl /usr/local/csf/csfwebmin.tgz >/dev/null 2>&1
-    GREENTXT "Installed CSF Firewall plugin"
-  fi
   
   echo "webmin_${OWNER}:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
   sed -i "s/root:/webmin_${OWNER}:/" /etc/webmin/webmin.acl
