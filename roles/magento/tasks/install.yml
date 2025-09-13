@@ -1,0 +1,258 @@
+---
+- name: Install Magento with composer
+  community.general.composer:
+    command: "install"
+    working_dir: "/home/{{ brand }}/releases/{{ installation_release }}"
+    no_dev: yes
+    prefer_dist: yes
+  become: yes
+  become_user: "{{ brand }}"
+  when: magento_release.matched == 0
+
+- name: Generate random Magento admin password
+  ansible.builtin.set_fact:
+    magento_admin_password: "{{ lookup('ansible.builtin.password', '/dev/null length=12 chars=ascii_letters,digits,#?$&') }}"
+    cacheable: yes
+  when: magento_admin_password is not defined
+
+- name: Run Magento setup:install
+  ansible.builtin.command: >
+    bin/magento setup:install
+      --base-url="https://{{ domain }}/"
+      --db-host="mariadb"
+      --db-name="{{ brand }}"
+      --db-user="{{ brand }}"
+      --db-password="{{ mariadb_password }}"
+      --admin-firstname="{{ brand }}"
+      --admin-lastname="{{ brand }}"
+      --admin-email="admin@{{ domain }}"
+      --admin-user="admin"
+      --admin-password="{{ magento_admin_password }}"
+      --language="en_US"
+      --currency="EUR"
+      --timezone="{{ timezone }}"
+      --cleanup-database
+      --use-rewrites=1
+      --session-save=redis
+      --session-save-redis-host="session"
+      --session-save-redis-port="6379"
+      --session-save-redis-log-level=3
+      --session-save-redis-db=0
+      --session-save-redis-password="{{ redis_password }}"
+      --session-save-redis-compression-lib=lz4
+      --cache-backend=redis
+      --cache-backend-redis-server="cache"
+      --cache-backend-redis-port="6380"
+      --cache-backend-redis-db=0
+      --cache-backend-redis-password="{{ redis_password }}"
+      --cache-backend-redis-compress-data=1
+      --cache-backend-redis-compression-lib=l4z
+      --amqp-host="rabbitmq"
+      --amqp-port="5672"
+      --amqp-user="{{ brand }}"
+      --amqp-password="{{ rabbitmq_password }}"
+      --amqp-virtualhost="/{{ domain }}"
+      --consumers-wait-for-messages=0
+      --search-engine=opensearch
+      --opensearch-host="opensearch"
+      --opensearch-port="9200"
+      --opensearch-index-prefix="{{ brand }}"
+      --opensearch-enable-auth=1
+      --opensearch-username="{{ brand }}"
+      --opensearch-password="{{ opensearch_password }}"
+  args:
+    chdir: "/home/{{ brand }}/releases/{{ installation_release }}"
+    creates: "/home/{{ brand }}/releases/{{ installation_release }}/app/etc/env.php"
+  become: yes
+  become_user: "{{ brand }}"
+  when: magento_release.matched == 0
+
+- name: Copy env.php installed configuration
+  ansible.builtin.copy:
+    src: "/home/{{ brand }}/releases/{{ installation_release }}/app/etc/env.php"
+    dest: "/home/{{ brand }}/shared/env.php.installed"
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "0660"
+  when: magento_release.matched == 0
+
+- name: Set ownership after install
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/releases/{{ installation_release }}"
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    recurse: yes
+  when: magento_release.matched == 0
+
+- name: Copy var directory
+  ansible.builtin.copy:
+    src: "/home/{{ brand }}/releases/{{ installation_release }}/var"
+    dest: "/home/{{ brand }}/shared/"
+    remote_src: true
+  when: magento_release.matched == 0
+
+- name: Check shared/pub exists
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/shared/pub"
+    state: directory
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Copy pub/media directory
+  ansible.builtin.copy:
+    src: "/home/{{ brand }}/releases/{{ installation_release }}/pub/media"
+    dest: "/home/{{ brand }}/shared/pub/"
+    remote_src: true
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Remove directories after successful copy
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/home/{{ brand }}/releases/{{ installation_release }}/var"
+    - "/home/{{ brand }}/releases/{{ installation_release }}/pub/media"
+  when: magento_release.matched == 0
+
+- name: Check var/tmp exists
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/shared/var/tmp"
+    state: directory
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Set magento umask to 007
+  ansible.builtin.copy:
+    content: "007"
+    dest: "/home/{{ brand }}/shared/magento_umask"
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "0660"
+  when: magento_release.matched == 0
+
+- name: Create symlink for var directory
+  ansible.builtin.file:
+    src: "/home/{{ brand }}/shared/var"
+    dest: "/home/{{ brand }}/releases/{{ installation_release }}/var"
+    state: link
+    force: yes
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Create symlink for pub/media directory
+  ansible.builtin.file:
+    src: "/home/{{ brand }}/shared/pub/media"
+    dest: "/home/{{ brand }}/releases/{{ installation_release }}/pub/media"
+    state: link
+    force: yes
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Create current symlink pointing to new release
+  ansible.builtin.file:
+    src: "/home/{{ brand }}/releases/{{ installation_release }}"
+    dest: "/home/{{ brand }}/current"
+    state: link
+    force: yes
+    owner: "root"
+    group: "root"
+  when: magento_release.matched == 0
+
+- name: Change current symlink permissions
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/current"
+    follow: false
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Change pub/media symlink permissions
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/releases/{{ installation_release }}/pub/media"
+    follow: false
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Change var symlink permissions
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/releases/{{ installation_release }}/var"
+    follow: false
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Configure Magento optimized settings and deploy production
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  args:
+    chdir: "/home/{{ brand }}/current"
+    executable: "/bin/bash"
+  loop:
+    # Varnish configuration
+    - "bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
+    - "bin/magento setup:config:set --http-cache-hosts=varnish:8081"
+    # Performance optimizations
+    - "bin/magento config:set web/url/catalog_media_url_format image_optimization_parameters"
+    - "bin/magento config:set dev/css/minify_files 1"
+    - "bin/magento config:set dev/js/minify_files 1"
+    - "bin/magento config:set dev/js/move_script_to_bottom 1"
+    # Security settings
+    - "bin/magento config:set web/secure/enable_hsts 1"
+    - "bin/magento config:set web/secure/enable_upgrade_insecure 1"
+    # Cache optimization
+    - "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
+    # Database updates
+    - "bin/magento setup:upgrade"
+    # Production mode deployment
+    - "bin/magento deploy:mode:set -s production"
+    # Compilation and static content
+    - "bin/magento setup:di:compile"
+    - "bin/magento setup:static-content:deploy -f -j auto"
+  become: yes
+  become_user: "{{ brand }}"
+  when: magento_release.matched == 0
+
+- name: Flush Magento cache
+  ansible.builtin.command: 
+    cmd: "bin/magento cache:flush"
+  args:
+    chdir: "/home/{{ brand }}/current"
+  become: yes
+  become_user: "{{ brand }}"
+  when: magento_release.matched == 0
+
+- name: Create .env file with Magento configuration
+  ansible.builtin.template:
+    src: magento-env.j2
+    dest: "/home/{{ brand }}/shared/.env"
+    mode: '0640'
+    owner: "{{ brand }}"
+    group: "{{ brand }}"
+
+- name: Setup cron jobs for Magento
+  ansible.builtin.cron:
+    name: "Magento Cron"
+    user: "php-{{ brand }}"
+    minute: "*"
+    job: "/usr/bin/php{{ php_version }} /home/{{ brand }}/current/bin/magento cron:run 2>&1 | grep -v 'Ran jobs by schedule' >> /home/{{ brand }}/current/var/log/magento.cron.log"
+  when: magento_release.matched == 0
+
+- name: Check php-fpm is enabled and started
+  ansible.builtin.systemd:
+    name: "php{{ php_version }}-fpm"
+    state: restarted

@@ -1,0 +1,79 @@
+---
+- name: Create redis directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: redis
+    group: redis
+    mode: "0750"
+  loop:
+    - /var/lib/redis
+    - /var/log/redis
+    - /etc/redis
+
+- name: Remove default redis.conf if exists
+  ansible.builtin.file:
+    path: /etc/redis/redis.conf
+    state: absent
+
+- name: Generate random password for redis
+  ansible.builtin.set_fact:
+    redis_password: "{{ lookup('ansible.builtin.password', '/dev/null length=32 chars=ascii_letters,digits,@%&?') }}"
+    cacheable: yes
+  when: redis_password is not defined
+
+- name: Create systemd redis@.service template
+  ansible.builtin.template:
+    src: "redis@.service.j2"
+    dest: "/etc/systemd/system/redis@.service"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Create session redis config
+  ansible.builtin.template:
+    src: "session.conf.j2"
+    dest: "/etc/redis/session.conf"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Create cache redis config
+  ansible.builtin.template:
+    src: "cache.conf.j2"
+    dest: "/etc/redis/cache.conf"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Add host entries for redis
+  lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 {{ item }}"
+    state: present
+  loop:
+    - "session"
+    - "cache"
+
+- name: Enable and start redis@session and redis@cache instances
+  ansible.builtin.systemd:
+    name: "redis@{{ item }}"
+    enabled: yes
+    daemon_reload: yes
+    state: restarted
+  loop:
+    - "session"
+    - "cache"
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Check Redis cache service
+  debug:
+    msg: "Redis cache - Running: {{ ansible_facts.services['redis@cache.service'].state }}, Enabled: {{ ansible_facts.services['redis@cache.service'].status }}"
+  when: "'redis@cache.service' in ansible_facts.services"
+
+- name: Check Redis session service
+  debug:
+    msg: "Redis session - Running: {{ ansible_facts.services['redis@session.service'].state }}, Enabled: {{ ansible_facts.services['redis@session.service'].status }}"
+  when: "'redis@session.service' in ansible_facts.services"

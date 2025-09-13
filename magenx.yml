@@ -1,0 +1,23 @@
+---
+- name: Provision Magento 2 E-commerce LEMP Stack
+  hosts: magento
+  vars:
+    magenx_version: "magenx-ansible-1.0"
+    ansible_python_interpreter: /usr/bin/python3
+  remote_user: root
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - system
+    - common
+    - mariadb
+    - php
+    - phpmyadmin
+    - nginx
+    - redis
+    - rabbitmq
+    - varnish
+    - opensearch
+    - magento
+    - postinstall

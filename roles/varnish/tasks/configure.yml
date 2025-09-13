@@ -1,0 +1,48 @@
+---
+- name: Deploy all configs
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/varnish/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - default.vcl
+    - devicedetect-include.vcl
+    - devicedetect.vcl
+    - varnish.params
+
+- name: Deploy varnish service
+  ansible.builtin.template:
+    src: "varnish.service.j2"
+    dest: "/etc/systemd/system/varnish.service"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Generate Varnish secret
+  ansible.builtin.set_fact:
+    varnish_secret: "{{ lookup('ansible.builtin.password', '/dev/null length=32 chars=ascii_letters,digits') | to_uuid }}"
+    cacheable: yes
+  when: varnish_secret is not defined
+
+- name: Save Varnish secret to file
+  ansible.builtin.copy:
+    dest: /etc/varnish/secret
+    content: "{{ varnish_secret }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Enable and restart Varnish
+  ansible.builtin.systemd:
+    name: varnish
+    daemon_reload: true
+    enabled: true
+    state: restarted
+
+- name: Add Varnish to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 varnish"
+    state: present

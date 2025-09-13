@@ -1,0 +1,6 @@
+---
+- name: Nginx repo setup and installation
+  ansible.builtin.import_tasks: install.yml
+
+- name: Nginx configuration
+  ansible.builtin.import_tasks: configure.yml

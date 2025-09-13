@@ -1,0 +1,107 @@
+---
+- name: Set system hostname
+  hostname:
+    name: "server.{{ domain }}"
+
+- name: Set correct timezone
+  ansible.builtin.timezone:
+    name: "{{ timezone | default('UTC') }}"
+
+- name: Preseed Postfix mailname
+  ansible.builtin.debconf:
+    name: postfix
+    question: "postfix/mailname"
+    value: "localhost"
+    vtype: string
+
+- name: Preseed Postfix main_mailer_type
+  ansible.builtin.debconf:
+    name: postfix
+    question: "postfix/main_mailer_type"
+    value: "Local only"
+    vtype: string
+
+- name: Create or update sysctl config files
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: "/etc/sysctl.d/99-zz-magenx-overrides.conf"
+    state: present
+    reload: yes
+  loop: "{{ sysctl_params | dict2items }}"
+
+- name: Stop and disable rpcbind service
+  ansible.builtin.systemd:
+    name: rpcbind
+    state: stopped
+    enabled: no
+    masked: yes
+
+- name: Stop and disable rpcbind.socket
+  ansible.builtin.systemd:
+    name: "rpcbind.socket"
+    state: stopped
+    enabled: no
+    masked: yes
+
+- name: Create Logrotate configuration for Magento
+  ansible.builtin.template:
+    src: "magento-logrotate.j2"
+    dest: "/etc/logrotate.d/magento"
+    mode: "0644"
+
+- name: Add audit rule to exclude var directory
+  ansible.builtin.lineinfile:
+    path: "/etc/audit/rules.d/audit.rules"
+    line: "-a never,exit -F dir=/home/{{ brand }}/current/var/ -k exclude"
+    state: present
+    create: yes
+
+- name: Add audit rule to watch Magento directory
+  ansible.builtin.lineinfile:
+    path: "/etc/audit/rules.d/audit.rules"
+    line: "-w /home/{{ brand }}/current/ -p wa -k {{ brand }}"
+    state: present
+
+- name: Restart auditd service
+  ansible.builtin.service:
+    name: auditd
+    state: restarted
+
+- name: Verify audit rules
+  ansible.builtin.command: 
+    cmd: "auditctl -l"
+  register: audit_rules
+  changed_when: false
+
+- name: Show current audit rules
+  ansible.builtin.debug:
+    msg: "{{ audit_rules.stdout }}"
+
+- name: Create .vimrc config
+  ansible.builtin.template:
+    src: "vimrc.j2"
+    dest: "/root/.vimrc"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Create motd message banner
+  ansible.builtin.template:
+    src: "motd.j2"
+    dest: "/etc/motd"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Update motd with Magento version
+  replace:
+    path: /etc/motd
+    regexp: 'MAGENTO_VERSION_INSTALLED'
+    replace: "{{ magento_version }}"
+
+- name: Update motd with MagenX version
+  replace:
+    path: /etc/motd
+    regexp: 'MAGENX_VERSION'
+    replace: "{{ magenx_version }}"

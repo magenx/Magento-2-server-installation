@@ -1,0 +1,64 @@
+---
+- name: Add Erlang APT repository
+  ansible.builtin.deb822_repository:
+    name: "rabbitmq-erlang"
+    types: "deb"
+    uris: "https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/deb/{{ ansible_distribution | lower }}"
+    suites: "{{ ansible_distribution_release }}"
+    components: main
+    architectures: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+    signed_by: "https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/gpg.E495BB49CC4BBE5B.key"
+  tags: install_erlang
+
+- name: Add RabbitMQ APT repository
+  ansible.builtin.deb822_repository:
+    name: "rabbitmq-server"
+    types: "deb"
+    uris: "https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/deb/{{ ansible_distribution | lower }}"
+    suites: "{{ ansible_distribution_release }}"
+    components: main
+    architectures: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+    signed_by: "https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/gpg.9F4587F226208342.key"
+  tags: install_rabbitmq
+
+- name: Pin Erlang version
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/erlang
+    content: |
+      Package: erlang*
+      Pin: version {{ erlang_version }}
+      Pin-Priority: 999
+
+- name: Install RabbitMQ and Erlang
+  ansible.builtin.apt:
+    update_cache: yes
+    name:
+      - "rabbitmq-server={{ rabbitmq_version }}"
+      - erlang-base
+      - erlang-asn1
+      - erlang-crypto
+      - erlang-eldap
+      - erlang-ftp
+      - erlang-inets
+      - erlang-mnesia
+      - erlang-os-mon
+      - erlang-parsetools
+      - erlang-public-key
+      - erlang-runtime-tools
+      - erlang-snmp
+      - erlang-ssl
+      - erlang-syntax-tools
+      - erlang-tftp
+      - erlang-tools
+      - erlang-xmerl
+    state: present
+
+- name: Hold RabbitMQ packages
+  ansible.builtin.dpkg_selections:
+    name: "rabbitmq-server"
+    selection: hold
+
+- name: Hold Erlang packages
+  ansible.builtin.dpkg_selections:
+    name: "erlang"
+    selection: hold

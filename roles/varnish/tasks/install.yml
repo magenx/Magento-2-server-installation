@@ -1,0 +1,21 @@
+---
+- name: Install Varnish official repository
+  ansible.builtin.deb822_repository:
+    name: varnish
+    types: deb
+    uris: "https://packagecloud.io/varnishcache/varnish{{ varnish_version}}/{{ ansible_distribution | lower }}/ "
+    suites: "{{ ansible_distribution_release }}"
+    components: main
+    architectures: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+    signed_by: "https://packagecloud.io/varnishcache/varnish{{ varnish_version}}/gpgkey"
+
+- name: Install Varnish
+  ansible.builtin.apt:
+    name: varnish
+    update_cache: yes
+    state: present
+
+- name: Hold varnish package
+  ansible.builtin.dpkg_selections:
+    name: varnish
+    selection: hold

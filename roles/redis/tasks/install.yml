@@ -1,0 +1,23 @@
+---
+- name: Install Redis official repository
+  ansible.builtin.deb822_repository:
+    name: redis
+    types: deb
+    uris: "https://packages.redis.io/deb"
+    suites: "{{ ansible_distribution_release }}"
+    components: main
+    architectures: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+    signed_by: "https://packages.redis.io/gpg"
+  tags: install_redis
+
+- name: Install Redis
+  ansible.builtin.apt:
+    name: "redis={{ redis_version }}"
+    update_cache: yes
+    state: present
+
+- name: Stop and disable default redis-server service
+  ansible.builtin.systemd:
+    name: redis-server
+    state: stopped
+    enabled: no

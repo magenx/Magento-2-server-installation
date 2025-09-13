@@ -1,0 +1,6 @@
+---
+- name: Redis repo setup and installation
+  ansible.builtin.import_tasks: install.yml
+
+- name: Redis configuration
+  ansible.builtin.import_tasks: configure.yml

@@ -1,0 +1,12 @@
+---
+- name: System update tasks
+  ansible.builtin.import_tasks: apt_update.yml
+
+- name: Configuration tasks
+  ansible.builtin.import_tasks: configure.yml
+
+- name: CPU I/O test tasks
+  ansible.builtin.import_tasks: cpuiotest.yml
+
+- name: Create system users
+  ansible.builtin.import_tasks: users.yml

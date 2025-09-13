@@ -1,0 +1,44 @@
+---
+- name: Add Nginx official repository
+  ansible.builtin.deb822_repository:
+    name: nginx
+    types: deb
+    uris: "http://nginx.org/packages/mainline/{{ ansible_distribution | lower }}"
+    suites: "{{ ansible_distribution_release }}"
+    components: nginx
+    architectures: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+    signed_by: "https://nginx.org/keys/nginx_signing.key"
+  tags: install_nginx
+
+- name: Pin nginx repository
+  ansible.builtin.blockinfile:
+    path: /etc/apt/preferences.d/99nginx
+    create: true
+    block: |
+      Package: *
+      Pin: origin nginx.org
+      Pin: release o=nginx
+      Pin-Priority: 900
+    mode: "0644"
+    state: present
+
+- name: Install Nginx and modules
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - "nginx={{ nginx_version }}*"
+      - nginx-module-perl
+      - nginx-module-image-filter
+    state: present
+
+- name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
+  community.crypto.openssl_privatekey:
+    path: /etc/ssl/private/default_server.key
+    type: "Ed25519"
+
+- name: Generate default self-signed SSL cert and key for nginx
+  community.crypto.x509_certificate:
+    path: /etc/ssl/certs/default_server.crt
+    privatekey_path: /etc/ssl/private/default_server.key
+    provider: selfsigned
+

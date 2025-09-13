@@ -1,0 +1,58 @@
+---
+- name: Check if PHPMyAdmin directory already exists
+  ansible.builtin.stat:
+    path: "/usr/share/phpMyAdmin"
+  register: phpmyadmin_dir_exists
+      
+- name: Create phpMyAdmin target directory
+  ansible.builtin.file:
+    path: "/usr/share/phpMyAdmin"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: not phpmyadmin_dir_exists.stat.exists
+
+- name: Check if PHPMyAdmin is already installed
+  ansible.builtin.stat:
+    path: "/usr/share/phpMyAdmin/index.php"
+  register: phpmyadmin_installed
+
+- name: Download phpMyAdmin using Composer
+  community.general.composer:
+    command: create-project
+    arguments: "phpmyadmin/phpmyadmin . --no-interaction"
+    working_dir: "/usr/share/phpMyAdmin"
+    prefer_dist: yes
+    optimize_autoloader: yes
+    no_dev: yes
+    no_plugins: yes
+  when: not phpmyadmin_installed.stat.exists
+  environment:
+    COMPOSER_HOME: /root/.composer
+    COMPOSER_ALLOW_SUPERUSER: 1
+
+- name: Check if config file already exists
+  ansible.builtin.stat:
+    path: "/usr/share/phpMyAdmin/config.inc.php"
+  register: config_exists
+
+- name: Backup existing config file if it exists
+  ansible.builtin.copy:
+    src: "/usr/share/phpMyAdmin/config.inc.php"
+    dest: "/usr/share/phpMyAdmin/config.inc.php.backup-{{ ansible_date_time.epoch }}"
+    remote_src: yes
+  when: config_exists.stat.exists
+
+- name: Generate random blowfish_secret
+  ansible.builtin.set_fact:
+    blowfish_secret: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+    cacheable: yes
+
+- name: Copy main configuration
+  ansible.builtin.template:
+    src: "templates/config.inc.php.j2"
+    dest: "/usr/share/phpMyAdmin/config.inc.php"
+    owner: root
+    mode: '0640'
+

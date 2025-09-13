@@ -1,0 +1,8 @@
+---
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+  tags: install_mariadb
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yml
+  tags: configure_mariadb

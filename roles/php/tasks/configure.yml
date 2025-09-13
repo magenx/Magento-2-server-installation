@@ -1,0 +1,42 @@
+---
+- name: Copy PHP overrides for both CLI and FPM
+  ansible.builtin.template:
+    src: zz-magenx-overrides.ini.j2
+    dest: "/etc/php/{{ php_version }}/{{ item }}/conf.d/zz-{{ brand }}-overrides.ini"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - "cli"
+    - "fpm"
+
+- name: Copy php-fpm {{ brand }} pool config
+  ansible.builtin.template:
+    src: pool.conf.j2
+    dest: "/etc/php/{{ php_version }}/fpm/pool.d/{{ brand }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Copy php-fpm www pool config
+  ansible.builtin.template:
+    src: www.conf.j2
+    dest: "/etc/php/{{ php_version }}/fpm/pool.d/www.conf"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Check php-fpm is enabled and started
+  ansible.builtin.systemd:
+    name: "php{{ php_version }}-fpm"
+    state: started
+    enabled: yes
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Check if PHP {{ php_version }} FPM is running and enabled
+  debug:
+    msg: "PHP {{ php_version }} FPM - Running: {{ ansible_facts.services['php' ~ php_version ~ '-fpm.service'].state }}, Enabled: {{ ansible_facts.services['php' ~ php_version ~ '-fpm.service'].status }}"
+  when: "'php' ~ php_version ~ '-fpm.service' in ansible_facts.services"
+  

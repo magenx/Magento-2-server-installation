@@ -1,0 +1,123 @@
+---
+- name: Check if Magento release is present
+  ansible.builtin.find:
+    paths: "/home/{{ brand }}/releases"
+    file_type: any
+  register: magento_release
+
+- name: Create additional directories [shared,releases]
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/{{ item }}"
+    state: directory
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  loop:
+    - shared
+    - releases
+  when: magento_release.matched == 0
+
+- name: Set ACL for shared directory
+  ansible.builtin.acl:
+    path: "/home/{{ brand }}/shared"
+    entity: "{{ brand }}"
+    etype: user
+    permissions: rwX
+    default: yes
+    state: present
+
+- name: Set ACL on shared for PHP user (group)
+  ansible.builtin.acl:
+    path: "/home/{{ brand }}/shared"
+    entity: "php-{{ brand }}"
+    etype: group
+    permissions: rwX
+    default: yes
+    state: present
+
+- name: Set ACL on releases for PHP user (group)
+  ansible.builtin.acl:
+    path: "/home/{{ brand }}/releases"
+    entity: "php-{{ brand }}"
+    etype: group
+    permissions: rX
+    default: yes
+    state: present
+
+- name: Set ACL for nginx user on shared and releases
+  ansible.posix.acl:
+    path: "/home/{{ brand }}/{{ item }}"
+    entity: nginx
+    etype: user
+    permissions: rX
+    recursive: yes
+    state: present
+  loop:
+    - shared
+    - releases
+
+- name: Set default ACL for nginx user on shared and releases
+  ansible.posix.acl:
+    path: "/home/{{ brand }}/{{ item }}"
+    entity: nginx
+    etype: user
+    permissions: rX
+    default: yes
+    state: present
+  loop:
+    - shared
+    - releases
+
+- name: Generate installation release directory
+  ansible.builtin.set_fact:
+    installation_release: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+    cacheable: yes
+  when: magento_release.matched == 0
+
+- name: Check if Magento release is empty
+  ansible.builtin.debug:
+    msg: "Magento release not found. Running Magento {{ magento_version }} installation"
+  when: magento_release.matched == 0
+
+- name: Create installation release directory
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/releases/{{ installation_release }}"
+    state: directory
+    owner: "{{ brand }}"
+    group: "php-{{ brand }}"
+    mode: "2770"
+  when: magento_release.matched == 0
+
+- name: Create composer cache config directory
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/{{ item }}"
+    state: directory
+    owner: "{{ brand }}"
+    group: "{{ brand }}"
+    mode: "2770"
+  loop:
+    - .config
+    - .cache
+  when: magento_release.matched == 0
+
+- name: Set composer global authentication
+  community.general.composer:
+    command: "config"
+    arguments: "http-basic.repo.magento.com {{ composer_name }} {{ composer_password }}"
+    working_dir: "/home/{{ brand }}"
+    global_command: yes
+  become: yes
+  become_user: "{{ brand }}"
+  when: magento_release.matched == 0
+
+- name: Create Magento project with composer
+  community.general.composer:
+    command: "create-project"
+    arguments: "--repository-url=https://repo.magento.com/ magento/project-community-edition:{{ magento_version }} . --no-install"
+    working_dir: "/home/{{ brand }}/releases/{{ installation_release }}"
+    no_dev: yes
+    prefer_dist: yes
+  become: yes
+  become_user: "{{ brand }}"
+  when: magento_release.matched == 0
+

@@ -1,0 +1,29 @@
+---
+- name: Install opensearch official repository
+  ansible.builtin.deb822_repository:
+    name: opensearch
+    types: deb
+    uris: "https://artifacts.opensearch.org/releases/bundle/opensearch/{{ opensearch_version }}/apt"
+    suites: stable
+    components: main
+    architectures: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+    signed_by: "https://artifacts.opensearch.org/publickeys/opensearch.pgp"
+
+- name: Generate random opensearch admin password
+  ansible.builtin.set_fact:
+    opensearch_admin_password: "{{ lookup('ansible.builtin.password', '/dev/null length=20 chars=ascii_letters,digits,#?$&') }}"
+    cacheable: yes
+  when: opensearch_admin_password is not defined
+
+- name: Install opensearch
+  ansible.builtin.apt:
+    name: opensearch
+    state: present
+    update_cache: yes
+  environment:
+    OPENSEARCH_INITIAL_ADMIN_PASSWORD: "{{ opensearch_admin_password }}"
+
+- name: Hold opensearch package
+  ansible.builtin.dpkg_selections:
+    name: opensearch
+    selection: hold

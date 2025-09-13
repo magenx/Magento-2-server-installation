@@ -1,0 +1,59 @@
+---
+- name: Check if cpuiotest lock file exists
+  ansible.builtin.stat:
+    path: "{{ magenx_config_path }}/cpuiotest.lock"
+  register: cpuiotest_lock
+      
+- name: Quick I/O and CPU test | Set test file variables
+  ansible.builtin.set_fact:
+    test_file: "TEST_FILE_{{ ansible_date_time.epoch }}"
+    tar_file: "TAR_FILE"
+  when: not cpuiotest_lock.stat.exists
+  
+- name: I/O PERFORMANCE - run dd test
+  ansible.builtin.shell: |
+    dd if=/dev/zero of={{ test_file }} bs=64k count=16k conv=fdatasync && rm -f {{ test_file }}
+  register: io_result
+  when: not cpuiotest_lock.stat.exists
+  
+- name: Extract I/O result line
+  ansible.builtin.set_fact:
+    io_perf: "{{ io_result.stderr_lines | select('search', 'copied') | list | first }}"
+  when: not cpuiotest_lock.stat.exists
+  
+- name: CPU PERFORMANCE - generate file with dd
+  ansible.builtin.shell: dd if=/dev/urandom of={{ tar_file }} bs=1024 count=25000
+  when: not cpuiotest_lock.stat.exists
+
+- name: CPU PERFORMANCE - run tar and time it
+  ansible.builtin.shell: |
+    /usr/bin/time -f "%es" tar cfj {{ tar_file }}.bz2 {{ tar_file }}
+  register: cpu_result
+  when: not cpuiotest_lock.stat.exists
+  
+- name: Clean up tar files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ tar_file }}"
+    - "{{ tar_file }}.bz2"
+  when: not cpuiotest_lock.stat.exists
+
+- name: Print I/O performance
+  ansible.builtin.debug:
+    msg: "[?] I/O PERFORMANCE: {{ io_perf }}"
+  when: not cpuiotest_lock.stat.exists
+
+- name: Print CPU performance
+  ansible.builtin.debug:
+    msg: "[?] CPU PERFORMANCE: {{ cpu_result.stderr }}"
+  when: not cpuiotest_lock.stat.exists
+
+- name: Create lock file for cpuiotest
+  ansible.builtin.file:
+    path: "{{ magenx_config_path }}/cpuiotest.lock"
+    state: touch
+    mode: '0644'
+  when: not cpuiotest_lock.stat.exists
+

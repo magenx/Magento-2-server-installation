@@ -1,0 +1,77 @@
+---
+- name: Add Sury PHP repository Debian
+  ansible.builtin.deb822_repository:
+    name: php
+    types: deb
+    uris: "https://packages.sury.org/php"
+    suites: "{{ ansible_distribution_release }}"
+    components: main
+    architectures: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+    signed_by: "https://packages.sury.org/php/apt.gpg"
+  when: ansible_distribution == 'Debian'
+
+- name: Add Sury PHP repository Ubuntu
+  ansible.builtin.apt_repository:
+    repo: 'ppa:ondrej/php'
+    state: present
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Install PHP and extensions
+  ansible.builtin.apt:
+    update_cache: yes
+    name:
+      - "php{{ php_version }}"
+      - "php{{ php_version }}-fpm"
+      - "php{{ php_version }}-cli"
+      - "php{{ php_version }}-common"
+      - "php{{ php_version }}-mysql"
+      - "php{{ php_version }}-zip"
+      - "php{{ php_version }}-gd"
+      - "php{{ php_version }}-mbstring"
+      - "php{{ php_version }}-curl"
+      - "php{{ php_version }}-xml"
+      - "php{{ php_version }}-bcmath"
+      - "php{{ php_version }}-intl"
+      - "php{{ php_version }}-ldap"
+      - "php{{ php_version }}-soap"
+      - "php{{ php_version }}-apcu"
+      - "php{{ php_version }}-lz4"
+      - "php{{ php_version }}-oauth"
+    state: present
+
+- name: Verify PHP installation
+  ansible.builtin.command: php -v
+  register: php_version_install
+  changed_when: false
+
+- name: Display PHP version
+  ansible.builtin.debug:
+    msg: "{{ php_version_install.stdout }}"
+
+- name: Check /var/run/php exists as root
+  ansible.builtin.file:
+    path: "/var/run/php"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Check if composer exists
+  ansible.builtin.stat:
+    path: /usr/local/bin/composer
+  register: composer
+
+- name: Download latest Composer
+  ansible.builtin.get_url:
+    url: https://getcomposer.org/installer
+    dest: /tmp/composer-setup.php
+  when: composer.stat.isreg is not defined or not composer.stat.isreg
+
+- name: Add composer to /usr/local/bin
+  command: php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+  when: composer.stat.isreg is not defined or not composer.stat.isreg
+
+- name: Remove composer installer
+  ansible.builtin.file:
+    path: /tmp/composer-setup.php
+    state: absent

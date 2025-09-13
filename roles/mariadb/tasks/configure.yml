@@ -1,0 +1,120 @@
+---
+- name: Generate MariaDB root password
+  ansible.builtin.set_fact:
+    mariadb_root_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits,special length=24') }}"
+    cacheable: yes
+  when: mariadb_root_password is not defined
+
+- name: Generate MariaDB magento password
+  ansible.builtin.set_fact:
+    mariadb_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits,special length=24') }}"
+    cacheable: yes
+  when: mariadb_password is not defined
+
+- name: Copy .my.cnf file
+  ansible.builtin.template:
+    src: "my.cnf.j2"
+    dest: "/etc/my.cnf"
+    owner: root
+    group: root
+    mode: 0640
+    backup: yes
+
+- name: Create root password for remote access (optional)
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: root
+    host: "%"
+    password: "{{ mariadb_root_password }}"
+    priv: '*.*:ALL'
+    state: present
+
+- name: Create Magento database using socket auth
+  community.mysql.mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ brand }}"
+    encoding: utf8mb4
+    collation: utf8mb4_unicode_ci
+    state: present
+
+- name: Create Magento database user for mariadb
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ brand }}"
+    password: "{{ mariadb_password }}"
+    host: "mariadb"
+    priv: "{{ brand }}.*:ALL,GRANT"
+    state: present
+
+- name: Create Magento database user for localhost
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ brand }}"
+    password: "{{ mariadb_password }}"
+    host: "localhost"
+    priv: "{{ brand }}.*:ALL,GRANT"
+    state: present
+
+- name: Create Magento database user for 127.0.0.1
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ brand }}"
+    password: "{{ mariadb_password }}"
+    host: "127.0.0.1"
+    priv: "{{ brand }}.*:ALL,GRANT"
+    state: present
+
+- name: Write minimal .my.cnf for root user only
+  ansible.builtin.copy:
+    dest: /root/.my.cnf
+    content: |
+      [client]
+      user=root
+      password={{ mariadb_root_password }}
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Flush privileges
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "FLUSH PRIVILEGES"
+
+- name: "Check MariaDB is started"
+  ansible.builtin.service:
+    name: "mariadb"
+    state: started
+    
+- name: Create Magento database
+  community.mysql.mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    login_user: root
+    name: "{{ brand }}"
+    encoding: utf8mb4
+    collation: utf8mb4_unicode_ci
+    state: present
+
+- name: Check mytop is linked in /usr/local/bin
+  ansible.builtin.file:
+    src: /usr/bin/mytop
+    dest: /usr/local/bin/mytop
+    state: link
+    force: yes
+
+- name: Write .mytop for root user only
+  ansible.builtin.copy:
+    dest: /root/.mytop
+    content: |
+      user=root
+      host=localhost
+      pass={{ mariadb_root_password }}
+      db=mysql
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Add mariadb to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 mariadb"
+    state: present

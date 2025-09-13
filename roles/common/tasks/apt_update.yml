@@ -1,0 +1,120 @@
+---
+- name: Check apt cache is updated
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Upgrade all packages to the latest version
+  ansible.builtin.apt:
+    upgrade: dist
+    
+- name: Install system utilities and core tools
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - sudo
+      - lsb-release
+      - ca-certificates
+      - apt-transport-https
+      - "{{ ansible_distribution | lower }}-keyring"
+      - apt-show-versions
+      - vim
+      - screen
+      - plocate
+      - time
+      - unzip
+      - openssl
+    state: present
+  tags: system_packages
+
+- name: Install networking packages
+  ansible.builtin.apt:
+    name:
+      - netcat-openbsd
+      - nfs-common
+      - inotify-tools
+      - snmp
+      - ipset
+    state: present
+  tags: networking_packages
+
+- name: Install security packages
+  ansible.builtin.apt:
+    name:
+      - nftables
+      - ufw
+      - fail2ban
+      - auditd
+    state: present
+  tags: security_packages
+
+- name: Install development and build tools
+  ansible.builtin.apt:
+    name:
+      - git
+      - make
+      - autoconf
+      - automake
+      - libtool
+      - patch
+      - perl
+      - jq
+      - gnupg2
+      - apache2-utils
+      - snapd
+      - uuid-runtime
+      - imagemagick
+    state: present
+  tags: development_packages
+
+- name: Install monitoring and diagnostics tools
+  ansible.builtin.apt:
+    name:
+      - smartmontools
+      - strace
+      - lsof
+      - sysstat
+      - iotop
+      - acl
+      - attr
+      - goaccess
+    state: present
+  tags: monitoring_packages
+
+- name: Install logging and system management tools
+  ansible.builtin.apt:
+    name:
+      - syslog-ng
+      - logrotate
+      - moreutils
+      - expect
+    state: present
+  tags: logging_packages
+
+- name: Install mail and communication packages
+  ansible.builtin.apt:
+    name:
+      - postfix
+      - mailutils
+    state: present
+  tags: mail_packages
+
+- name: Ensure required python packages are present
+  ansible.builtin.apt:
+    name:
+      - python3-pymysql
+    state: present
+  tags: python_packages
+
+- name: Check required perl packages are present
+  ansible.builtin.apt:
+    name:
+      - liblwp-protocol-https-perl 
+      - libdbi-perl 
+      - libconfig-inifiles-perl 
+      - libdbd-mysql-perl 
+      - libterm-readkey-perl
+    state: present
+  tags: perl_packages
+

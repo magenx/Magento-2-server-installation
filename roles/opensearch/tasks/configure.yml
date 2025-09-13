@@ -1,0 +1,138 @@
+---
+- name: Generate random opensearch password
+  ansible.builtin.set_fact:
+    opensearch_password: "{{ lookup('ansible.builtin.password', '/dev/null length=20 chars=ascii_letters,digits') }}"
+    cacheable: yes
+  when: opensearch_password is not defined
+
+- name: OpenSearch config template
+  ansible.builtin.template:
+    src: "opensearch.yml.j2"
+    dest: "/etc/opensearch/opensearch.yml"
+    owner: opensearch
+    group: opensearch
+    mode: "0644"
+    backup: yes
+
+- name: OpenSearch jvm.options template
+  ansible.builtin.template:
+    src: "jvm.options.j2"
+    dest: "/etc/opensearch/jvm.options.d/jvm.options"
+    owner: opensearch
+    group: opensearch
+    mode: "0644"
+    backup: yes
+
+- name: Check OpenSearch is enabled and started
+  ansible.builtin.systemd:
+    name: opensearch
+    state: started
+    enabled: yes
+
+- name: Print waiting message
+  ansible.builtin.debug:
+    msg: "Waiting for OpenSearch initialization"
+
+- name: Wait for OpenSearch port 9200 to be open
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 9200
+    state: started
+    timeout: 30
+
+- name: Check OpenSearch cluster health
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:9200/_cluster/health?pretty"
+    method: GET
+    url_username: "admin"
+    url_password: "{{ opensearch_admin_password }}"
+    force_basic_auth: yes
+    return_content: yes
+    status_code: 200
+  register: opensearch_health
+  until: opensearch_health is succeeded and opensearch_health.json.status != 'red'
+  retries: 5
+  delay: 5
+  failed_when: opensearch_health is failed or opensearch_health.json.status == 'red'
+  ignore_errors: false
+
+- name: Debug OpenSearch cluster status
+  ansible.builtin.debug:
+    msg: "OpenSearch cluster status: {{ opensearch_health.json }}"
+
+- name: Create OpenSearch indexer role
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:9200/_plugins/_security/api/roles/{{ brand }}"
+    method: PUT
+    user: admin
+    password: "{{ opensearch_admin_password }}"
+    force_basic_auth: yes
+    status_code: [200,201]
+    body_format: "json"
+    body: |
+      {
+        "cluster_permissions": [
+          "cluster_composite_ops_monitor",
+          "cluster:monitor/main",
+          "cluster:monitor/state",
+          "cluster:monitor/health"
+        ],
+        "index_permissions": [
+          {
+            "index_patterns": ["{{ brand }}*"],
+            "fls": [],
+            "masked_fields": [],
+            "allowed_actions": ["*"]
+          },
+          {
+            "index_patterns": ["*"],
+            "fls": [],
+            "masked_fields": [],
+            "allowed_actions": [
+              "indices:admin/aliases/get",
+              "indices:data/read/search",
+              "indices:admin/get"
+            ]
+          }
+        ],
+        "tenant_permissions": []
+      }
+
+- name: Create OpenSearch user for Magento
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:9200/_plugins/_security/api/internalusers/{{ brand }}"
+    method: PUT
+    user: admin
+    password: "{{ opensearch_admin_password }}"
+    force_basic_auth: yes
+    status_code: [200,201]
+    body_format: "json"
+    body: |
+      {
+        "password": "{{ opensearch_password }}",
+        "opendistro_security_roles": ["{{ brand }}", "own_index"]
+      }
+
+- name: Install OpenSearch plugins
+  ansible.builtin.command: 
+    cmd: "/usr/share/opensearch/bin/opensearch-plugin install {{ item }} --batch"
+    creates: "/usr/share/opensearch/plugins/{{ item }}"
+  loop:
+    - analysis-icu
+    - analysis-phonetic
+  register: opensearch_plugin
+
+- name: Get all the installed OpenSearch plugins
+  ansible.builtin.command: 
+    cmd: "/usr/share/opensearch/bin/opensearch-plugin list"
+  register: opensearch_list_plugins
+
+- name: Show all the installed OpenSearch plugins
+  ansible.builtin.debug:
+    msg: "{{ opensearch_list_plugins.stdout }}"
+
+- name: Add OpenSearch to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 opensearch"
+    state: present

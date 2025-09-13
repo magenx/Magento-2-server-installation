@@ -1,0 +1,85 @@
+---
+- name: Create Magento user home directory
+  ansible.builtin.file:
+    path: "/home/{{ brand }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "711"
+
+- name: Create shell user for Magento
+  ansible.builtin.user:
+    name: "{{ brand }}"
+    home: "/home/{{ brand }}"
+    create_home: false
+    shell: /bin/bash
+    state: present
+
+- name: Create php system user for Magento
+  ansible.builtin.user:
+    name: "php-{{ brand }}"
+    home: /home/{{ brand }}
+    create_home: false
+    system: yes
+    shell: /usr/sbin/nologin
+    comment: "php system user for magento"
+    state: present
+
+- name: Change primary group to php
+  ansible.builtin.user:
+    name: "{{ brand }}"
+    group: "php-{{ brand }}"
+
+- name: Check .bashrc files exist
+  ansible.builtin.template:
+    src: "bashrc.j2"
+    dest: "/home/{{ brand }}/.bashrc"
+    owner: "{{ brand }}"
+    group: "{{ brand }}"
+    mode: "0600"
+
+- name: Check .bash_profile files exist
+  ansible.builtin.template:
+    src: "bash_profile.j2"
+    dest: "/home/{{ brand }}/.bash_profile"
+    owner: "{{ brand }}"
+    group: "{{ brand }}"
+    mode: "0600"
+
+- name: Check .bash_history files exist
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/.bash_history"
+    owner: "{{ brand }}"
+    group: "{{ brand }}"
+    state: touch
+    mode: "0600"
+
+- name: Create .ssh directory if it does not exist
+  ansible.builtin.file:
+    path: "/home/{{ brand }}/.ssh"
+    state: directory
+    owner: "{{ brand }}"
+    group: "{{ brand }}"
+    mode: "2700"
+
+- name: Regenerate SSH keypair
+  community.crypto.openssh_keypair:
+    path: "/home/{{ brand }}/.ssh/{{ brand }}"
+    type: ed25519
+    backend: "cryptography"
+    comment: ""
+    regenerate: full_idempotence
+    private_key_format: ssh
+    owner: "{{ brand }}"
+    group: "{{ brand }}"
+    mode: "0600"
+
+- name: Add public key to authorized_keys
+  ansible.builtin.lineinfile:
+    path: "/home/{{ brand }}/.ssh/authorized_keys"
+    line: "{{ lookup('file', '/home/' ~ brand ~ '/.ssh/' ~ brand ~ '.pub') }}"
+    state: present
+    create: yes
+    mode: "0600"
+    owner: "{{ brand }}"
+    group: "{{ brand }}"

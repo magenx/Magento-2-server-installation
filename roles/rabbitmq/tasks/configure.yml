@@ -1,0 +1,108 @@
+---
+- name: Check RabbitMQ is stopped before configuration
+  ansible.builtin.systemd:
+    name: rabbitmq-server
+    state: stopped
+
+- name: Stop EPMD service
+  ansible.builtin.systemd:
+    name: "epmd"
+    state: stopped
+
+- name: Kill any running EPMD processes
+  ansible.builtin.command: 
+    cmd: epmd -kill
+  register: epmd_kill_result
+  changed_when: epmd_kill_result.rc == 0
+  failed_when: >
+    (epmd_kill_result.rc != 0) and 
+    ("Cannot connect to local epmd" not in epmd_kill_result.stderr)
+
+- name: Create RabbitMQ service configuration
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/etc/rabbitmq/{{ item | regex_replace('\\.j2$', '') }}"
+    mode: "0644"
+  loop: "{{ lookup('ansible.builtin.fileglob', 'templates/*.j2', wantlist=True) | map('basename') | list }}"
+
+- name: Create EPMD service configuration
+  ansible.builtin.template:
+    src: "epmd/system/{{ item }}"
+    dest: "/etc/systemd/system/{{ item | regex_replace('\\.j2$', '') }}"
+    mode: "0644"
+  loop: "{{ lookup('ansible.builtin.fileglob', 'templates/epmd/system/*.j2', wantlist=True) | map('basename') | list }}"
+
+- name: Add /etc/hosts entry for rabbitmq
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 rabbitmq"
+    state: present
+
+- name: Enable and start RabbitMQ
+  ansible.builtin.systemd:
+    name: rabbitmq-server
+    enabled: yes
+    daemon_reload: yes
+    state: started
+  ignore_errors: true
+
+- name: Wait for RabbitMQ to be ready
+  ansible.builtin.wait_for:
+    port: 5672
+    delay: 10
+    timeout: 60
+
+- name: Enables the rabbitmq_management plugin
+  community.rabbitmq.rabbitmq_plugin:
+    names: rabbitmq_management
+    state: enabled
+
+- name: Generate random RabbitMQ user password
+  ansible.builtin.set_fact:
+    rabbitmq_password: "{{ lookup('ansible.builtin.password', '/dev/null length=32 chars=ascii_letters,digits,@%&?') }}"
+    cacheable: yes
+  when: rabbitmq_password is not defined
+
+- name: Generate random RabbitMQ admin password
+  ansible.builtin.set_fact:
+    rabbitmq_admin_password: "{{ lookup('ansible.builtin.password', '/dev/null length=32 chars=ascii_letters,digits,@%&?') }}"
+    cacheable: yes
+  when: rabbitmq_admin_password is not defined
+
+- name: Check that the vhost /{{ domain }} exists.
+  community.rabbitmq.rabbitmq_vhost:
+    name: "/{{ domain }}"
+    node: "rabbit@localhost"
+    state: present
+
+- name: Remove guest user using admin credentials
+  community.rabbitmq.rabbitmq_user:
+    user: guest
+    vhost: /
+    node: "rabbit@localhost"
+    state: absent
+
+- name: Create admin user first
+  community.rabbitmq.rabbitmq_user:
+    user: admin
+    password: "{{ rabbitmq_admin_password }}"
+    tags: administrator
+    node: "rabbit@localhost"
+    permissions:
+      - vhost: "/{{ domain }}"
+        configure_priv: .*
+        read_priv: .*
+        write_priv: .*
+    state: present
+
+- name: Add RabbitMQ user and assign access control on vhost.
+  community.rabbitmq.rabbitmq_user:
+    user: "{{ brand }}"
+    password: "{{ rabbitmq_password }}"
+    node: "rabbit@localhost"
+    permissions:
+      - vhost: "/{{ domain }}"
+        configure_priv: .*
+        read_priv: .*
+        write_priv: .*
+    state: present

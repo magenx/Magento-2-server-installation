@@ -1,0 +1,33 @@
+---
+- name: Add MariaDB repo
+  ansible.builtin.deb822_repository:
+    name: mariadb
+    types: deb
+    uris: "https://dlm.mariadb.com/repo/mariadb-server/{{ mariadb_version }}/repo/{{ ansible_distribution | lower }}"
+    suites: "{{ ansible_distribution_release }}"
+    components: main
+    architectures: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+    signed_by: "https://mariadb.org/mariadb_release_signing_key.asc"
+
+- name: Configure repository pinning
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/mariadb.pref
+    content: |
+      Package: *
+      Pin: origin mirror.mariadb.org
+      Pin-Priority: 1000
+    mode: 0644
+
+- name: Install MariaDB server
+  ansible.builtin.apt:
+    name: 
+      - mariadb-server
+      - mariadb-client
+    state: present
+    update_cache: yes
+
+- name: MariaDB running?
+  ansible.builtin.systemd:
+    name: mariadb
+    state: started
+    enabled: yes

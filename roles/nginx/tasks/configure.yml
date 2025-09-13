@@ -1,0 +1,127 @@
+---
+- name: Generate random profiler_key
+  ansible.builtin.set_fact:
+    profiler_key: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
+    cacheable: yes
+  when: profiler_key is not defined
+
+- name: Generate random phpmyadmin_path
+  ansible.builtin.set_fact:
+    phpmyadmin_path: "{{ lookup('password', '/dev/null length=6 chars=ascii_letters,digits') }}"
+    cacheable: yes
+  when: phpmyadmin_path is not defined
+
+- name: Generate random rabbitmq_path
+  ansible.builtin.set_fact:
+    rabbitmq_path: "{{ lookup('password', '/dev/null length=6 chars=ascii_letters,digits') }}"
+    cacheable: yes
+  when: rabbitmq_path is not defined
+
+- name: Generate random admin_path
+  ansible.builtin.set_fact:
+    admin_path: "{{ lookup('password', '/dev/null length=6 chars=ascii_letters,digits') }}"
+    cacheable: yes
+  when: admin_path is not defined
+
+- name: Check nginx config directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - /etc/nginx
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+    - /etc/nginx/conf_m2
+    - /etc/nginx/ipset
+    - /etc/nginx/upstream
+
+- name: Copy nginx.conf from template
+  ansible.builtin.template:
+    src: "nginx.conf.j2"
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Copy fastcgi_params from template
+  ansible.builtin.template:
+    src: "fastcgi_params.j2"
+    dest: /etc/nginx/fastcgi_params
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Copy all sites-available configs
+  ansible.builtin.template:
+    src: "sites-available/{{ item }}.j2"
+    dest: "/etc/nginx/sites-available/{{ item }}"
+    owner: root
+    group: root
+    mode: "0640"
+  loop:
+    - default.conf
+    - magento2.conf
+
+- name: Copy magento2.conf file to brand file
+  ansible.builtin.copy:
+    src: "/etc/nginx/sites-available/magento2.conf"
+    dest: "/etc/nginx/sites-available/{{ domain }}.conf"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Symlink default.conf to sites-enabled
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/default.conf
+    dest: /etc/nginx/sites-enabled/default.conf
+    state: link
+
+- name: Symlink {{ domain }}.conf to sites-enabled
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/{{ domain }}.conf
+    dest: /etc/nginx/sites-enabled/{{ domain }}.conf
+    state: link
+
+- name: Copy all nginx configs from templates
+  ansible.builtin.template:
+    src: "conf_m2/{{ item }}"
+    dest: "/etc/nginx/conf_m2/{{ item | regex_replace('\\.j2$', '') }}"
+    owner: root
+    group: root
+    mode: "0640"
+  loop: "{{ lookup('ansible.builtin.fileglob', 'templates/conf_m2/*.j2', wantlist=True) | map('basename') | list }}"
+
+- name: Copy all nginx access config
+  ansible.builtin.template:
+    src: "ipset/{{ item }}"
+    dest: "/etc/nginx/ipset/{{ item | regex_replace('\\.j2$', '') }}"
+    owner: root
+    group: root
+    mode: "0640"
+  loop: "{{ lookup('ansible.builtin.fileglob', 'templates/ipset/*.j2', wantlist=True) | map('basename') | list }}"
+
+- name: Copy all nginx upstream config
+  ansible.builtin.template:
+    src: "upstream/{{ item }}"
+    dest: "/etc/nginx/upstream/{{ item | regex_replace('\\.j2$', '') }}"
+    owner: root
+    group: root
+    mode: "0640"
+  loop: "{{ lookup('ansible.builtin.fileglob', 'templates/upstream/*.j2', wantlist=True) | map('basename') | list }}"
+
+- name: Enable and start nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Check if Nginx is running and enabled
+  debug:
+    msg: "Nginx - Running: {{ ansible_facts.services['nginx.service'].state }}, Enabled: {{ ansible_facts.services['nginx.service'].status }}"
+  when: "'nginx.service' in ansible_facts.services"

@@ -1,0 +1,31 @@
+---
+- name: Check for root user
+  ansible.builtin.assert:
+    that: ansible_user_id == 'root'
+    fail_msg: "This playbook must be run as root"
+
+- name: Check network is up
+  ansible.builtin.wait_for:
+    host: github.com
+    port: 443
+    timeout: 10
+
+- name: Check OS is supported
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution in ['Ubuntu', 'Debian']
+      - (ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('22.04', '>='))
+        or (ansible_distribution == 'Debian' and ansible_distribution_version is version('12', '>='))
+    fail_msg: "This OS version is not supported"
+
+- name: Check RAM is > 4GB
+  ansible.builtin.assert:
+    that: ansible_memtotal_mb | int >= 4096
+    fail_msg: "You need at least 4GB RAM"
+
+- name: Check /opt/magenx/config exists
+  ansible.builtin.file:
+    path: /opt/magenx/config
+    state: directory
+    owner: root
+    mode: "0750"
