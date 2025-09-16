@@ -1,0 +1,44 @@
+- name: Create Fail2Ban filters
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/fail2ban/filter.d/{{ item.name }}.conf"
+    owner: root
+    group: root
+    mode: "0640"
+  loop:
+    - nginx-local-403.conf
+    - nginx-local-429.conf
+
+- name: Create Fail2Ban actions
+  ansible.builtin.template:
+    src: "nginx-local-deny.conf.j2"
+    dest: "/etc/fail2ban/action.d/nginx-local-deny.conf"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Create Fail2Ban jail configuration
+  ansible.builtin.template:
+    src: "nginx-local.conf.j2"
+    dest: "/etc/fail2ban/jail.d/nginx-local.conf"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Check Fail2Ban service is enabled and started
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: restarted
+    enabled: true
+
+- name: Check Fail2Ban jail status
+  ansible.builtin.command: 
+    cmd: fail2ban-client status
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Check Fail2Ban is running and enabled
+  debug:
+    msg: "Fail2Ban - Running: {{ ansible_facts.services['fail2ban.service'].state }}, Enabled: {{ ansible_facts.services['fail2ban.service'].status }}"
+  when: "'fail2ban.service' in ansible_facts.services"
