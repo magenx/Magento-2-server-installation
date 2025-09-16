@@ -44,7 +44,6 @@
     name:
       - nftables
       - ufw
-      - fail2ban
       - auditd
     state: present
   tags: security_packages
@@ -104,6 +103,9 @@
   ansible.builtin.apt:
     name:
       - python3-pymysql
+      - python3
+      - python3-setuptools
+      - python3-pip
     state: present
   tags: python_packages
 
