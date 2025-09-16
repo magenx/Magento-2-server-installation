@@ -23,8 +23,8 @@ COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974"
 
 ## Version lock
 COMPOSER_VERSION="2.7"
-RABBITMQ_VERSION="4*"
-ERLANG_VERSION="1:27*"
+RABBITMQ_VERSION="1:4.1.4-1"
+ERLANG_VERSION="1:27.*"
 MARIADB_VERSION="11.4"
 PHP_VERSION="8.4"
 OPENSEARCH_VERSION="2.x"
@@ -51,8 +51,8 @@ MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria* php* nginx* varnish* certbot* redis* webmin"
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
-perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils \
-logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp ssl-cert-check"
+perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils python3-setuptools \
+logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp ssl-cert-check ufw"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
@@ -900,13 +900,29 @@ _space 2
 _echo "${YELLOW}[?] Install RabbitMQ ${RABBITMQ_VERSION} ? [y/n][n]:${RESET} "
 read rabbitmq_install
 if [ "${rabbitmq_install}" == "y" ];then
-  curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/setup.deb.sh' | bash
-  curl -1sLf 'https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/setup.deb.sh' | bash
- cat > /etc/apt/preferences.d/erlang <<END
+  curl -1sLf "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" | gpg --dearmor | tee /usr/share/keyrings/com.rabbitmq.team.gpg > /dev/null
+    _space 1
+  tee /etc/apt/sources.list.d/rabbitmq.list <<END
+## Modern Erlang/OTP releases
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb1.rabbitmq.com/rabbitmq-erlang/${DISTRO_NAME,,}/$(lsb_release -cs) $(lsb_release -cs) main
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-erlang/${DISTRO_NAME,,}/$(lsb_release -cs) $(lsb_release -cs) main
+## Provides modern RabbitMQ releases
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb1.rabbitmq.com/rabbitmq-server/${DISTRO_NAME,,}/$(lsb_release -cs) $(lsb_release -cs) main
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-server/${DISTRO_NAME,,}/$(lsb_release -cs) $(lsb_release -cs) main
+END
+  _space 1
+  tee /etc/apt/preferences.d/rabbitmq <<END
+Package: rabbitmq-server
+Pin: version ${RABBITMQ_VERSION}
+Pin-Priority: 999
+END
+  _space 1
+  tee /etc/apt/preferences.d/erlang <<END
 Package: erlang*
 Pin: version ${ERLANG_VERSION}
 Pin-Priority: 999
 END
+
   if [ "$?" = 0 ]; then
     _space 1
     GREENTXT "RabbitMQ repository installed - OK"
@@ -914,7 +930,7 @@ END
     YELLOWTXT "RabbitMQ ${RABBITMQ_VERSION} installation:"
     _space 1
     apt update
-    apt -y install rabbitmq-server=${RABBITMQ_VERSION}  --fix-missing
+    apt -y install rabbitmq-server --fix-missing
     if [ "$?" = 0 ]; then
      _space 1
      GREENTXT "RabbitMQ ${RABBITMQ_VERSION} installed  -  OK"
@@ -1103,7 +1119,6 @@ node.max_local_storage_nodes: 1
 
 discovery.type: single-node
 cluster.routing.allocation.enable: all
-index.number_of_replicas: 0
 
 path.data: /var/lib/opensearch
 path.logs: /var/log/opensearch
@@ -1950,6 +1965,67 @@ service auditd restart
 auditctl -l
 
 _space 1
+YELLOWTXT "[-] Fail2ban installation and configuration"
+cd /tmp
+git clone https://github.com/fail2ban/fail2ban.git
+cd fail2ban
+
+_space 1
+python3 setup.py install
+
+_space 1
+tee /etc/fail2ban/filter.d/nginx-local-403.conf <<'END'
+[Definition]
+failregex = ^<HOST> -.*(GET|POST|HEAD).*"\s(444|403|401)\s
+ignoreregex =
+datepattern = \[%%d/%%b/%%Y:%%H:%%M:%%S
+END
+
+tee /etc/fail2ban/filter.d/nginx-local-429.conf <<'END'
+[Definition]
+failregex = ^<HOST> -.*"(GET|POST|HEAD).*" 429
+ignoreregex =
+datepattern = \[%%d/%%b/%%Y:%%H:%%M:%%S
+END
+
+tee /etc/fail2ban/action.d/nginx-local-deny.conf <<'END'
+[Definition]
+actionstart =
+actionstop =
+actioncheck =
+actionban   = echo "<ip>  1; ## $(date '+%%Y-%%m-%%d %%H:%%M:%%S') <name>" >> <nginx_local_deny> && nginx -s reload
+actionunban = sed -i "/.*<ip>  1;.*/d" <nginx_local_deny> && nginx -s reload
+END
+
+tee /etc/fail2ban/jail.d/nginx-local.conf <<'END'
+[nginx-local-403]
+enabled  = true
+port     = http,https
+filter   = nginx-local-403
+logpath  = /var/log/nginx/access.log
+backend  = auto
+maxretry = 5
+findtime = 600
+bantime  = -1
+ignoreip =
+action   = %(action_)s
+           nginx-local-deny[nginx_local_deny=/etc/nginx/ipset/deny.conf]
+
+[nginx-local-429]
+enabled  = true
+port     = http,https
+filter   = nginx-local-429
+logpath  = /var/log/nginx/access.log
+backend  = auto
+maxretry = 5
+findtime = 60
+bantime  = 600
+ignoreip =
+action   = %(action_)s
+           nginx-local-deny[nginx_local_deny=/etc/nginx/ipset/deny.conf]
+END
+
+_space 1
 if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
  _echo "${YELLOW}[?] Apply config optimization and settings ? [y/n][n]:${RESET} "
 read apply_config
@@ -2111,6 +2187,8 @@ systemctl daemon-reload
 systemctl restart nginx.service
 systemctl restart php*fpm.service
 systemctl restart varnish.service
+systemctl restart fail2ban
+fail2ban-client version
 
 _space 2
 YELLOWTXT "Magento configuration parameters:"
