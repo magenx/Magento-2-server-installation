@@ -1,0 +1,15 @@
+- name: Clone Fail2Ban repository
+  ansible.builtin.git:
+    repo: https://github.com/fail2ban/fail2ban.git
+    dest: /tmp/fail2ban
+    version: master
+
+- name: Install Fail2Ban
+  ansible.builtin.command: 
+    cmd: python3 setup.py install
+  args:
+    chdir: /tmp/fail2ban
+
+- name: Verify Fail2Ban version
+  ansible.builtin.command: 
+    cmd: fail2ban-client version
