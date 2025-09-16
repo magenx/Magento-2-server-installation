@@ -1966,7 +1966,7 @@ auditctl -l
 
 _space 1
 YELLOWTXT "[-] Fail2ban installation and configuration"
-cd /tmp
+cd /usr/local/src
 git clone https://github.com/fail2ban/fail2ban.git
 cd fail2ban
 
@@ -1981,6 +1981,7 @@ ignoreregex =
 datepattern = \[%%d/%%b/%%Y:%%H:%%M:%%S
 END
 
+_space 1
 tee /etc/fail2ban/filter.d/nginx-local-429.conf <<'END'
 [Definition]
 failregex = ^<HOST> -.*"(GET|POST|HEAD).*" 429
@@ -1988,6 +1989,7 @@ ignoreregex =
 datepattern = \[%%d/%%b/%%Y:%%H:%%M:%%S
 END
 
+_space 1
 tee /etc/fail2ban/action.d/nginx-local-deny.conf <<'END'
 [Definition]
 actionstart =
@@ -1997,6 +1999,7 @@ actionban   = echo "<ip>  1; ## $(date '+%%Y-%%m-%%d %%H:%%M:%%S') <name>" >> <n
 actionunban = sed -i "/.*<ip>  1;.*/d" <nginx_local_deny> && nginx -s reload
 END
 
+_space 1
 tee /etc/fail2ban/jail.d/nginx-local.conf <<'END'
 [nginx-local-403]
 enabled  = true
@@ -2023,6 +2026,31 @@ bantime  = 600
 ignoreip =
 action   = %(action_)s
            nginx-local-deny[nginx_local_deny=/etc/nginx/ipset/deny.conf]
+END
+
+_space 1
+tee /etc/systemd/system/fail2ban.service <<'END'
+[Unit]
+Description=Fail2Ban Service
+Documentation=man:fail2ban(1)
+After=network.target iptables.service firewalld.service ip6tables.service ipset.service nftables.service
+PartOf=iptables.service firewalld.service ip6tables.service ipset.service nftables.service
+
+[Service]
+Type=simple
+Environment="PYTHONNOUSERSITE=1"
+ExecStartPre=/bin/mkdir -p /run/fail2ban
+ExecStart=/usr/local/bin/fail2ban-server -xf start
+# Use this line for systemd journal logging instead of file logs:
+# ExecStart=/usr/local/bin/fail2ban-server -xf --logtarget=sysout start
+ExecStop=/usr/local/bin/fail2ban-client stop
+ExecReload=/usr/local/bin/fail2ban-client reload
+PIDFile=/run/fail2ban/fail2ban.pid
+Restart=on-failure
+RestartPreventExitStatus=0 255
+
+[Install]
+WantedBy=multi-user.target
 END
 
 _space 1
