@@ -28,7 +28,7 @@ ERLANG_VERSION="1:27.*"
 MARIADB_VERSION="11.4"
 PHP_VERSION="8.4"
 OPENSEARCH_VERSION="2.x"
-VARNISH_VERSION="76"
+VARNISH_VERSION="77"
 REDIS_VERSION="8"
 NODE_VERSION="20"
 NVM_VERSION="0.40.3"
@@ -38,8 +38,7 @@ MARIADB_REPO_CONFIG="https://r.mariadb.com/downloads/mariadb_repo_setup"
 
 # Nginx configuration
 NGINX_VERSION=$(curl -s http://nginx.org/en/download.html | grep -oP '(?<=gz">nginx-).*?(?=</a>)' | head -1)
-MAGENX_NGINX_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-nginx-config/master/"
-MAGENX_NGINX_GITHUB_REPO_API="https://api.github.com/repos/magenx/Magento-nginx-config/contents/magento2"
+MAGENX_NGINX_GITHUB="https://github.com/magenx/Magento-nginx-config"
 
 # Debug Tools
 MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
@@ -52,7 +51,7 @@ WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
 perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils python3-setuptools \
-logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp ssl-cert-check ufw"
+logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp ssl-cert-check ufw gettext-base"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
@@ -203,7 +202,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
    indexer_password          text,
    version_installed         text,
    domain                    text,
-   owner                     text,
+   brand                     text,
    php_user                  text,
    root_path                 text,
    database_host             text,
@@ -480,9 +479,9 @@ DOMAIN=($(${SQLITE3} "SELECT domain FROM magento;"))
 if [ "${DOMAIN}" = "" ]; then
  _space 3
  read -e -p "$(echo -e ${YELLOW}"  [?] Store domain name: "${RESET})" -i "domain.com" DOMAIN
- read -e -p "$(echo -e ${YELLOW}"  [?] Files owner/SSH user: "${RESET})" -i "${DOMAIN//[-.]/}" OWNER
+ read -e -p "$(echo -e ${YELLOW}"  [?] Files brand/SSH user: "${RESET})" -i "${DOMAIN//[-.]/}" BRAND
  
- ${SQLITE3} "INSERT INTO magento (domain, owner, php_user, root_path) VALUES ( '${DOMAIN}', '${OWNER}', 'php-${OWNER}', '/home/${OWNER}' );"
+ ${SQLITE3} "INSERT INTO magento (domain, brand, php_user, root_path) VALUES ( '${DOMAIN}', '${BRAND}', 'php-${BRAND}', '/home/${BRAND}' );"
  else
    GREENTXT "DOMAIN: ${DOMAIN}"
 fi
@@ -663,6 +662,7 @@ if [ "${nginx_install}" == "y" ]; then
     if [ "$?" = 0 ]; then
      _space 1
      GREENTXT "Nginx ${NGINX_VERSION} installed  -  OK"
+	 echo "127.0.0.1 nginx" >> /etc/hosts
      _space 1
      systemctl enable nginx >/dev/null 2>&1
      PACKAGES_INSTALLED nginx*
@@ -1019,10 +1019,10 @@ rabbitmqctl delete_user guest
 # generate rabbitmq password
   RABBITMQ_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 15 | head -n 1)"
   ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}';"
-  OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
-  rabbitmqctl add_user ${OWNER} ${RABBITMQ_PASSWORD}
-  rabbitmqctl add_vhost /${OWNER}
-  rabbitmqctl set_permissions -p /${OWNER} ${OWNER} ".*" ".*" ".*"
+  BRAND=$(${SQLITE3} "SELECT brand FROM magento;")
+  rabbitmqctl add_user ${BRAND} ${RABBITMQ_PASSWORD}
+  rabbitmqctl add_vhost /${BRAND}
+  rabbitmqctl set_permissions -p /${BRAND} ${BRAND} ".*" ".*" ".*"
    else
     _space 1
     REDTXT "RabbitMQ ${RABBITMQ_VERSION} installation error"
@@ -1103,8 +1103,8 @@ if [ "${opensearch_install}" == "y" ];then
     YELLOWTXT "OpenSearch pre-configuration:"
     _space 1
     ## opensearch settings
-    OWNER=$(${SQLITE3} "SELECT owner FROM magento LIMIT 1;")
-    if ! grep -q "${OWNER}" /etc/opensearch/opensearch.yml >/dev/null 2>&1 ; then
+    BRAND=$(${SQLITE3} "SELECT brand FROM magento LIMIT 1;")
+    if ! grep -q "${BRAND}" /etc/opensearch/opensearch.yml >/dev/null 2>&1 ; then
     cp /etc/opensearch/opensearch.yml /etc/opensearch/opensearch.yml_default
 cat > /etc/opensearch/opensearch.yml <<END
 #--------------------------------------------------------------------#
@@ -1112,8 +1112,8 @@ cat > /etc/opensearch/opensearch.yml <<END
 # -------------------------------------------------------------------#
 # original config saved: /etc/opensearch/opensearch.yml_default
 
-cluster.name: ${OWNER}
-node.name: ${OWNER}-node1
+cluster.name: ${BRAND}
+node.name: ${BRAND}-node1
 node.attr.rack: r1
 node.max_local_storage_nodes: 1
 
@@ -1177,7 +1177,7 @@ systemctl restart opensearch.service
   ## generate opensearch password
   INDEXER_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)"
   ${SQLITE3} "UPDATE magento SET indexer_password = '${INDEXER_PASSWORD}';"
-  OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
+  BRAND=$(${SQLITE3} "SELECT brand FROM magento;")
   _space 1
   YELLOWTXT "Waiting for OpenSearch initialization ..."
   timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 9200
@@ -1185,7 +1185,7 @@ systemctl restart opensearch.service
   sleep 5
   
   ## Create role
-  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/roles/${OWNER}" \
+  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/roles/${BRAND}" \
   -H "Content-Type: application/json" \
   -d "$(cat <<EOF
 {
@@ -1197,7 +1197,7 @@ systemctl restart opensearch.service
     ],
     "index_permissions": [
       {
-        "index_patterns": ["${OWNER}*"],
+        "index_patterns": ["${BRAND}*"],
         "fls": [],
         "masked_fields": [],
         "allowed_actions": ["*"]
@@ -1221,17 +1221,17 @@ EOF
 _space 1
 
   ## Create user
-  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/internalusers/${OWNER}" \
+  curl -u admin:${OPENSEARCH_ADMIN_PASSWORD} -XPUT "http://127.0.0.1:9200/_plugins/_security/api/internalusers/${BRAND}" \
   -H "Content-Type: application/json" \
   -d "$(cat <<EOF
 {
     "password": "${INDEXER_PASSWORD}",
-    "opendistro_security_roles": ["${OWNER}", "own_index"]
+    "opendistro_security_roles": ["${BRAND}", "own_index"]
 }
 EOF
 )"
 _space 1
-YELLOWTXT "Created OpenSearch user: ${OWNER} and role: ${OWNER}"
+YELLOWTXT "Created OpenSearch user: ${BRAND} and role: ${BRAND}"
 _space 1
 YELLOWTXT "Installing OpenSearch plugins:"
 /usr/share/opensearch/bin/opensearch-plugin install --batch \
@@ -1276,29 +1276,29 @@ WHITETXT "----------------------------------------------------------------------
 _space 1
  ## configure
  DOMAIN="$(${SQLITE3} "SELECT domain FROM magento;")"
- OWNER="$(${SQLITE3} "SELECT owner FROM magento;")"
+ BRAND="$(${SQLITE3} "SELECT brand FROM magento;")"
  PHP_USER="$(${SQLITE3} "SELECT php_user FROM magento;")"
  ROOT_PATH="$(${SQLITE3} "SELECT root_path FROM magento;")"
  
  ## create magento/ssh user
- useradd -d ${ROOT_PATH} -s /bin/bash ${OWNER}
+ useradd -d ${ROOT_PATH} -s /bin/bash ${BRAND}
  INSTALLATION_RELEASE="$(date +'%Y%m%d%H%M')"
  mkdir -p ${ROOT_PATH}/{releases/${INSTALLATION_RELEASE},shared}
  echo "007" > ${ROOT_PATH}/shared/magento_umask
  
  ## create magento php user
  useradd -M -s /sbin/nologin -d ${ROOT_PATH} ${PHP_USER}
- usermod -g ${PHP_USER} ${OWNER}
+ usermod -g ${PHP_USER} ${BRAND}
  chmod 711 ${ROOT_PATH}
- chown -R ${OWNER}:${PHP_USER} ${ROOT_PATH}/{shared,releases}
+ chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases}
  
  ## magento root folder permissions
  chmod 2750 ${ROOT_PATH}/{shared,releases}
- setfacl -R -m m:r-X,u:${OWNER}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${OWNER}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}/{shared,releases}
+ setfacl -R -m m:r-X,u:${BRAND}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}/{shared,releases}
  setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases}
 
  ## write permissions for shared
- setfacl -R -m u:${OWNER}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${OWNER}:rwX,d:g:${PHP_USER}:rwX,d:o::- ${ROOT_PATH}/shared
+ setfacl -R -m u:${BRAND}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:rwX,d:o::- ${ROOT_PATH}/shared
  
  _space 1
  _echo "[?] Download Magento 2 ? [y/n][n]: "
@@ -1316,9 +1316,9 @@ _space 1
    _space 1
    mkdir -p ${ROOT_PATH}/.config
    chmod 2700 ${ROOT_PATH}/.config
-   chown -R ${OWNER}:${OWNER} ${ROOT_PATH}/.config
-   su ${OWNER} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${COMPOSER_NAME} ${COMPOSER_PASSWORD}"
-   su ${OWNER} -s /bin/bash -c "${PROJECT}=${VERSION_INSTALLED} . --no-install"
+   chown -R ${BRAND}:${BRAND} ${ROOT_PATH}/.config
+   su ${BRAND} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${COMPOSER_NAME} ${COMPOSER_PASSWORD}"
+   su ${BRAND} -s /bin/bash -c "${PROJECT}=${VERSION_INSTALLED} . --no-install"
 
    ## composer replace bloatware
    curl -sO ${MAGENX_INSTALL_GITHUB_REPO}/composer_replace
@@ -1330,7 +1330,7 @@ _space 1
    rm composer_replace
 
    ### install magento from here ###
-   su ${OWNER} -s /bin/bash -c "composer install"
+   su ${BRAND} -s /bin/bash -c "composer install"
    
     if [ "$?" != 0 ]; then
       _space 1
@@ -1341,16 +1341,16 @@ _space 1
     fi
    
    ## make magento great again
-   su ${OWNER} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var ${ROOT_PATH}/shared/"
-   su ${OWNER} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
-   su ${OWNER} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media ${ROOT_PATH}/shared/pub/"
+   su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var ${ROOT_PATH}/shared/"
+   su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
+   su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media ${ROOT_PATH}/shared/pub/"
    ## set shared permissions
-   setfacl -R -m m:r-X,u:${OWNER}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${OWNER}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}/shared
+   setfacl -R -m m:r-X,u:${BRAND}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}/shared
    setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/shared
-   setfacl -R -m u:${OWNER}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${OWNER}:rwX,d:g:${PHP_USER}:rwX,d:o::- ${ROOT_PATH}/shared
+   setfacl -R -m u:${BRAND}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:rwX,d:o::- ${ROOT_PATH}/shared
    ## create symlink to shared and release
-   su ${OWNER} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/var ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var"
-   su ${OWNER} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/pub/media ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media"
+   su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/var ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var"
+   su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/pub/media ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media"
    ln -sfn ${ROOT_PATH}/releases/${INSTALLATION_RELEASE} ${ROOT_PATH}/current
  fi
 
@@ -1411,11 +1411,11 @@ chmod 600 /root/.my.cnf /root/.mytop
 
 ## configure database
  _space 1
- OWNER=$(${SQLITE3} "SELECT owner FROM magento;")
+ BRAND=$(${SQLITE3} "SELECT brand FROM magento;")
  YELLOWTXT "[-] Settings for database:"
  read -e -p "$(echo -e ${YELLOW}"  [?] Host name: "${RESET})" -i "mariadb"  DATABASE_HOST
- read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${OWNER}"  DATABASE_NAME
- read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${OWNER}"  DATABASE_USER
+ read -e -p "$(echo -e ${YELLOW}"  [?] Database name: "${RESET})" -i "${BRAND}"  DATABASE_NAME
+ read -e -p "$(echo -e ${YELLOW}"  [?] User name: "${RESET})" -i "${BRAND}"  DATABASE_USER
  read -e -p "$(echo -e ${YELLOW}"  [?] Password: "${RESET})" -i "$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9%^&+_{}()<>-' | fold -w 15 | head -n 1)${RANDOM}"  DATABASE_PASSWORD
  _space 1
 for USER_HOST in ${DATABASE_HOST} localhost 127.0.0.1
@@ -1474,7 +1474,7 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
  _space 1
  TIMEZONE=$(${SQLITE3} "SELECT timezone FROM system;")
  cd ${GET_[root_path]}/current/
- chown -R ${GET_[owner]}:${GET_[php_user]} *
+ chown -R ${GET_[brand]}:${GET_[php_user]} *
  chmod u+x bin/magento
  YELLOWTXT "[-] Administrator settings and store base url:"
  read -e -p "$(echo -e ${YELLOW}"  [?] First name: "${RESET})" -i "Magento"  ADMIN_FIRSTNAME
@@ -1492,7 +1492,7 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
  _space 1
  _pause '[!] Press [Enter] key to run setup:install'
  _space 1
- su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:install --base-url=https://${GET_[domain]}/ \
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:install --base-url=https://${GET_[domain]}/ \
  --db-host=${GET_[database_host]} \
  --db-name=${GET_[database_name]} \
  --db-user=${GET_[database_user]} \
@@ -1523,16 +1523,16 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
  --cache-backend-redis-compression-lib=l4z \
  --amqp-host=rabbitmq \
  --amqp-port=5672 \
- --amqp-user=${GET_[owner]} \
+ --amqp-user=${GET_[brand]} \
  --amqp-password='${GET_[rabbitmq_password]}' \
- --amqp-virtualhost='/${GET_[owner]}' \
+ --amqp-virtualhost='/${GET_[brand]}' \
  --consumers-wait-for-messages=0 \
  --search-engine=opensearch \
  --opensearch-host=opensearch \
  --opensearch-port=9200 \
- --opensearch-index-prefix=${GET_[owner]} \
+ --opensearch-index-prefix=${GET_[brand]} \
  --opensearch-enable-auth=1 \
- --opensearch-username=${GET_[owner]} \
+ --opensearch-username=${GET_[brand]} \
  --opensearch-password='${GET_[indexer_password]}'"
 
  if [ "$?" != 0 ]; then
@@ -1590,15 +1590,31 @@ if [[ ${RESULT} == up ]]; then
   exit 1
 fi
 
-## Get variables for configuration
+##
+## Configuration
+## Create an associative array
+  declare -A GET_
+  ## Get the data for the Magento mode from the magento table | sqlite .mode line key=value
+  QUERY=$(${SQLITE3} -line "SELECT * FROM magento;")
+  ## Loop through the lines of the query output and add the key=value pairs to the associative array
+  while IFS='=' read -r KEY VALUE; do
+    ## Extract the key and value from the line separated by ' = '
+    KEY=$(echo "${KEY}" | tr -d '[:space:]')
+    VALUE=$(echo "${VALUE}" | tr -d '[:space:]')
+    ## Skip adding key=value pair if value is empty
+    if [[ -n "${VALUE}" ]]; then
+      ## Add the key=value pair to the associative array
+      GET_["${KEY}"]="${VALUE}"
+    fi
+  done <<< "${QUERY}"
+
 SSH_PORT="$(${SQLITE3} "SELECT ssh_port FROM system;")"
 PHP_VERSION="$(${SQLITE3} "SELECT php_version FROM system;")"
 TIMEZONE="$(${SQLITE3} "SELECT timezone FROM system;")"
 
 _space 1
 YELLOWTXT "[-] Server hostname settings"
-DOMAIN="$(${SQLITE3} "SELECT domain FROM magento LIMIT 1;")"
-hostnamectl set-hostname "${DOMAIN}" --static
+hostnamectl set-hostname "${GET_[domain]}" --static
 hostname
 
 _space 1
@@ -1726,29 +1742,43 @@ openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/private/defau
 
 _space 1
 YELLOWTXT "[-] Downloading nginx configuration files"
-curl -o /etc/nginx/fastcgi_params  ${MAGENX_NGINX_GITHUB_REPO}magento2/fastcgi_params
-curl -o /etc/nginx/nginx.conf  ${MAGENX_NGINX_GITHUB_REPO}magento2/nginx.conf
-mkdir -p /etc/nginx/sites-enabled
-mkdir -p /etc/nginx/sites-available && cd $_
-curl ${MAGENX_NGINX_GITHUB_REPO_API}/sites-available 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -O "$4)}' >/dev/null
-ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
-mkdir -p /etc/nginx/conf_m2 && cd /etc/nginx/conf_m2/
-curl ${MAGENX_NGINX_GITHUB_REPO_API}/conf_m2 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -O "$4)}' >/dev/null
-mkdir -p /etc/nginx/ipset && cd /etc/nginx/ipset/
-curl ${MAGENX_NGINX_GITHUB_REPO_API}/ipset 2>&1 | awk -F'"' '/download_url/ {print $4 ; system("curl -O "$4)}' >/dev/null
+mkdir -p /tmp/nginx
+cd /tmp/nginx
+git init
+git config core.sparseCheckout true
+echo "magento2/*" >> .git/info/sparse-checkout
+git remote add origin https://github.com/magenx/Magento-nginx-config
+git pull origin master
+
+mv magento2/sites-available/magento2.conf  magento2/sites-available/${GET_[domain]}.conf
+
 
 _space 1
-YELLOWTXT "[-] Magento profiler configuration in nginx"
-PROFILER_PLACEHOLDER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
-sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/g" /etc/nginx/conf_m2/maps.conf
-echo "  Magento profiler query => ${PROFILER_PLACEHOLDER}"
+YELLOWTXT "[-] Nginx configuration"
+
+export DOMAIN="${GET_[domain]}"
+export ROOT_PATH="${GET_[root_path]}/current/"
+export ADMIN_PATH="${GET_[admin_path]}"
+export PHP_FPM="unix:/var/run/php/${GET_[brand]}.sock"
+export PROFILER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
+export PHPMYADMIN_PATH="mysql_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)"
+export PHPMYADMIN_PHP_FPM="unix:/var/run/php/php${PHP_VERSION}-fpm.sock"
+export RABBITMQ_PATH="rabbitmq_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)"
+
+find /tmp/nginx/magento2 -type f -exec sh -c '
+  dest_path="/etc/nginx/$(echo "{}" | sed "s|/tmp/nginx/magento2||")";
+  mkdir -p "$(dirname "$dest_path")";
+  envsubst '\''$DOMAIN $ROOT_PATH $ADMIN_PATH $PHP_FPM $PROFILER $PHPMYADMIN_PATH $PHPMYADMIN_PHP_FPM $RABBITMQ_PATH'\'' < "{}" > "$dest_path";
+' \;
+  
+ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
+ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
+
+rm -rf /tmp/nginx/magento2
 
 _space 1
 YELLOWTXT "[-] phpMyAdmin installation and configuration"
-PHPMYADMIN_LOCATION=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
 BLOWFISH_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-echo "  phpMyAdmin location => ${PHPMYADMIN_LOCATION}"
-_space 1
 mkdir -p /usr/share/phpMyAdmin && cd $_
 composer -n create-project phpmyadmin/phpmyadmin .
 
@@ -1780,21 +1810,13 @@ pm = ondemand
 pm.max_children = 5
 END
 
-sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PHPMYADMIN_LOCATION}/"  /etc/nginx/conf_m2/phpmyadmin.conf
-sed -i "s|PHP_FPM_PLACEHOLDER|unix:/var/run/php/php${PHP_VERSION}-fpm.sock|"  /etc/nginx/conf_m2/phpmyadmin.conf
-
-_space 1
-YELLOWTXT "[-] RabbitMQ management UI configuration"
-RABBITMQ_LOCATION=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
-sed -i "s/RABBITMQ_PLACEHOLDER/rabbitmq_${RABBITMQ_LOCATION}/"  /etc/nginx/conf_m2/rabbitmq.conf
-
 _space 1
 YELLOWTXT "[-] Varnish Cache configuration file"
 systemctl enable varnish.service
 curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
 curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}/devicedetect-include.vcl
 curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/default.vcl
-sed -i "s/PROFILER_PLACEHOLDER/${PROFILER_PLACEHOLDER}/g" /etc/varnish/default.vcl
+sed -i "s/PROFILER/${PROFILER}/g" /etc/varnish/default.vcl
 
 _space 1
 YELLOWTXT "[-] Realtime malware monitor with email alerts"
@@ -1819,31 +1841,14 @@ echo "deb [signed-by=/usr/share/keyrings/goaccess.gpg arch=$(dpkg --print-archit
 apt update
 apt -y install goaccess
 
-##
-## Configuration
-## Create an associative array
-  declare -A GET_
-  ## Get the data for the Magento mode from the magento table | sqlite .mode line key=value
-  QUERY=$(${SQLITE3} -line "SELECT * FROM magento;")
-  ## Loop through the lines of the query output and add the key=value pairs to the associative array
-  while IFS='=' read -r KEY VALUE; do
-    ## Extract the key and value from the line separated by ' = '
-    KEY=$(echo "${KEY}" | tr -d '[:space:]')
-    VALUE=$(echo "${VALUE}" | tr -d '[:space:]')
-    ## Skip adding key=value pair if value is empty
-    if [[ -n "${VALUE}" ]]; then
-      ## Add the key=value pair to the associative array
-      GET_["${KEY}"]="${VALUE}"
-    fi
-  done <<< "${QUERY}"
   _space 1
 ## Use associative array here
 _echo "${YELLOW}[?]${REDBG}${BOLD}[ Configuration ]${RESET} ${YELLOW}${RESET}"
 _space 2
 
 YELLOWTXT "[-] Php-fpm pool configuration"
-tee /etc/php/${PHP_VERSION}/fpm/pool.d/${GET_[owner]}.conf <<END
-[${GET_[owner]}]
+tee /etc/php/${PHP_VERSION}/fpm/pool.d/${GET_[brand]}.conf <<END
+[${GET_[brand]}]
 
 ;;
 ;; Pool user
@@ -1917,30 +1922,18 @@ END
 systemctl daemon-reload
 
 _space 1
-YELLOWTXT "[-] Nginx configuration"
-cp /etc/nginx/sites-available/magento2.conf  /etc/nginx/sites-available/${GET_[domain]}.conf
-ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
-
-sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/g" /etc/nginx/sites-available/${GET_[domain]}.conf
-sed -i "s/ADMIN_PLACEHOLDER/${GET_[admin_path]}/" /etc/nginx/conf_m2/admin_protect.conf
-
-sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/g" /etc/nginx/conf_m2/maps.conf
-sed -i "s,PHP_FPM_PLACEHOLDER,unix:/var/run/php/${GET_[owner]}.sock,"  /etc/nginx/conf_m2/maps.conf
-sed -i "s,MAGE_ROOT_PLACEHOLDER,${GET_[root_path]}/current/," /etc/nginx/conf_m2/maps.conf
-
-_space 1
-YELLOWTXT "[-] Add user ${GET_[owner]} to sudo to execute cacheflush"
+YELLOWTXT "[-] Add user ${GET_[brand]} to sudo to execute cacheflush"
 tee -a /etc/sudoers <<END
-${GET_[owner]} ALL=(ALL) NOPASSWD: /usr/local/bin/cacheflush
+${GET_[brand]} ALL=(ALL) NOPASSWD: /usr/local/bin/cacheflush
 END
 
 _space 1
 YELLOWTXT "[-] Logrotate script for Magento logs"
-tee /etc/logrotate.d/${GET_[owner]} <<END
+tee /etc/logrotate.d/${GET_[brand]} <<END
 ${GET_[root_path]}/current/var/log/*.log
 {
-su ${GET_[owner]} ${GET_[php_user]}
-create 660 ${GET_[owner]} ${GET_[php_user]}
+su ${GET_[brand]} ${GET_[php_user]}
+create 660 ${GET_[brand]} ${GET_[php_user]}
 weekly
 rotate 2
 notifempty
@@ -1956,9 +1949,9 @@ tee -a /usr/local/maldetect/monitor_paths <<END
 ${GET_[root_path]}/current/
 END
 tee -a /etc/audit/rules.d/audit.rules <<END
-## audit magento files for ${GET_[owner]}
+## audit magento files for ${GET_[brand]}
 -a never,exit -F dir=${GET_[root_path]}/current/var/ -k exclude
--w ${GET_[root_path]}/current/ -p wa -k ${GET_[owner]}
+-w ${GET_[root_path]}/current/ -p wa -k ${GET_[brand]}
 END
 service auditd reload
 service auditd restart
@@ -2062,34 +2055,34 @@ if [ "${apply_config}" == "y" ]; then
  YELLOWTXT "[-] Enable Varnish Cache and add cache hosts to Magento env.php"
  cd ${GET_[root_path]}/current/
  chmod u+x bin/magento
- su ${GET_[owner]} -s /bin/bash -c "${GET_[root_path]}/current/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=varnish:8081"
+ su ${GET_[brand]} -s /bin/bash -c "${GET_[root_path]}/current/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=varnish:8081"
 
- chown -R ${GET_[owner]}:${GET_[php_user]} ${GET_[root_path]}/current/
+ chown -R ${GET_[brand]}:${GET_[php_user]} ${GET_[root_path]}/current/
  
  _space 1
  YELLOWTXT "[-] Clean Magento cache add some optimization config"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${GET_[admin_email]}"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set web/url/catalog_media_url_format image_optimization_parameters"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set dev/css/minify_files 1"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set dev/js/minify_files 1"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set dev/js/move_script_to_bottom 1"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set web/secure/enable_hsts 1"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:upgrade"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento deploy:mode:set -s production"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:di:compile"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento setup:static-content:deploy -j auto"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento cache:flush"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set trans_email/ident_general/email ${GET_[admin_email]}"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set web/url/catalog_media_url_format image_optimization_parameters"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set dev/css/minify_files 1"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set dev/js/minify_files 1"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set dev/js/move_script_to_bottom 1"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set web/secure/enable_hsts 1"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set web/secure/enable_upgrade_insecure 1"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set dev/caching/cache_user_defined_attributes 1"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:upgrade"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento deploy:mode:set -s production"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:di:compile"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:static-content:deploy -j auto"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento cache:flush"
  
  _space 1
  YELLOWTXT "[-] Configure Google 2FA code for ${GET_[admin_login]}"
  _space 1
  GOOGLE_TFA_CODE="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&' | fold -w 15 | head -n 1 | base32)"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set twofactorauth/general/force_providers google"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento config:set twofactorauth/google/otp_window 29"
- su ${GET_[owner]} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${GET_[admin_login]} ${GOOGLE_TFA_CODE}"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set twofactorauth/general/force_providers google"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set twofactorauth/google/otp_window 29"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento security:tfa:google:set-secret ${GET_[admin_login]} ${GOOGLE_TFA_CODE}"
  echo "  Google Authenticator mobile app configuration:"
  echo "  - select: Enter a setup key"
  echo "  - type in: Account name"
@@ -2119,8 +2112,8 @@ crontab -u ${GET_[php_user]} /tmp/${GET_[php_user]}_crontab
 rm /tmp/${GET_[php_user]}_crontab
 
 _space 1
-YELLOWTXT "[-] Creating Magento environment variables to ${GET_[root_path]}/.env"
-tee ${GET_[root_path]}/.env <<END
+YELLOWTXT "[-] Creating Magento environment variables to ${GET_[root_path]}/shared/.env"
+tee ${GET_[root_path]}/shared/.env <<END
 MODE="${GET_[mode]}"
 DOMAIN="${GET_[domain]}"
 ADMIN_PATH="${GET_[admin_path]}"
@@ -2135,19 +2128,19 @@ INDEXER_PASSWORD="${GET_[indexer_password]}"
 INSTALLATION_DATE="$(date -u "+%a, %d %b %Y %H:%M:%S %z")"
 END
 
-cp ${GET_[root_path]}/current/app/etc/env.php /home/${GET_[owner]}/shared/env.php.installed
-chown ${OWNER} /home/${GET_[owner]}/shared/env.php.installed
+cp ${GET_[root_path]}/current/app/etc/env.php /home/${GET_[brand]}/shared/env.php.installed
+chown ${BRAND} /home/${GET_[brand]}/shared/env.php.installed
 
 _space 1
-YELLOWTXT "[-] Creating .mytop config to /home/${GET_[owner]}/.mytop"
-tee /home/${GET_[owner]}/.mytop <<END
+YELLOWTXT "[-] Creating .mytop config to /home/${GET_[brand]}/.mytop"
+tee /home/${GET_[brand]}/.mytop <<END
 user=${GET_[database_user]}
 pass=${GET_[database_password]}
 db=${GET_[database_name]}
 END
 
 cd ${GET_[root_path]}/
-chown ${GET_[owner]}:${GET_[owner]} ${GET_[root_path]}/.mytop
+chown ${GET_[brand]}:${GET_[brand]} ${GET_[root_path]}/.mytop
 
 _space 1
 YELLOWTXT "[-] Generating SSH keys for Magento user and Github Actions"
@@ -2195,7 +2188,7 @@ END
 
 touch ${GET_[root_path]}/.bash_history
 chmod 600 ${GET_[root_path]}/{.bashrc,.bash_profile,.bash_history}
-chown -R ${OWNER}:${OWNER} ${GET_[root_path]}/{.bashrc,.bash_profile,.bash_history,.ssh}
+chown -R ${BRAND}:${BRAND} ${GET_[root_path]}/{.bashrc,.bash_profile,.bash_history,.ssh}
 
 _space 2
 YELLOWTXT "[-] Add timestamp to bash history and config alias:"
@@ -2253,7 +2246,7 @@ _pause '[] Press [Enter] key to show menu'
 _space 2
 _echo "[?] Install Webmin Control Panel ? [y/n][n]: "
 DOMAIN=$(${SQLITE3} "SELECT domain FROM magento LIMIT 1;")
-OWNER=$(${SQLITE3} "SELECT owner FROM magento LIMIT 1;")
+BRAND=$(${SQLITE3} "SELECT brand FROM magento LIMIT 1;")
 ADMIN_EMAIL=$(${SQLITE3} "SELECT admin_email FROM magento LIMIT 1;")
 read webmin_install
 if [ "${webmin_install}" == "y" ];then
@@ -2274,10 +2267,10 @@ if [ "$?" = 0 ]; then
  echo "keyfile=/etc/letsencrypt/live/${DOMAIN}/privkey.pem" >> /etc/webmin/miniserv.conf
  echo "certfile=/etc/letsencrypt/live/${DOMAIN}/cert.pem" >> /etc/webmin/miniserv.conf
   
-  echo "webmin_${OWNER}:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
-  sed -i "s/root:/webmin_${OWNER}:/" /etc/webmin/webmin.acl
+  echo "webmin_${BRAND}:\$1\$84720675\$F08uAAcIMcN8lZNg9D74p1:::::$(date +%s):::0::::" > /etc/webmin/miniserv.users
+  sed -i "s/root:/webmin_${BRAND}:/" /etc/webmin/webmin.acl
   WEBMIN_PASSWORD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9@#%^?=+_[]{}()' | fold -w 15 | head -n 1)
-  /usr/share/webmin/changepass.pl /etc/webmin/ webmin_${OWNER} "${WEBMIN_PASSWORD}"
+  /usr/share/webmin/changepass.pl /etc/webmin/ webmin_${BRAND} "${WEBMIN_PASSWORD}"
   
   systemctl enable webmin
   /etc/webmin/restart
@@ -2286,7 +2279,7 @@ if [ "$?" = 0 ]; then
   GREENTXT "Webmin installed - OK"
   _space 1
   YELLOWTXT "[!] Webmin Port: ${WEBMIN_PORT}"
-  YELLOWTXT "[!] User: webmin_${OWNER}"
+  YELLOWTXT "[!] User: webmin_${BRAND}"
   YELLOWTXT "[!] Password: ${WEBMIN_PASSWORD}"
   _space 1
   REDTXT "[!] PLEASE ENABLE TWO-FACTOR AUTHENTICATION!"
