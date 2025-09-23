@@ -612,6 +612,7 @@ if [ "${mariadb_install}" == "y" ]; then
      _space 1
      PACKAGES_INSTALLED mariadb*
      echo "127.0.0.1 mariadb" >> /etc/hosts
+     echo "127.0.0.1 mariadb" >> /etc/cloud/templates/hosts.debian.tmpl
      _space 1
      WHITETXT "Downloading my.cnf file from MagenX Github repository"
      curl -sSo /etc/my.cnf https://raw.githubusercontent.com/magenx/magento-mysql/master/my.cnf/my.cnf
@@ -662,7 +663,8 @@ if [ "${nginx_install}" == "y" ]; then
     if [ "$?" = 0 ]; then
      _space 1
      GREENTXT "Nginx ${NGINX_VERSION} installed  -  OK"
-	 echo "127.0.0.1 nginx" >> /etc/hosts
+     echo "127.0.0.1 nginx" >> /etc/hosts
+     echo "127.0.0.1 nginx" >> /etc/cloud/templates/hosts.debian.tmpl 
      _space 1
      systemctl enable nginx >/dev/null 2>&1
      PACKAGES_INSTALLED nginx*
@@ -875,6 +877,7 @@ chown redis /etc/redis/${SERVICE}.conf
 chmod 640 /etc/redis/${SERVICE}.conf
 
 echo "127.0.0.1 ${SERVICE}" >> /etc/hosts
+echo "127.0.0.1 ${SERVICE}" >> /etc/cloud/templates/hosts.debian.tmpl 
 
 systemctl daemon-reload
 systemctl enable redis@${SERVICE}
@@ -937,6 +940,7 @@ END
      _space 1
      PACKAGES_INSTALLED rabbitmq* erlang*
      echo "127.0.0.1 rabbitmq" >> /etc/hosts
+     echo "127.0.0.1 rabbitmq" >> /etc/cloud/templates/hosts.debian.tmpl
      _space 2
      YELLOWTXT "RabbitMQ ${RABBITMQ_VERSION} configuration per environment:"
      _space 1
@@ -1062,6 +1066,7 @@ if [ "${varnish_install}" == "y" ];then
      systemctl daemon-reload
      PACKAGES_INSTALLED varnish*
      echo "127.0.0.1 varnish" >> /etc/hosts
+     echo "127.0.0.1 varnish" >> /etc/cloud/templates/hosts.debian.tmpl
     else
     _space 1
     REDTXT "Varnish Cache installation error"
@@ -1240,6 +1245,7 @@ YELLOWTXT "Installing OpenSearch plugins:"
   _space 2
   PACKAGES_INSTALLED opensearch
   echo "127.0.0.1 opensearch" >> /etc/hosts
+  echo "127.0.0.1 opensearch" >> /etc/cloud/templates/hosts.debian.tmpl
   else
   _space 1
     REDTXT "OpenSearch ${OPENSEARCH_VERSION} installation error"
