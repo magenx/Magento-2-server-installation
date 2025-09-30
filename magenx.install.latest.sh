@@ -1295,16 +1295,21 @@ _space 1
  ## create magento php user
  useradd -M -s /sbin/nologin -d ${ROOT_PATH} ${PHP_USER}
  usermod -g ${PHP_USER} ${BRAND}
+
+ ## magento root folder permissions
  chmod 711 ${ROOT_PATH}
  chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases}
- 
- ## magento root folder permissions
- chmod 2750 ${ROOT_PATH}/{shared,releases}
- setfacl -R -m m:r-X,u:${BRAND}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}/{shared,releases}
- setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases}
+ chmod 2770 ${ROOT_PATH}/{shared,releases}
+ su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
 
- ## write permissions for shared
+ ## ACL php read only for releases
+ setfacl -R -m m:r-X,u:${BRAND}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}/releases
+ 
+ ## ACL write permissions for shared
  setfacl -R -m u:${BRAND}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:rwX,d:o::- ${ROOT_PATH}/shared
+ 
+ ## ACL nginx reads everything
+ setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases}
  
  _space 1
  _echo "[?] Download Magento 2 ? [y/n][n]: "
@@ -1348,15 +1353,12 @@ _space 1
    
    ## make magento great again
    su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var ${ROOT_PATH}/shared/"
-   su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
    su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media ${ROOT_PATH}/shared/pub/"
-   ## set shared permissions
-   setfacl -R -m m:r-X,u:${BRAND}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}/shared
-   setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/shared
-   setfacl -R -m u:${BRAND}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:rwX,d:o::- ${ROOT_PATH}/shared
+   
    ## create symlink to shared and release
    su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/var ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var"
    su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/pub/media ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media"
+   su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/magento_umask ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/magento_umask"
    ln -sfn ${ROOT_PATH}/releases/${INSTALLATION_RELEASE} ${ROOT_PATH}/current
  fi
 
@@ -1548,14 +1550,21 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
    _space 1
    exit 1
  fi
+
+_space 1
+YELLOWTXT "[-] Reset permissions:"
+cd ${GET_[root_path]}
+find {releases,shared} -type d ! -perm 2770 -exec chmod 2770 {} \;
+find {releases,shared} -type f ! -perm 660 -exec chmod 660 {} \;
+chmod +x current/bin/magento
  
- # save config variables
+ ## Save config variables
  ${SQLITE3} "UPDATE magento SET
   admin_login = '${ADMIN_LOGIN}',
   admin_password = '${ADMIN_PASSWORD}',
   admin_email = '${ADMIN_EMAIL}',
   locale = '${LOCALE}',
-  admin_path = '$(grep -Po "(?<='frontName' => ')\w*(?=')" ${GET_[root_path]}/current/app/etc/env.php)',
+  admin_path = '$(bin/magento info:adminuri | xargs | cut -d'/' -f2)',
   crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/current/app/etc/env.php)';"
   
   ${SQLITE3} "UPDATE menu SET install = 'x';"
