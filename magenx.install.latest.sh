@@ -232,7 +232,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS menu(
    );"
    
 ${SQLITE3} "INSERT INTO menu (lemp, magento, database, install, config, webmin)
- VALUES('-', '-', '-', '-', '-', '-', '-');"
+ VALUES('-', '-', '-', '-', '-', '-');"
 fi
 ###################################################################################
 ###                              CHECK IF WE CAN RUN IT                         ###
@@ -1352,7 +1352,8 @@ _space 1
     fi
    
    ## make magento great again
-   su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var ${ROOT_PATH}/shared/"
+   su ${BRAND} -s /bin/bash -c "cp -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var/* ${ROOT_PATH}/shared/var/"
+   su ${BRAND} -s /bin/bash -c "rm -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var
    su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media ${ROOT_PATH}/shared/pub/"
    
    ## create symlink to shared and release
@@ -1553,10 +1554,9 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
 
 _space 1
 YELLOWTXT "[-] Reset permissions:"
-cd ${GET_[root_path]}
-find {releases,shared} -type d ! -perm 2770 -exec chmod 2770 {} \;
-find {releases,shared} -type f ! -perm 660 -exec chmod 660 {} \;
-chmod +x current/bin/magento
+find ${GET_[root_path]}/{releases,shared} -type d ! -perm 2770 -exec chmod 2770 {} \;
+find ${GET_[root_path]}/{releases,shared} -type f ! -perm 660 -exec chmod 660 {} \;
+chmod +x bin/magento
  
  ## Save config variables
  ${SQLITE3} "UPDATE magento SET
