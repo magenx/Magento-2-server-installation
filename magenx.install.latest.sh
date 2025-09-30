@@ -408,7 +408,18 @@ if [ -z "${SYSTEM_TEST}" ]; then
  _pause "[] Press [Enter] key to proceed"
  _space 1
 fi
+
 _space 1
+## ssh service/socket test
+if systemctl is-enabled ssh.socket >/dev/null 2>&1; then
+  YELLOWTXT "SSH socket is enabled, disabling it"
+  systemctl disable ssh.socket
+  systemctl enable ssh.service
+  systemctl restart ssh.service
+  GREENTXT "SSH service enabled"
+else
+  GREENTXT "SSH socket is already disabled"
+fi
 
 ## ssh port test
 SSH_PORT=$(${SQLITE3} "SELECT ssh_port FROM system;")
@@ -437,7 +448,7 @@ if [ "${CURRENT_PORT}" = "22" ]; then
 tee ${OVERRIDE_DIR}/20-magenx-custom-port.conf << EOF
 Port ${SSH_PORT}
 EOF
-  echo "Changed SSH port from 22 to ${SSH_PORT}"
+  YELLOWTXT "Changed SSH port from 22 to ${SSH_PORT}"
 fi
 
 chmod 600 ${OVERRIDE_DIR}/*magenx*.conf
