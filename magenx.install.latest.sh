@@ -1353,7 +1353,7 @@ _space 1
    
    ## make magento great again
    su ${BRAND} -s /bin/bash -c "cp -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var/* ${ROOT_PATH}/shared/var/"
-   su ${BRAND} -s /bin/bash -c "rm -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var
+   su ${BRAND} -s /bin/bash -c "rm -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var"
    su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media ${ROOT_PATH}/shared/pub/"
    
    ## create symlink to shared and release
@@ -1564,7 +1564,7 @@ chmod +x bin/magento
   admin_password = '${ADMIN_PASSWORD}',
   admin_email = '${ADMIN_EMAIL}',
   locale = '${LOCALE}',
-  admin_path = '$(bin/magento info:adminuri | xargs | cut -d'/' -f2)',
+  admin_path = '$(bin/magento info:adminuri | xargs | cut -d"/" -f2)',
   crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/current/app/etc/env.php)';"
   
   ${SQLITE3} "UPDATE menu SET install = 'x';"
@@ -1783,7 +1783,7 @@ export RABBITMQ_PATH="rabbitmq_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' |
 find /tmp/nginx/magento2 -type f -exec sh -c '
   dest_path="/etc/nginx/$(echo "{}" | sed "s|/tmp/nginx/magento2||")";
   mkdir -p "$(dirname "$dest_path")";
-  envsubst '\''$DOMAIN $ROOT_PATH $ADMIN_PATH $PHP_FPM $PROFILER $PHPMYADMIN_PATH $PHPMYADMIN_PHP_FPM $RABBITMQ_PATH'\'' < "{}" > "$dest_path";
+  envsubst '\''${DOMAIN} ${ROOT_PATH} ${ADMIN_PATH} ${PHP_FPM} ${PROFILER} ${PHPMYADMIN_PATH} ${PHPMYADMIN_PHP_FPM} ${RABBITMQ_PATH}'\'' < "{}" > "$dest_path";
 ' \;
   
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
