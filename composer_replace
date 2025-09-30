@@ -160,6 +160,7 @@
         "magento/module-worldpay": "*",
         "magento/module-elasticsearch-6": "*",
         "magento/module-elasticsearch-7": "*",
+        "magento/module-elasticsearch-8": "*",
         "magento/module-admin-analytics": "*",
         "magento/module-paypal-captcha": "*",
         "magento/module-release-notification": "*",
