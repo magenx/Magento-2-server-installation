@@ -408,7 +408,18 @@ if [ -z "${SYSTEM_TEST}" ]; then
  _pause "[] Press [Enter] key to proceed"
  _space 1
 fi
+
 _space 1
+## ssh service/socket test
+if systemctl is-enabled ssh.socket >/dev/null 2>&1; then
+  YELLOWTXT "SSH socket is enabled, disabling it"
+  systemctl disable ssh.socket
+  systemctl enable ssh.service
+  systemctl restart ssh.service
+  GREENTXT "SSH service enabled"
+else
+  GREENTXT "SSH socket is already disabled"
+fi
 
 ## ssh port test
 SSH_PORT=$(${SQLITE3} "SELECT ssh_port FROM system;")
@@ -437,7 +448,7 @@ if [ "${CURRENT_PORT}" = "22" ]; then
 tee ${OVERRIDE_DIR}/20-magenx-custom-port.conf << EOF
 Port ${SSH_PORT}
 EOF
-  echo "Changed SSH port from 22 to ${SSH_PORT}"
+  YELLOWTXT "Changed SSH port from 22 to ${SSH_PORT}"
 fi
 
 chmod 600 ${OVERRIDE_DIR}/*magenx*.conf
@@ -1353,7 +1364,7 @@ _space 1
    
    ## make magento great again
    su ${BRAND} -s /bin/bash -c "cp -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var/* ${ROOT_PATH}/shared/var/"
-   su ${BRAND} -s /bin/bash -c "rm -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var
+   su ${BRAND} -s /bin/bash -c "rm -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var"
    su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media ${ROOT_PATH}/shared/pub/"
    
    ## create symlink to shared and release
@@ -1564,7 +1575,7 @@ chmod +x bin/magento
   admin_password = '${ADMIN_PASSWORD}',
   admin_email = '${ADMIN_EMAIL}',
   locale = '${LOCALE}',
-  admin_path = '$(bin/magento info:adminuri | xargs | cut -d'/' -f2)',
+  admin_path = '$(bin/magento info:adminuri | xargs | cut -d"/" -f2)',
   crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/current/app/etc/env.php)';"
   
   ${SQLITE3} "UPDATE menu SET install = 'x';"
@@ -1783,7 +1794,7 @@ export RABBITMQ_PATH="rabbitmq_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' |
 find /tmp/nginx/magento2 -type f -exec sh -c '
   dest_path="/etc/nginx/$(echo "{}" | sed "s|/tmp/nginx/magento2||")";
   mkdir -p "$(dirname "$dest_path")";
-  envsubst '\''$DOMAIN $ROOT_PATH $ADMIN_PATH $PHP_FPM $PROFILER $PHPMYADMIN_PATH $PHPMYADMIN_PHP_FPM $RABBITMQ_PATH'\'' < "{}" > "$dest_path";
+  envsubst '\''${DOMAIN} ${ROOT_PATH} ${ADMIN_PATH} ${PHP_FPM} ${PROFILER} ${PHPMYADMIN_PATH} ${PHPMYADMIN_PHP_FPM} ${RABBITMQ_PATH}'\'' < "{}" > "$dest_path";
 ' \;
   
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
