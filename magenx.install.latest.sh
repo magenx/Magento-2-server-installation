@@ -1073,6 +1073,7 @@ if [ "${varnish_install}" == "y" ];then
      uuidgen > /etc/varnish/secret
      systemctl daemon-reload
      PACKAGES_INSTALLED varnish*
+	 sed -i "s/VARNISH_LISTEN_ADDRESS=127.0.0.1/VARNISH_LISTEN_ADDRESS=$(curl -4 ifconfig.io)/" /etc/varnish/varnish.params
      echo "$(curl -4 ifconfig.io) varnish" >> /etc/hosts
      echo "$(curl -4 ifconfig.io) varnish" >> /etc/cloud/templates/hosts.debian.tmpl
     else
