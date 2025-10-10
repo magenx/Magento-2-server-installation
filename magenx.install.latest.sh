@@ -1272,6 +1272,8 @@ _space 2
 ${SQLITE3} "UPDATE menu SET lemp = 'x';"
 ## keep versions for critical services to avoid issues
 apt-mark hold opensearch erlang rabbitmq-server
+echo "127.0.0.1 phpmyadmin" >> /etc/hosts
+echo "127.0.0.1 imgproxy" >> /etc/hosts
 _space 2
 GREENTXT "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
 WHITETXT "-------------------------------------------------------------------------------------"
@@ -2057,7 +2059,7 @@ if [ "${apply_config}" == "y" ]; then
  cd ${GET_[root_path]}/current/
  chmod u+x bin/magento
  su ${GET_[brand]} -s /bin/bash -c "${GET_[root_path]}/current/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
- su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=varnish:8081"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=varnish:80"
 
  chown -R ${GET_[brand]}:${GET_[php_user]} ${GET_[root_path]}/current/
  
@@ -2130,7 +2132,7 @@ INSTALLATION_DATE="$(date -u "+%a, %d %b %Y %H:%M:%S %z")"
 END
 
 cp ${GET_[root_path]}/current/app/etc/env.php /home/${GET_[brand]}/shared/env.php.installed
-chown ${BRAND} /home/${GET_[brand]}/shared/env.php.installed
+chown ${GET_[brand]} /home/${GET_[brand]}/shared/env.php.installed
 
 _space 1
 YELLOWTXT "[-] Creating .mytop config to /home/${GET_[brand]}/.mytop"
