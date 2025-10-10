@@ -1,7 +1,6 @@
 [Unit]
 Description=Varnish a high-perfomance HTTP accelerator
 After=syslog.target network.target
-OnFailure=service-status-mail@%n.service
 
 [Service]
 # Enviroment variables may be found in /etc/varnish/varnish.params
