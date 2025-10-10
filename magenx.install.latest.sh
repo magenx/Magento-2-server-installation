@@ -1076,8 +1076,8 @@ if [ "${varnish_install}" == "y" ];then
      uuidgen > /etc/varnish/secret
      systemctl daemon-reload
      PACKAGES_INSTALLED varnish*
-     echo "127.0.0.1 varnish" >> /etc/hosts
-     echo "127.0.0.1 varnish" >> /etc/cloud/templates/hosts.debian.tmpl
+     echo "$(curl -4 ifconfig.io) varnish" >> /etc/hosts
+     echo "$(curl -4 ifconfig.io) varnish" >> /etc/cloud/templates/hosts.debian.tmpl
     else
     _space 1
     REDTXT "Varnish Cache installation error"
@@ -1788,53 +1788,19 @@ export ADMIN_PATH="${GET_[admin_path]}"
 export PHP_FPM="unix:/var/run/php/${GET_[brand]}.sock"
 export PROFILER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 export PHPMYADMIN_PATH="mysql_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)"
-export PHPMYADMIN_PHP_FPM="unix:/var/run/php/php${PHP_VERSION}-fpm.sock"
 export RABBITMQ_PATH="rabbitmq_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)"
+
 
 find /tmp/nginx/magento2 -type f -exec sh -c '
   dest_path="/etc/nginx/$(echo "{}" | sed "s|/tmp/nginx/magento2||")";
   mkdir -p "$(dirname "$dest_path")";
-  envsubst '\''${DOMAIN} ${ROOT_PATH} ${ADMIN_PATH} ${PHP_FPM} ${PROFILER} ${PHPMYADMIN_PATH} ${PHPMYADMIN_PHP_FPM} ${RABBITMQ_PATH}'\'' < "{}" > "$dest_path";
+  envsubst '\''${DOMAIN} ${ROOT_PATH} ${ADMIN_PATH} ${PHP_FPM} ${PROFILER} ${PHPMYADMIN_PATH} ${RABBITMQ_PATH} ${RESOLVER}'\'' < "{}" > "$dest_path";
 ' \;
   
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
 ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
 
 rm -rf /tmp/nginx/magento2
-
-_space 1
-YELLOWTXT "[-] phpMyAdmin installation and configuration"
-BLOWFISH_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-mkdir -p /usr/share/phpMyAdmin && cd $_
-composer -n create-project phpmyadmin/phpmyadmin .
-
-tee config.inc.php <<'END'
-<?php
-declare(strict_types=1);
-$cfg['blowfish_secret'] = 'BLOWFISH_SECRET_PLACEHOLDER';
-$i = 0;
-$i++;
-$cfg['Servers'][$i]['auth_type'] = 'cookie';
-$cfg['Servers'][$i]['host'] = 'localhost';
-$cfg['Servers'][$i]['compress'] = false;
-$cfg['Servers'][$i]['AllowNoPassword'] = false;
-$cfg['UploadDir'] = '/tmp/';
-$cfg['SaveDir'] = '/tmp/';
-$cfg['TempDir'] = '/tmp/';
-END
-sed -i "s|BLOWFISH_SECRET_PLACEHOLDER|${BLOWFISH_SECRET}|" config.inc.php
-
-_space 2
-tee /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf <<END
-[www]
-user = www-data
-group = www-data
-listen = /var/run/php/php${PHP_VERSION}-fpm.sock
-listen.owner = nginx
-listen.group = www-data
-pm = ondemand
-pm.max_children = 5
-END
 
 _space 1
 YELLOWTXT "[-] Varnish Cache configuration file"
@@ -1943,6 +1909,18 @@ php_admin_value[opcache.log_verbosity_level] = 1
 php_admin_value[opcache.preferred_memory_model] = ""
 php_admin_value[opcache.jit_buffer_size] = 536870912
 php_admin_value[opcache.jit] = 1235
+END
+
+
+tee /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf <<END
+[www]
+user = www-data
+group = www-data
+listen = /var/run/php/php${PHP_VERSION}-fpm.sock
+listen.owner = nginx
+listen.group = www-data
+pm = ondemand
+pm.max_children = 5
 END
 
 systemctl daemon-reload
