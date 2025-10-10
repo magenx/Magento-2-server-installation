@@ -1073,9 +1073,9 @@ if [ "${varnish_install}" == "y" ];then
      uuidgen > /etc/varnish/secret
      systemctl daemon-reload
      PACKAGES_INSTALLED varnish*
-	 sed -i "s/VARNISH_LISTEN_ADDRESS=127.0.0.1/VARNISH_LISTEN_ADDRESS=$(curl -4 ifconfig.io)/" /etc/varnish/varnish.params
-     echo "$(curl -4 ifconfig.io) varnish" >> /etc/hosts
-     echo "$(curl -4 ifconfig.io) varnish" >> /etc/cloud/templates/hosts.debian.tmpl
+	 sed -i "s/VARNISH_LISTEN_ADDRESS=127.0.0.1/VARNISH_LISTEN_ADDRESS=PRIVATE_IP/" /etc/varnish/varnish.params
+     echo "PRIVATE_IP varnish" >> /etc/hosts
+     echo "PRIVATE_IP varnish" >> /etc/cloud/templates/hosts.debian.tmpl
     else
     _space 1
     REDTXT "Varnish Cache installation error"
