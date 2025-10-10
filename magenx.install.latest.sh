@@ -667,7 +667,7 @@ if [ "${nginx_install}" == "y" ]; then
     YELLOWTXT "Nginx ${NGINX_VERSION} installation:"
     _space 1
     apt update
-    apt -y install nginx nginx-module-image-filter
+    apt -y install nginx
     if [ "$?" = 0 ]; then
      _space 1
      GREENTXT "Nginx ${NGINX_VERSION} installed  -  OK"
