@@ -50,7 +50,7 @@ MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria* php* nginx* varnish* certbot* redis* webmin"
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
-perl openssl unzip screen nfs-common inotify-tools iptables smartmontools mlocate vim wget sudo apache2-utils python3-setuptools \
+perl openssl unzip screen nfs-common inotify-tools iptables smartmontools vim wget sudo apache2-utils python3-setuptools \
 logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp ssl-cert-check ufw gettext-base"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
@@ -574,9 +574,6 @@ WHITETXT "----------------------------------------------------------------------
   debconf-set-selections <<< "postfix postfix/mailname string localhost"
   debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Local only'"
   apt update && apt upgrade -y
-  apt -y install software-properties-common
-  apt-add-repository -y contrib
-  apt update
   DEBIAN_FRONTEND=noninteractive apt -y install ${EXTRA_PACKAGES} ${PERL_MODULES}
   _space 1
  if [ "$?" != 0 ]; then
@@ -587,7 +584,7 @@ WHITETXT "----------------------------------------------------------------------
   _space 1
  fi
   # Set system_update to full release version
-  [ "${DISTRO_NAME}" == "Debian" ] && FULL_VERSION="$(cat /etc/debian_version )" || FULL_VERSION="$(lsb_release -d | awk '/(20|22)\.04.+/{print $3}')"
+  [ "${DISTRO_NAME}" == "Debian" ] && FULL_VERSION="$(cat /etc/debian_version )" || FULL_VERSION="$(lsb_release -d | awk '/(22|24)\.04.+/{print $3}')"
   ${SQLITE3} "UPDATE system SET system_update = 'installed @ ${FULL_VERSION}';"
   _space 1
 fi
