@@ -199,7 +199,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS system(
 ${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
    redis_password            text,
    rabbitmq_password         text,
-   indexer_password          text,
+   opensearch_password       text,
    version_installed         text,
    domain                    text,
    brand                     text,
@@ -1189,8 +1189,8 @@ systemctl restart opensearch.service
     fi
 
   ## generate opensearch password
-  INDEXER_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)"
-  ${SQLITE3} "UPDATE magento SET indexer_password = '${INDEXER_PASSWORD}';"
+  OPENSEARCH_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)"
+  ${SQLITE3} "UPDATE magento SET opensearch_password = '${OPENSEARCH_PASSWORD}';"
   BRAND=$(${SQLITE3} "SELECT brand FROM magento;")
   _space 1
   YELLOWTXT "Waiting for OpenSearch initialization ..."
@@ -1239,7 +1239,7 @@ _space 1
   -H "Content-Type: application/json" \
   -d "$(cat <<EOF
 {
-    "password": "${INDEXER_PASSWORD}",
+    "password": "${OPENSEARCH_PASSWORD}",
     "opendistro_security_roles": ["${BRAND}", "own_index"]
 }
 EOF
@@ -1553,7 +1553,7 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
  --opensearch-index-prefix=${GET_[brand]} \
  --opensearch-enable-auth=1 \
  --opensearch-username=${GET_[brand]} \
- --opensearch-password='${GET_[indexer_password]}'"
+ --opensearch-password='${GET_[opensearch_password]}'"
 
  if [ "$?" != 0 ]; then
    _space 1
@@ -2118,7 +2118,7 @@ rm /tmp/${GET_[php_user]}_crontab
 _space 1
 YELLOWTXT "[-] Creating Magento environment variables to ${GET_[root_path]}/shared/.env"
 tee ${GET_[root_path]}/shared/.env <<END
-MODE="${GET_[mode]}"
+MODE="production"
 DOMAIN="${GET_[domain]}"
 ADMIN_PATH="${GET_[admin_path]}"
 REDIS_PASSWORD="${GET_[redis_password]}"
@@ -2128,7 +2128,7 @@ GRAPHQL_ID_SALT=""
 DATABASE_NAME="${GET_[database_name]}"
 DATABASE_USER="${GET_[database_user]}"
 DATABASE_PASSWORD="${GET_[database_password]}"
-INDEXER_PASSWORD="${GET_[indexer_password]}"
+OPENSEARCH_PASSWORD="${GET_[opensearch_password]}"
 INSTALLATION_DATE="$(date -u "+%a, %d %b %Y %H:%M:%S %z")"
 END
 
