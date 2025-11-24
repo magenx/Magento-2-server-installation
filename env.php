@@ -185,7 +185,7 @@ return [
                     'opensearch_server_port' => '9200',
                     'opensearch_index_prefix' => $_ENV['OWNER'],
                     'opensearch_username' => $_ENV['OWNER'],
-                    'opensearch_password' => $_ENV['INDEXER_PASSWORD']
+                    'opensearch_password' => $_ENV['OPENSEARCH_PASSWORD']
                 ]
             ]
         ]
