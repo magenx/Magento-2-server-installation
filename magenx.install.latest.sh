@@ -1273,7 +1273,6 @@ _space 2
 ${SQLITE3} "UPDATE menu SET lemp = 'x';"
 ## keep versions for critical services to avoid issues
 apt-mark hold opensearch erlang rabbitmq-server
-echo "127.0.0.1 phpmyadmin" >> /etc/hosts
 echo "127.0.0.1 imgproxy" >> /etc/hosts
 _space 2
 GREENTXT "~    REPOSITORIES AND PACKAGES INSTALLATION IS COMPLETED    ~"
@@ -1787,14 +1786,13 @@ export ROOT_PATH="${GET_[root_path]}/current/"
 export ADMIN_PATH="${GET_[admin_path]}"
 export PHP_FPM="unix:/var/run/php/${GET_[brand]}.sock"
 export PROFILER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
-export PHPMYADMIN_PATH="mysql_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)"
 export RABBITMQ_PATH="rabbitmq_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)"
 
 
 find /tmp/nginx/magento2 -type f -exec sh -c '
   dest_path="/etc/nginx/$(echo "{}" | sed "s|/tmp/nginx/magento2||")";
   mkdir -p "$(dirname "$dest_path")";
-  envsubst '\''${DOMAIN} ${ROOT_PATH} ${ADMIN_PATH} ${PHP_FPM} ${PROFILER} ${PHPMYADMIN_PATH} ${RABBITMQ_PATH} ${RESOLVER}'\'' < "{}" > "$dest_path";
+  envsubst '\''${DOMAIN} ${ROOT_PATH} ${ADMIN_PATH} ${PHP_FPM} ${PROFILER} ${RABBITMQ_PATH} ${RESOLVER}'\'' < "{}" > "$dest_path";
 ' \;
   
 ln -s /etc/nginx/sites-available/${GET_[domain]}.conf /etc/nginx/sites-enabled/${GET_[domain]}.conf
