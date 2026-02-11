@@ -1309,7 +1309,8 @@ _space 1
  ## magento root folder permissions
  chmod 711 ${ROOT_PATH}
  chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases}
- chmod 2770 ${ROOT_PATH}/{shared,releases}
+ chmod 2770 ${ROOT_PATH}/shared
+ chmod 2750 ${ROOT_PATH}/releases
  su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
 
  ## ACL php read only for releases
@@ -1320,6 +1321,9 @@ _space 1
  
  ## ACL nginx reads everything
  setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases}
+
+  ## ACL imgproxy reads everything from media
+ setfacl -R -m u:imgproxy:r-X,d:u:imgproxy:r-X ${ROOT_PATH}/shared/pub/media
  
  _space 1
  _echo "[?] Download Magento 2 ? [y/n][n]: "
@@ -1336,8 +1340,8 @@ _space 1
    _pause '[] Press [Enter] key to start downloading'
    _space 1
    mkdir -p ${ROOT_PATH}/.config
-   chmod 2700 ${ROOT_PATH}/.config
    chown -R ${BRAND}:${BRAND} ${ROOT_PATH}/.config
+   chmod 2700 ${ROOT_PATH}/.config
    su ${BRAND} -s /bin/bash -c "composer -n -q config -g http-basic.repo.magento.com ${COMPOSER_NAME} ${COMPOSER_PASSWORD}"
    su ${BRAND} -s /bin/bash -c "${PROJECT}=${VERSION_INSTALLED} . --no-install"
 
@@ -1561,12 +1565,6 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
    _space 1
    exit 1
  fi
-
-_space 1
-YELLOWTXT "[-] Reset permissions:"
-find ${GET_[root_path]}/{releases,shared} -type d ! -perm 2770 -exec chmod 2770 {} \;
-find ${GET_[root_path]}/{releases,shared} -type f ! -perm 660 -exec chmod 660 {} \;
-chmod +x bin/magento
  
  ## Save config variables
  ${SQLITE3} "UPDATE magento SET
@@ -1641,11 +1639,6 @@ _space 1
 YELLOWTXT "[-] Server hostname settings"
 hostnamectl set-hostname "${GET_[domain]}" --static
 hostname
-
-_space 1
-YELLOWTXT "[-] Create motd banner"
-curl -o /etc/motd "${MAGENX_INSTALL_GITHUB_REPO}/motd"
-sed -i "s/MAGENX_VERSION/${MAGENX_VERSION}/" /etc/motd
 
 _space 1
 YELLOWTXT "[-] Sysctl parameters"
@@ -2094,7 +2087,6 @@ if [ "${apply_config}" == "y" ]; then
  ${SQLITE3} "UPDATE magento SET tfa_key = '${GOOGLE_TFA_CODE}';"
  _space 1
  fi
- sed -i "s/VERSION_INSTALLED/${GET_[version_installed]}/" /etc/motd
 fi
 
 _space 1
