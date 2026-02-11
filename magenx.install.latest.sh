@@ -1313,12 +1313,6 @@ _space 1
  chmod 2750 ${ROOT_PATH}/releases
  su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
 
- ## ACL php read only for releases
- setfacl -R -m m:r-X,u:${BRAND}:rwX,g:${PHP_USER}:r-X,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:r-X,d:o::- ${ROOT_PATH}/releases
- 
- ## ACL write permissions for shared
- setfacl -R -m u:${BRAND}:rwX,g:${PHP_USER}:rwX,o::-,d:u:${BRAND}:rwX,d:g:${PHP_USER}:rwX,d:o::- ${ROOT_PATH}/shared
- 
  ## ACL nginx reads everything
  setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases}
 
