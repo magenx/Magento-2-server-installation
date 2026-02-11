@@ -1300,7 +1300,6 @@ _space 1
  useradd -d ${ROOT_PATH} -s /bin/bash ${BRAND}
  INSTALLATION_RELEASE="$(date +'%Y%m%d%H%M')"
  mkdir -p ${ROOT_PATH}/{releases/${INSTALLATION_RELEASE},shared}
- echo "007" > ${ROOT_PATH}/shared/magento_umask
  
  ## create magento php user
  useradd -M -s /sbin/nologin -d ${ROOT_PATH} ${PHP_USER}
@@ -1367,7 +1366,6 @@ _space 1
    ## create symlink to shared and release
    su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/var ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var"
    su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/pub/media ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media"
-   su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/magento_umask ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/magento_umask"
    ln -sfn ${ROOT_PATH}/releases/${INSTALLATION_RELEASE} ${ROOT_PATH}/current
  fi
 
