@@ -350,7 +350,7 @@ fi
 
 ## check if web stack is clean
 WEB_STACK=$(${SQLITE3} "SELECT web_stack FROM system;")
-if [ "${WEB_STACK}" != "magenx" ]; then
+if [ "${WEB_STACK}" != "magento" ]; then
   installed_packages="$(apt -qq list --installed ${WEB_STACK_CHECK} 2> /dev/null | cut -d'/' -f1 | tr '\n' ' ')"
   if [ ! -z "$installed_packages" ]; then
     REDTXT  "[!] Some webstack packages already installed"
@@ -361,7 +361,7 @@ if [ "${WEB_STACK}" != "magenx" ]; then
     exit 1
   else
     ## set web_stack clean
-    ${SQLITE3} "UPDATE system SET web_stack = 'magenx';"
+    ${SQLITE3} "UPDATE system SET web_stack = 'magento';"
   fi
 fi
 
@@ -2181,8 +2181,6 @@ YELLOWTXT "[-] Add timestamp to bash history and config alias:"
 tee -a  ~/.bashrc <<END
 ### magenx
 export HISTTIMEFORMAT="%d/%m/%y %T "
-alias magenx_magento='sqlite3 -line /opt/magenx/config/magenx.db "select * from magento;"'
-alias magenx_system='sqlite3 -line /opt/magenx/config/magenx.db "select * from system;"'
 END
 
 # clean config directory and set permissions
