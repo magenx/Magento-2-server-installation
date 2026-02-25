@@ -43,15 +43,12 @@ MAGENX_NGINX_GITHUB="https://github.com/magenx/Magento-nginx-config"
 # Debug Tools
 MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
 
-# Malware detector
-MALDET="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
-
 # WebStack Packages .deb
 WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria* php* nginx* varnish* certbot* redis* webmin"
 
-EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf snapd automake libtool uuid-runtime \
-perl openssl unzip screen nfs-common inotify-tools iptables smartmontools vim wget sudo apache2-utils python3-setuptools \
-logrotate git netcat-openbsd patch ipset postfix strace rsyslog moreutils lsof sysstat acl attr iotop expect imagemagick snmp ssl-cert-check ufw gettext-base"
+EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf automake libtool uuid-runtime \
+perl openssl unzip screen nfs-common inotify-tools smartmontools vim wget sudo apache2-utils python3-setuptools \
+logrotate git netcat-openbsd patch strace syslog-ng-core moreutils lsof sysstat acl attr snmp ufw gettext-base"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
@@ -217,9 +214,7 @@ ${SQLITE3} "CREATE TABLE IF NOT EXISTS magento(
    crypt_key                 text,
    tfa_key                   text,
    private_ssh_key           text,
-   public_ssh_key            text,
-   github_actions_private_ssh_key    text,
-   github_actions_public_ssh_key     text
+   public_ssh_key            text
    );"
    
 ${SQLITE3} "CREATE TABLE IF NOT EXISTS menu(
@@ -463,7 +458,7 @@ systemctl restart sshd.service
   ss -tlp | grep sshd
   _space 2
 REDTXT "[!] IMPORTANT: Now open new SSH session with the new port!"
-REDTXT "[!] IMPORTANT: Do not close your current session!"
+REDTXT "[!] IMPORTANT: Do not close your live session!"
 _space 1
 _echo "[?] Have you logged in another session? [y/n][n]: "
 read ssh_test
@@ -1222,8 +1217,8 @@ systemctl restart opensearch.service
         "masked_fields": [],
         "allowed_actions": [
           "indices:admin/aliases/get",
-		      "indices:data/read/search",
-		      "indices:admin/get"
+          "indices:data/read/search",
+          "indices:admin/get"
         ]
       }
     ],
@@ -1295,25 +1290,30 @@ _space 1
  BRAND="$(${SQLITE3} "SELECT brand FROM magento;")"
  PHP_USER="$(${SQLITE3} "SELECT php_user FROM magento;")"
  ROOT_PATH="$(${SQLITE3} "SELECT root_path FROM magento;")"
- 
- ## create magento/ssh user
- useradd -d ${ROOT_PATH} -s /bin/bash ${BRAND}
+
  INSTALLATION_RELEASE="$(date +'%Y%m%d%H%M')"
- mkdir -p ${ROOT_PATH}/{releases/${INSTALLATION_RELEASE},shared}
+ CURRENT_SYMLINK="public/current"
+ 
+ ## create magento user
+ useradd -d ${ROOT_PATH} -s /bin/bash ${BRAND}
  
  ## create magento php user
  useradd -M -s /sbin/nologin -d ${ROOT_PATH} ${PHP_USER}
  usermod -g ${PHP_USER} ${BRAND}
 
  ## magento root folder permissions
- chmod 711 ${ROOT_PATH}
- chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases}
- chmod 2770 ${ROOT_PATH}/shared
- chmod 2750 ${ROOT_PATH}/releases
+ mkdir -p ${ROOT_PATH}/{releases/${INSTALLATION_RELEASE},shared,public}
+ chmod 0711 ${ROOT_PATH}
+ 
+ chown ${BRAND}:${BRAND} ${ROOT_PATH}
+ chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases,public}
+ chmod -R 2750 ${ROOT_PATH}/{releases,public}
+ 
  su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
-
+ chmod -R 2770 ${ROOT_PATH}/shared
+ 
  ## ACL nginx reads everything
- setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases}
+ setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases,public}
 
   ## ACL imgproxy reads everything from media
  setfacl -R -m u:imgproxy:r-X,d:u:imgproxy:r-X ${ROOT_PATH}/shared/pub/media
@@ -1364,9 +1364,14 @@ _space 1
    su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media ${ROOT_PATH}/shared/pub/"
    
    ## create symlink to shared and release
-   su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/var ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var"
-   su ${BRAND} -s /bin/bash -c "ln -sfn ${ROOT_PATH}/shared/pub/media ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media"
-   ln -sfn ${ROOT_PATH}/releases/${INSTALLATION_RELEASE} ${ROOT_PATH}/current
+   cd ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}
+   su ${BRAND} -s /bin/bash -c "ln -sfn ../../shared/var var"
+   
+   cd ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub
+   su ${BRAND} -s /bin/bash -c "ln -sfn ../../../shared/pub/media media"
+   
+   cd ${ROOT_PATH}/public
+   ln -sfn ../releases/${INSTALLATION_RELEASE} current
  fi
 
    ## save all the variables
@@ -1483,12 +1488,12 @@ for PORT_SELECTED in ${REDIS_PORTS} 9200 5672 3306; do nc -4zvw3 localhost ${POR
     fi
   done <<< "${QUERY}"
 ## Use associative array here
-if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
+if [ -f "${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento" ]; then
  _space 1
  YELLOWTXT "[-] Configuration for Magento ${GET_[version_installed]}"
  _space 1
  TIMEZONE=$(${SQLITE3} "SELECT timezone FROM system;")
- cd ${GET_[root_path]}/current/
+ cd ${GET_[root_path]}/${CURRENT_SYMLINK}/
  chown -R ${GET_[brand]}:${GET_[php_user]} *
  chmod u+x bin/magento
  YELLOWTXT "[-] Administrator settings and store base url:"
@@ -1565,7 +1570,7 @@ if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
   admin_email = '${ADMIN_EMAIL}',
   locale = '${LOCALE}',
   admin_path = '$(bin/magento info:adminuri | xargs | cut -d"/" -f2)',
-  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/current/app/etc/env.php)';"
+  crypt_key = '$(grep -Po "(?<='key' => ')\w*(?=')" ${GET_[root_path]}/${CURRENT_SYMLINK}/app/etc/env.php)';"
   
   ${SQLITE3} "UPDATE menu SET install = 'x';"
 fi
@@ -1736,7 +1741,7 @@ _space 1
 YELLOWTXT "[-] Creating cache cleaner script: /usr/local/bin/cacheflush"
 tee /usr/local/bin/cacheflush <<END
 #!/bin/bash
-sudo -u \${SUDO_USER} n98-magerun2 --root-dir=/home/\${SUDO_USER}/current cache:flush
+sudo -u \${SUDO_USER} n98-magerun2 --root-dir=/home/\${SUDO_USER}/${CURRENT_SYMLINK} cache:flush
 /usr/bin/systemctl restart php${PHP_VERSION}-fpm.service
 nginx -t && /usr/bin/systemctl restart nginx.service || echo "[!] Error: check nginx config"
 END
@@ -1767,7 +1772,7 @@ _space 1
 YELLOWTXT "[-] Nginx configuration"
 
 export DOMAIN="${GET_[domain]}"
-export ROOT_PATH="${GET_[root_path]}/current/"
+export ROOT_PATH="${GET_[root_path]}/${CURRENT_SYMLINK}/"
 export ADMIN_PATH="${GET_[admin_path]}"
 export PHP_FPM="unix:/var/run/php/${GET_[brand]}.sock"
 export PROFILER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
@@ -1792,22 +1797,6 @@ curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishc
 curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}/devicedetect-include.vcl
 curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/default.vcl
 sed -i "s/PROFILER/${PROFILER}/g" /etc/varnish/default.vcl
-
-_space 1
-YELLOWTXT "[-] Realtime malware monitor with email alerts"
-cd /usr/local/src
-curl -Lo maldetect-current.tar.gz ${MALDET}
-tar -zxf maldetect-current.tar.gz
-cd maldetect-*/
-./install.sh
-
-sed -i 's/email_alert="0"/email_alert="1"/' /usr/local/maldetect/conf.maldet
-sed -i 's/quarantine_hits="0"/quarantine_hits="1"/' /usr/local/maldetect/conf.maldet
-sed -i '/default_monitor_mode="users"/d' /usr/local/maldetect/conf.maldet
-sed -i 's,# default_monitor_mode="/usr/local/maldetect/monitor_paths",default_monitor_mode="/usr/local/maldetect/monitor_paths",' /usr/local/maldetect/conf.maldet
-sed -i 's/inotify_base_watches="16384"/inotify_base_watches="35384"/' /usr/local/maldetect/conf.maldet
-
-maldet --monitor /usr/local/maldetect/monitor_paths
 
 _space 1
 YELLOWTXT "[-] GoAccess real-time web log analyzer"
@@ -1859,10 +1848,10 @@ php_admin_value[upload_max_filesize] = 64M
 php_admin_value[realpath_cache_size] = 4096k
 php_admin_value[realpath_cache_ttl] = 86400
 php_admin_value[session.gc_maxlifetime] = 28800
-php_admin_value[error_log] = "/home/\$pool/current/var/log/php-fpm-error.log"
+php_admin_value[error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/php-fpm-error.log"
 php_admin_value[date.timezone] = "${TIMEZONE}"
-php_admin_value[upload_tmp_dir] = "/home/\$pool/current/var/tmp"
-php_admin_value[sys_temp_dir] = "/home/\$pool/current/var/tmp"
+php_admin_value[upload_tmp_dir] = "/home/\$pool/${CURRENT_SYMLINK}/var/tmp"
+php_admin_value[sys_temp_dir] = "/home/\$pool/${CURRENT_SYMLINK}/var/tmp"
 
 ;;
 ;; [opcache] settings
@@ -1887,7 +1876,7 @@ php_admin_value[opcache.optimization_level] = 0xffffffff
 php_admin_value[opcache.blacklist_filename] = "/home/\$pool/opcache.blacklist"
 php_admin_value[opcache.max_file_size] = 0
 php_admin_value[opcache.force_restart_timeout] = 60
-php_admin_value[opcache.error_log] = "/home/\$pool/current/var/log/opcache.log"
+php_admin_value[opcache.error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/opcache.log"
 php_admin_value[opcache.log_verbosity_level] = 1
 php_admin_value[opcache.preferred_memory_model] = ""
 php_admin_value[opcache.jit_buffer_size] = 536870912
@@ -1917,7 +1906,7 @@ END
 _space 1
 YELLOWTXT "[-] Logrotate script for Magento logs"
 tee /etc/logrotate.d/${GET_[brand]} <<END
-${GET_[root_path]}/current/var/log/*.log
+${GET_[root_path]}/${CURRENT_SYMLINK}/var/log/*.log
 {
 su ${GET_[brand]} ${GET_[php_user]}
 create 660 ${GET_[brand]} ${GET_[php_user]}
@@ -1931,14 +1920,10 @@ END
 
 _space 1
 YELLOWTXT "[-] Audit configuration for Magento folders and files"
-sed -i "s/you@domain.com/${GET_[admin_email]}/" /usr/local/maldetect/conf.maldet
-tee -a /usr/local/maldetect/monitor_paths <<END
-${GET_[root_path]}/current/
-END
 tee -a /etc/audit/rules.d/audit.rules <<END
 ## audit magento files for ${GET_[brand]}
--a never,exit -F dir=${GET_[root_path]}/current/var/ -k exclude
--w ${GET_[root_path]}/current/ -p wa -k ${GET_[brand]}
+-a never,exit -F dir=${GET_[root_path]}/${CURRENT_SYMLINK}/var/ -k exclude
+-w ${GET_[root_path]}/${CURRENT_SYMLINK}/ -p wa -k ${GET_[brand]}
 END
 service auditd reload
 service auditd restart
@@ -2034,18 +2019,18 @@ WantedBy=multi-user.target
 END
 
 _space 1
-if [ -f "${GET_[root_path]}/current/bin/magento" ]; then
+if [ -f "${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento" ]; then
  _echo "${YELLOW}[?] Apply config optimization and settings ? [y/n][n]:${RESET} "
 read apply_config
 if [ "${apply_config}" == "y" ]; then
  _space 1
  YELLOWTXT "[-] Enable Varnish Cache and add cache hosts to Magento env.php"
- cd ${GET_[root_path]}/current/
+ cd ${GET_[root_path]}/${CURRENT_SYMLINK}/
  chmod u+x bin/magento
- su ${GET_[brand]} -s /bin/bash -c "${GET_[root_path]}/current/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
+ su ${GET_[brand]} -s /bin/bash -c "${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
  su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=varnish:80"
 
- chown -R ${GET_[brand]}:${GET_[php_user]} ${GET_[root_path]}/current/
+ chown -R ${GET_[brand]}:${GET_[php_user]} ${GET_[root_path]}/${CURRENT_SYMLINK}/
  
  _space 1
  YELLOWTXT "[-] Clean Magento cache add some optimization config"
@@ -2087,11 +2072,11 @@ sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/" /etc/varnish/default.vcl
 
 _space 1
 YELLOWTXT "[-] Add Magento cronjob to ${GET_[php_user]} user crontab"
-BP_HASH="$(echo -n "${GET_[root_path]}/current/" | openssl dgst -sha256 | awk '{print $2}')"
+BP_HASH="$(echo -n "${GET_[root_path]}/${CURRENT_SYMLINK}/" | openssl dgst -sha256 | awk '{print $2}')"
 crontab -l -u ${GET_[php_user]} > /tmp/${GET_[php_user]}_crontab
 cat << END | tee -a /tmp/${GET_[php_user]}_crontab
 #~ MAGENTO START ${BP_HASH}
-* * * * * /usr/bin/php${PHP_VERSION} ${GET_[root_path]}/current/bin/magento cron:run 2>&1 | grep -v "Ran jobs by schedule" >> ${GET_[root_path]}/current/var/log/magento.cron.log
+* * * * * /usr/bin/php${PHP_VERSION} ${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento cron:run 2>&1 | grep -v "Ran jobs by schedule" >> ${GET_[root_path]}/${CURRENT_SYMLINK}/var/log/magento.cron.log
 #~ MAGENTO END ${BP_HASH}
 END
 crontab -u ${GET_[php_user]} /tmp/${GET_[php_user]}_crontab
@@ -2114,8 +2099,8 @@ OPENSEARCH_PASSWORD="${GET_[opensearch_password]}"
 INSTALLATION_DATE="$(date -u "+%a, %d %b %Y %H:%M:%S %z")"
 END
 
-cp ${GET_[root_path]}/current/app/etc/env.php /home/${GET_[brand]}/shared/env.php.installed
-chown ${GET_[brand]} /home/${GET_[brand]}/shared/env.php.installed
+cp ${GET_[root_path]}/${CURRENT_SYMLINK}/app/etc/env.php /home/${GET_[brand]}/env.php.installed
+chown ${GET_[brand]} /home/${GET_[brand]}/env.php.installed
 
 _space 1
 YELLOWTXT "[-] Creating .mytop config to /home/${GET_[brand]}/.mytop"
@@ -2140,13 +2125,6 @@ tee -a .ssh/authorized_keys <<END
 ${PUBLIC_SSH_KEY}
 END
 
-GITHUB_ACTIONS_SSH_KEY="github_actions_private_ssh_key"
-ssh-keygen -o -a 256 -t ed25519 -f ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY} -C "github actions for ${GET_[domain]}" -N ""
-GITHUB_ACTIONS_PRIVATE_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}")
-GITHUB_ACTIONS_PUBLIC_SSH_KEY=$(cat "${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub")
-${SQLITE3} "UPDATE magento SET github_actions_private_ssh_key = '${GITHUB_ACTIONS_PRIVATE_SSH_KEY}', github_actions_public_ssh_key = '${GITHUB_ACTIONS_PUBLIC_SSH_KEY}';"
-cat ${MAGENX_CONFIG_PATH}/${GITHUB_ACTIONS_SSH_KEY}.pub >> .ssh/authorized_keys
-
 _space 1
 YELLOWTXT "[-] Creating bash_profile"
 tee .bash_profile <<END
@@ -2167,7 +2145,7 @@ tee .bashrc <<END
 # history timestamp
 export HISTTIMEFORMAT="%d/%m/%y %T "
 # got to app root folder
-cd ~/current/
+cd ~/${CURRENT_SYMLINK}/
 # change prompt color
 PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '
 END
