@@ -1202,7 +1202,8 @@ systemctl restart opensearch.service
       "cluster_composite_ops_monitor",
       "cluster:monitor/main",
       "cluster:monitor/state",
-      "cluster:monitor/health"
+      "cluster:monitor/health",
+      "cluster:monitor/nodes/info"
     ],
     "index_permissions": [
       {
@@ -1217,8 +1218,11 @@ systemctl restart opensearch.service
         "masked_fields": [],
         "allowed_actions": [
           "indices:admin/aliases/get",
+          "indices:admin/settings/get",
+          "indices:admin/get",
           "indices:data/read/search",
-          "indices:admin/get"
+          "indices:monitor/settings/get",
+          "indices:monitor/stats"
         ]
       }
     ],
