@@ -2075,16 +2075,17 @@ YELLOWTXT "[-] Varnish Cache config optimization"
 sed -i "s/DOMAIN_PLACEHOLDER/${GET_[domain]}/" /etc/varnish/default.vcl
 
 _space 1
-YELLOWTXT "[-] Add Magento cronjob to ${GET_[php_user]} user crontab"
+YELLOWTXT "[-] Add Magento cronjob to ${GET_[brand]} user crontab"
 BP_HASH="$(echo -n "${GET_[root_path]}/${CURRENT_SYMLINK}/" | openssl dgst -sha256 | awk '{print $2}')"
-crontab -l -u ${GET_[php_user]} > /tmp/${GET_[php_user]}_crontab
-cat << END | tee -a /tmp/${GET_[php_user]}_crontab
+crontab -l -u ${GET_[brand]} > /tmp/${GET_[brand]}_crontab
+cat << END | tee -a /tmp/${GET_[brand]}_crontab
 #~ MAGENTO START ${BP_HASH}
 * * * * * /usr/bin/php${PHP_VERSION} ${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento cron:run 2>&1 | grep -v "Ran jobs by schedule" >> ${GET_[root_path]}/${CURRENT_SYMLINK}/var/log/magento.cron.log
 #~ MAGENTO END ${BP_HASH}
 END
-crontab -u ${GET_[php_user]} /tmp/${GET_[php_user]}_crontab
-rm /tmp/${GET_[php_user]}_crontab
+crontab -u ${GET_[brand]} /tmp/${GET_[brand]}_crontab
+rm /tmp/${GET_[brand]}_crontab
+echo ${GET_[php_user]} > /etc/cron.deny
 
 _space 1
 YELLOWTXT "[-] Creating Magento environment variables to ${GET_[root_path]}/shared/.env"
