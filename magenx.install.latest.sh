@@ -22,7 +22,7 @@ COMPOSER_NAME="8c681734f22763b50ea0c29dff9e7af2"
 COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974" 
 
 ## Version lock
-COMPOSER_VERSION="2.7"
+COMPOSER_VERSION="2.9"
 RABBITMQ_VERSION="1:4.1.4-1"
 ERLANG_VERSION="1:27.*"
 MARIADB_VERSION="11.4"
@@ -30,8 +30,6 @@ PHP_VERSION="8.4"
 OPENSEARCH_VERSION="2.x"
 VARNISH_VERSION="77"
 REDIS_VERSION="8"
-NODE_VERSION="20"
-NVM_VERSION="0.40.3"
 
 # Repositories
 MARIADB_REPO_CONFIG="https://r.mariadb.com/downloads/mariadb_repo_setup"
@@ -408,9 +406,8 @@ _space 1
 ## ssh service/socket test
 if systemctl is-enabled ssh.socket >/dev/null 2>&1; then
   YELLOWTXT "SSH socket is enabled, disabling it"
-  systemctl disable ssh.socket
-  systemctl enable ssh.service
-  systemctl restart ssh.service
+  systemctl disable --now ssh.socket
+  systemctl enable --now ssh.service
   GREENTXT "SSH service enabled"
 else
   GREENTXT "SSH socket is already disabled"
@@ -1296,7 +1293,7 @@ _space 1
  ROOT_PATH="$(${SQLITE3} "SELECT root_path FROM magento;")"
 
  INSTALLATION_RELEASE="$(date +'%Y%m%d%H%M')"
- CURRENT_SYMLINK="public/current"
+ CURRENT_SYMLINK="current"
  
  ## create magento user
  useradd -d ${ROOT_PATH} -s /bin/bash ${BRAND}
@@ -1306,18 +1303,18 @@ _space 1
  usermod -g ${PHP_USER} ${BRAND}
 
  ## magento root folder permissions
- mkdir -p ${ROOT_PATH}/{releases/${INSTALLATION_RELEASE},shared,public}
+ mkdir -p ${ROOT_PATH}/{releases/${INSTALLATION_RELEASE},shared}
  chmod 0711 ${ROOT_PATH}
  
  chown ${BRAND}:${BRAND} ${ROOT_PATH}
- chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases,public}
- chmod -R 2750 ${ROOT_PATH}/{releases,public}
+ chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases}
+ chmod -R 2750 ${ROOT_PATH}/releases
  
  su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
  chmod -R 2770 ${ROOT_PATH}/shared
  
  ## ACL nginx reads everything
- setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases,public}
+ setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases}
 
   ## ACL imgproxy reads everything from media
  setfacl -R -m u:imgproxy:r-X,d:u:imgproxy:r-X ${ROOT_PATH}/shared/pub/media
@@ -1369,13 +1366,13 @@ _space 1
    
    ## create symlink to shared and release
    cd ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}
-   su ${BRAND} -s /bin/bash -c "ln -sfn ../../shared/var var"
+   su ${BRAND} -s /bin/bash -c "ln -sfn ~/shared/var var"
    
    cd ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub
-   su ${BRAND} -s /bin/bash -c "ln -sfn ../../../shared/pub/media media"
+   su ${BRAND} -s /bin/bash -c "ln -sfn ~/shared/pub/media media"
    
-   cd ${ROOT_PATH}/public
-   ln -sfn ../releases/${INSTALLATION_RELEASE} current
+   cd ${ROOT_PATH}
+   su ${BRAND} -s /bin/bash -c "ln -sfn ~/releases/${INSTALLATION_RELEASE} ${CURRENT_SYMLINK}"
  fi
 
    ## save all the variables
