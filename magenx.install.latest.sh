@@ -1684,41 +1684,12 @@ YELLOWTXT "[-] Downloading mysqltuner and mytop"
 curl -o /usr/local/bin/mysqltuner ${MYSQL_TUNER}
 ln -s /usr/bin/mytop /usr/local/bin/mytop
 
-for dir in cli fpm
-do
 _space 1
-YELLOWTXT "[-] PHP global system settings overrides ${dir} ini"
-tee /etc/php/${PHP_VERSION}/$dir/conf.d/zz-magenx-overrides.ini <<END
-opcache.enable_cli = 1
-opcache.memory_consumption = 512
-opcache.interned_strings_buffer = 4
-opcache.max_accelerated_files = 60000
-opcache.max_wasted_percentage = 5
-opcache.use_cwd = 1
-opcache.validate_timestamps = 0
-;opcache.revalidate_freq = 2
-;opcache.validate_permission= 1
-opcache.validate_root= 1
-opcache.file_update_protection = 2
-opcache.revalidate_path = 0
-opcache.save_comments = 1
-opcache.load_comments = 1
-opcache.fast_shutdown = 1
-opcache.enable_file_override = 0
-opcache.optimization_level = 0xffffffff
-opcache.inherited_hack = 1
-opcache.blacklist_filename=/etc/opcache-default.blacklist
-opcache.max_file_size = 0
-opcache.consistency_checks = 0
-opcache.force_restart_timeout = 60
-opcache.error_log = "/var/log/php-fpm/opcache.log"
-opcache.log_verbosity_level = 1
-opcache.preferred_memory_model = ""
-opcache.protect_memory = 0
-;opcache.mmap_base = ""
-
-max_execution_time = 7200
-max_input_time = 7200
+YELLOWTXT "[-] PHP global system settings overrides cli ini"
+tee /etc/php/${PHP_VERSION}/cli/conf.d/zz-magenx-overrides.ini <<END
+opcache.enable_cli = 0
+max_execution_time = 600
+max_input_time = 600
 memory_limit = 2048M
 post_max_size = 64M
 upload_max_filesize = 64M
@@ -1732,7 +1703,6 @@ mysql.allow_persistent = On
 mysqli.allow_persistent = On
 date.timezone = "${TIMEZONE}"
 END
-done
 
 _space 1
 YELLOWTXT "[-] Downloading: /usr/local/bin/n98-magerun2"
@@ -1748,15 +1718,6 @@ nginx -t && /usr/bin/systemctl restart nginx.service || echo "[!] Error: check n
 END
 
 _space 1
-YELLOWTXT "[-] Certbot installation with snapd"
-snap install --classic certbot
-
-_space 1
-YELLOWTXT "[-] Generating default selfsigned ssl cert for nginx"
-openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/private/default_server.key -out /etc/ssl/certs/default_server.crt \
--subj "/CN=default_server" -days 3650 -subj "/C=US/ST=Oregon/L=Portland/O=default_server/OU=Org/CN=default_server"
-
-_space 1
 YELLOWTXT "[-] Downloading nginx configuration files"
 mkdir -p /tmp/nginx
 cd /tmp/nginx
@@ -1768,7 +1729,6 @@ git pull origin master
 
 mv magento2/sites-available/magento2.conf  magento2/sites-available/${GET_[domain]}.conf
 
-
 _space 1
 YELLOWTXT "[-] Nginx configuration"
 
@@ -1778,7 +1738,6 @@ export ADMIN_PATH="${GET_[admin_path]}"
 export PHP_FPM="unix:/var/run/php/${GET_[brand]}.sock"
 export PROFILER="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
 export RABBITMQ_PATH="rabbitmq_$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)"
-
 
 find /tmp/nginx/magento2 -type f -exec sh -c '
   dest_path="/etc/nginx/$(echo "{}" | sed "s|/tmp/nginx/magento2||")";
@@ -1794,8 +1753,6 @@ rm -rf /tmp/nginx/magento2
 _space 1
 YELLOWTXT "[-] Varnish Cache configuration file"
 systemctl enable varnish.service
-curl -o /etc/varnish/devicedetect.vcl https://raw.githubusercontent.com/varnishcache/varnish-devicedetect/master/devicedetect.vcl
-curl -o /etc/varnish/devicedetect-include.vcl ${MAGENX_INSTALL_GITHUB_REPO}/devicedetect-include.vcl
 curl -o /etc/varnish/default.vcl ${MAGENX_INSTALL_GITHUB_REPO}/default.vcl
 sed -i "s/PROFILER/${PROFILER}/g" /etc/varnish/default.vcl
 
@@ -1841,8 +1798,8 @@ php_admin_flag[mysql.allow_persistent] = On
 php_admin_flag[mysqli.allow_persistent] = On
 php_admin_value[default_charset] = "UTF-8"
 php_admin_value[memory_limit] = 1024M
-php_admin_value[max_execution_time] = 7200
-php_admin_value[max_input_time] = 7200
+php_admin_value[max_execution_time] = 600
+php_admin_value[max_input_time] = 600
 php_admin_value[max_input_vars] = 50000
 php_admin_value[post_max_size] = 64M
 php_admin_value[upload_max_filesize] = 64M
@@ -1880,7 +1837,7 @@ php_admin_value[opcache.force_restart_timeout] = 60
 php_admin_value[opcache.error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/opcache.log"
 php_admin_value[opcache.log_verbosity_level] = 1
 php_admin_value[opcache.preferred_memory_model] = ""
-php_admin_value[opcache.jit_buffer_size] = 536870912
+php_admin_value[opcache.jit_buffer_size] = 64M
 php_admin_value[opcache.jit] = 1235
 END
 
@@ -1926,8 +1883,7 @@ tee -a /etc/audit/rules.d/audit.rules <<END
 -a never,exit -F dir=${GET_[root_path]}/${CURRENT_SYMLINK}/var/ -k exclude
 -w ${GET_[root_path]}/${CURRENT_SYMLINK}/ -p wa -k ${GET_[brand]}
 END
-service auditd reload
-service auditd restart
+systemctl restart auditd
 auditctl -l
 
 _space 1
@@ -2028,7 +1984,7 @@ if [ "${apply_config}" == "y" ]; then
  YELLOWTXT "[-] Enable Varnish Cache and add cache hosts to Magento env.php"
  cd ${GET_[root_path]}/${CURRENT_SYMLINK}/
  chmod u+x bin/magento
- su ${GET_[brand]} -s /bin/bash -c "${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
  su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=varnish:80"
 
  chown -R ${GET_[brand]}:${GET_[php_user]} ${GET_[root_path]}/${CURRENT_SYMLINK}/
@@ -2046,7 +2002,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:upgrade"
  su ${GET_[brand]} -s /bin/bash -c "bin/magento deploy:mode:set -s production"
  su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:di:compile"
- su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:static-content:deploy -j auto"
+ su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:static-content:deploy -j $(nproc)"
  su ${GET_[brand]} -s /bin/bash -c "bin/magento cache:flush"
  
  _space 1
@@ -2082,8 +2038,8 @@ END
 echo ${GET_[php_user]} > /etc/cron.deny
 
 _space 1
-YELLOWTXT "[-] Creating Magento environment variables to ${GET_[root_path]}/shared/.env"
-tee ${GET_[root_path]}/shared/.env <<END
+YELLOWTXT "[-] Creating Magento environment variables to ${GET_[root_path]}/.env"
+tee ${GET_[root_path]}/.env <<END
 MODE="production"
 DOMAIN="${GET_[domain]}"
 ADMIN_PATH="${GET_[admin_path]}"
@@ -2098,12 +2054,12 @@ OPENSEARCH_PASSWORD="${GET_[opensearch_password]}"
 INSTALLATION_DATE="$(date -u "+%a, %d %b %Y %H:%M:%S %z")"
 END
 
-cp ${GET_[root_path]}/${CURRENT_SYMLINK}/app/etc/env.php /home/${GET_[brand]}/env.php.installed
-chown ${GET_[brand]} /home/${GET_[brand]}/env.php.installed
+cp ${GET_[root_path]}/${CURRENT_SYMLINK}/app/etc/env.php ${GET_[root_path]}/env.php.installed
+chown ${GET_[brand]} ${GET_[root_path]}/env.php.installed
 
 _space 1
-YELLOWTXT "[-] Creating .mytop config to /home/${GET_[brand]}/.mytop"
-tee /home/${GET_[brand]}/.mytop <<END
+YELLOWTXT "[-] Creating .mytop config to ${GET_[root_path]}/.mytop"
+tee ${GET_[root_path]}/.mytop <<END
 user=${GET_[database_user]}
 pass=${GET_[database_password]}
 db=${GET_[database_name]}
@@ -2180,10 +2136,7 @@ YELLOWTXT "For issues and support:"
 WHITETXT "https://github.com/magenx/Magento-2-server-installation"
 _space 2
 YELLOWTXT "For Github Actions CI/CD integration:"
-WHITETXT "https://www.magenx.com/magento-support-and-server-management.html"
-_space 2
-YELLOWTXT "Write a review:"
-WHITETXT "https://trustpilot.com/review/www.magenx.com"
+WHITETXT "https://www.magenx.com"
 _space 2
 echo "PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '" >> /etc/bashrc
 _space 1
