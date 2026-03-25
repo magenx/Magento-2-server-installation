@@ -1,0 +1,7 @@
+bin/magento config:set catalog/search/engine 'opensearch'
+bin/magento config:set catalog/search/opensearch_server_hostname "opensearch"
+bin/magento config:set catalog/search/opensearch_server_port "9200"
+bin/magento config:set catalog/search/opensearch_index_prefix "${BRAND}"
+bin/magento config:set catalog/search/opensearch_enable_auth "1"
+bin/magento config:set catalog/search/opensearch_username "${BRAND}"
+bin/magento config:set catalog/search/opensearch_password "${OPENSEARCH_PASSWORD}"
