@@ -1025,8 +1025,8 @@ rabbitmqctl delete_user guest
   ${SQLITE3} "UPDATE magento SET rabbitmq_password = '${RABBITMQ_PASSWORD}';"
   BRAND=$(${SQLITE3} "SELECT brand FROM magento;")
   rabbitmqctl add_user ${BRAND} ${RABBITMQ_PASSWORD}
-  rabbitmqctl add_vhost /${BRAND}
-  rabbitmqctl set_permissions -p /${BRAND} ${BRAND} ".*" ".*" ".*"
+  rabbitmqctl add_vhost ${BRAND}
+  rabbitmqctl set_permissions -p ${BRAND} ${BRAND} ".*" ".*" ".*"
    else
     _space 1
     REDTXT "RabbitMQ ${RABBITMQ_VERSION} installation error"
@@ -1546,7 +1546,7 @@ if [ -f "${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento" ]; then
  --amqp-port=5672 \
  --amqp-user=${GET_[brand]} \
  --amqp-password='${GET_[rabbitmq_password]}' \
- --amqp-virtualhost='/${GET_[brand]}' \
+ --amqp-virtualhost='${GET_[brand]}' \
  --consumers-wait-for-messages=0 \
  --search-engine=opensearch \
  --opensearch-host=opensearch \
