@@ -47,7 +47,7 @@ WEB_STACK_CHECK="mysql* rabbitmq* elasticsearch opensearch percona-server* maria
 
 EXTRA_PACKAGES="curl jq gnupg2 auditd apt-transport-https apt-show-versions ca-certificates lsb-release make autoconf automake libtool uuid-runtime \
 perl openssl unzip screen nfs-common inotify-tools smartmontools vim wget sudo apache2-utils python3-setuptools \
-logrotate git netcat-openbsd patch strace syslog-ng-core moreutils lsof sysstat acl attr snmp ufw gettext-base"
+logrotate git netcat-openbsd patch strace syslog-ng-core moreutils lsof sysstat acl attr snmp ufw gettext-base bzip2"
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
@@ -298,10 +298,7 @@ if [[ ${RESULT} == up ]]; then
   _space 2
   exit 1
 fi
-
-## install packages to run CPU and HDD test
-dpkg-query -l curl time bc bzip2 tar >/dev/null || { echo; echo; apt update -o Acquire::ForceIPv4=true; apt -y install curl time bc bzip2 tar; }
-
+  
 ## check if you need self update
 MD5_NEW=$(curl -sL ${MAGENX_BASE} > ${SELF}.new && md5sum ${SELF}.new | awk '{print $1}')
 MD5=$(md5sum ${SELF} | awk '{print $1}')
@@ -377,6 +374,12 @@ fi
 GREENTXT "TIMEZONE: ${TIMEZONE}"
 
 _space 2
+## install packages to run CPU and HDD test
+missing_packages="$(apt -qq list curl time bc bzip2 tar 2> /dev/null | grep -v installed | cut -d'/' -f1 | tr '\n' ' ')"
+if [ ! -z "$missing_packages" ]; then
+  apt -y install ${missing_packages}
+fi
+
 SYSTEM_TEST=$(${SQLITE3} "SELECT system_test FROM system;")
 if [ -z "${SYSTEM_TEST}" ]; then
  _space 1
