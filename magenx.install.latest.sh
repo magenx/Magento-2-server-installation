@@ -1314,7 +1314,7 @@ _space 1
  chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases}
  chmod -R 2750 ${ROOT_PATH}/releases
  
- su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub}"
+ su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub/media}"
  chmod -R 2770 ${ROOT_PATH}/shared
  
  ## ACL nginx reads everything
@@ -1365,8 +1365,9 @@ _space 1
    
    ## make magento great again
    su ${BRAND} -s /bin/bash -c "cp -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var/* ${ROOT_PATH}/shared/var/"
+   su ${BRAND} -s /bin/bash -c "cp -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media/* ${ROOT_PATH}/shared/pub/media/"
    su ${BRAND} -s /bin/bash -c "rm -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/var"
-   su ${BRAND} -s /bin/bash -c "mv -f ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media ${ROOT_PATH}/shared/pub/"
+   su ${BRAND} -s /bin/bash -c "rm -rf ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}/pub/media"
    
    ## create symlink to shared and release
    cd ${ROOT_PATH}/releases/${INSTALLATION_RELEASE}
