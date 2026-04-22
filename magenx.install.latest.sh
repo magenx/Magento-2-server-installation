@@ -17,6 +17,7 @@ MAGENX_INSTALL_GITHUB_REPO="https://raw.githubusercontent.com/magenx/Magento-2-s
 # Magento
 VERSION_LIST=$(curl -s https://api.github.com/repos/magento/magento2/tags 2>&1 | grep -oP '(?<=name": ").*(?=")' | sort -r)
 PROJECT="composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition"
+CURRENT_SYMLINK="current"
 
 COMPOSER_NAME="8c681734f22763b50ea0c29dff9e7af2" 
 COMPOSER_PASSWORD="02dfee497e669b5db1fe1c8d481d6974" 
