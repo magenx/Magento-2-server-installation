@@ -1980,6 +1980,16 @@ RestartPreventExitStatus=0 255
 WantedBy=multi-user.target
 END
 
+tee /etc/logrotate.d/fail2ban <<'END'
+/var/log/fail2ban.log {
+    missingok
+    notifempty
+    postrotate
+      /usr/bin/fail2ban-client flushlogs >/dev/null || true
+    endscript
+}
+END
+
 _space 1
 if [ -f "${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento" ]; then
  _echo "${YELLOW}[?] Apply config optimization and settings ? [y/n][n]:${RESET} "
