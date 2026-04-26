@@ -1,3 +1,14 @@
+## Why you should consider migrating your Magento store to this Docker configuration: https://github.com/magenx/Magento-2-docker-configuration
+### Purpose: Deploy a secure, flexible, and reusable Docker infrastructure for Magento 2 quickly.
+
+#### Key Advantages
+- [x] Best-in-class configuration and optimization.
+- [x] Portability - Run on any Linux host or Docker Desktop.
+- [x] Increased security - Private network, isolated containers, secure defaults.
+- [x] Plug-and-play and modularity - Easy to change containers and move between hosts.
+- [x] Easy component integration - Add stacks, routes, gitops, etc.
+
+  
 # Magento 2 installation - Magenx e-commerce webstack  
 ## Debian 12 13 | Ubuntu 22.04 24.04
 
