@@ -1830,20 +1830,18 @@ php_admin_flag[opcache.enable_file_override] = Off
 php_admin_flag[opcache.inherited_hack] = On
 php_admin_flag[opcache.consistency_checks] = Off
 php_admin_flag[opcache.protect_memory] = Off
-php_admin_value[opcache.memory_consumption] = 512
-php_admin_value[opcache.interned_strings_buffer] = 4
+php_admin_value[opcache.memory_consumption] = 2048
+php_admin_value[opcache.interned_strings_buffer] = 64
 php_admin_value[opcache.max_accelerated_files] = 60000
 php_admin_value[opcache.max_wasted_percentage] = 5
 php_admin_value[opcache.file_update_protection] = 2
-php_admin_value[opcache.optimization_level] = 0xffffffff
-php_admin_value[opcache.blacklist_filename] = "/home/\$pool/opcache.blacklist"
+php_admin_value[opcache.optimization_level] = 0x7FFEBFFF
 php_admin_value[opcache.max_file_size] = 0
 php_admin_value[opcache.force_restart_timeout] = 60
-php_admin_value[opcache.error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/opcache.log"
 php_admin_value[opcache.log_verbosity_level] = 1
 php_admin_value[opcache.preferred_memory_model] = ""
-php_admin_value[opcache.jit_buffer_size] = 64M
-php_admin_value[opcache.jit] = 1235
+php_admin_value[opcache.blacklist_filename] = "/home/\$pool/${CURRENT_SYMLINK}/opcache.blacklist"
+php_admin_value[opcache.error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/opcache.log"
 END
 
 
