@@ -1811,39 +1811,41 @@ php_admin_value[upload_max_filesize] = 64M
 php_admin_value[realpath_cache_size] = 4096k
 php_admin_value[realpath_cache_ttl] = 86400
 php_admin_value[session.gc_maxlifetime] = 28800
-php_admin_value[error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/php-fpm-error.log"
 php_admin_value[date.timezone] = "${TIMEZONE}"
+php_admin_value[error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/php-fpm-error.log"
 php_admin_value[upload_tmp_dir] = "/home/\$pool/${CURRENT_SYMLINK}/var/tmp"
 php_admin_value[sys_temp_dir] = "/home/\$pool/${CURRENT_SYMLINK}/var/tmp"
-
-;;
-;; [opcache] settings
-php_admin_flag[opcache.enable] = On
-php_admin_flag[opcache.use_cwd] = On
-php_admin_flag[opcache.validate_root] = On
-php_admin_flag[opcache.revalidate_path] = Off
-php_admin_flag[opcache.validate_timestamps] = Off
-php_admin_flag[opcache.save_comments] = On
-php_admin_flag[opcache.load_comments] = On
-php_admin_flag[opcache.fast_shutdown] = On
-php_admin_flag[opcache.enable_file_override] = Off
-php_admin_flag[opcache.inherited_hack] = On
-php_admin_flag[opcache.consistency_checks] = Off
-php_admin_flag[opcache.protect_memory] = Off
-php_admin_value[opcache.memory_consumption] = 2048
-php_admin_value[opcache.interned_strings_buffer] = 64
-php_admin_value[opcache.max_accelerated_files] = 60000
-php_admin_value[opcache.max_wasted_percentage] = 5
-php_admin_value[opcache.file_update_protection] = 2
-php_admin_value[opcache.optimization_level] = 0x7FFEBFFF
-php_admin_value[opcache.max_file_size] = 0
-php_admin_value[opcache.force_restart_timeout] = 60
-php_admin_value[opcache.log_verbosity_level] = 1
-php_admin_value[opcache.preferred_memory_model] = ""
-php_admin_value[opcache.blacklist_filename] = "/home/\$pool/${CURRENT_SYMLINK}/opcache.blacklist"
-php_admin_value[opcache.error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/opcache.log"
 END
 
+_space 1
+tee /etc/php/${PHP_VERSION}/fpm/conf.d/zz-magenx-overrides.ini <<END
+;;
+[opcache]
+opcache.enable = On
+opcache.use_cwd = On
+opcache.validate_root = On
+opcache.revalidate_path = Off
+opcache.validate_timestamps = Off
+opcache.save_comments = On
+opcache.load_comments = On
+opcache.fast_shutdown = On
+opcache.enable_file_override = Off
+opcache.inherited_hack = On
+opcache.consistency_checks = Off
+opcache.protect_memory = Off
+opcache.memory_consumption = 384
+opcache.interned_strings_buffer = 64
+opcache.max_accelerated_files = 60000
+opcache.max_wasted_percentage = 5
+opcache.file_update_protection = 2
+opcache.optimization_level = 0x7FFEBFFF
+opcache.max_file_size = 0
+opcache.force_restart_timeout = 60
+opcache.log_verbosity_level = 1
+opcache.preferred_memory_model = ""
+opcache.blacklist_filename = "/home/\$pool/${CURRENT_SYMLINK}/opcache.blacklist"
+opcache.error_log = "/home/\$pool/${CURRENT_SYMLINK}/var/log/opcache.log"
+END
 
 tee /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf <<END
 [www]
