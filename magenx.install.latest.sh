@@ -1815,11 +1815,14 @@ php_admin_value[date.timezone] = "${TIMEZONE}"
 php_admin_value[error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/php-fpm-error.log"
 php_admin_value[upload_tmp_dir] = "/home/\$pool/${CURRENT_SYMLINK}/var/tmp"
 php_admin_value[sys_temp_dir] = "/home/\$pool/${CURRENT_SYMLINK}/var/tmp"
+;;
+;; [opcache] settings
+php_admin_value[opcache.blacklist_filename] = "/home/\$pool/${CURRENT_SYMLINK}/opcache.blacklist"
+php_admin_value[opcache.error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/opcache-error.log"
 END
 
 _space 1
 tee /etc/php/${PHP_VERSION}/fpm/conf.d/zz-magenx-overrides.ini <<END
-;;
 [opcache]
 opcache.enable = On
 opcache.use_cwd = On
@@ -1843,8 +1846,6 @@ opcache.max_file_size = 0
 opcache.force_restart_timeout = 60
 opcache.log_verbosity_level = 1
 opcache.preferred_memory_model = ""
-opcache.blacklist_filename = "/home/\$pool/${CURRENT_SYMLINK}/opcache.blacklist"
-opcache.error_log = "/home/\$pool/${CURRENT_SYMLINK}/var/log/opcache.log"
 END
 
 tee /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf <<END
