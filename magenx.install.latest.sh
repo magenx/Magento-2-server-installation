@@ -482,7 +482,7 @@ if [ "${ssh_test}" == "y" ]; then
 fi
 
 # Enter domain name and ssh user per environment
-DOMAIN=($(${SQLITE3} "SELECT domain FROM magento;"))
+DOMAIN="$(${SQLITE3} "SELECT domain FROM magento;")"
 if [ "${DOMAIN}" = "" ]; then
  _space 3
  read -e -p "$(echo -e ${YELLOW}"  [?] Store domain name: "${RESET})" -i "domain.com" DOMAIN
