@@ -697,12 +697,9 @@ if [ "${php_install}" == "y" ]; then
   # Set php_version
   ${SQLITE3} "UPDATE system SET php_version = '${PHP_VERSION}';"
   _space 1
- if [ "${DISTRO_NAME}" == "Debian" ]; then
-  curl -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-  echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
- else
-  add-apt-repository ppa:ondrej/php -y
- fi
+  curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
+  dpkg -i /tmp/debsuryorg-archive-keyring.deb
+  echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
  if [ "$?" = 0 ]; then
    _space 1
    GREENTXT "PHP repository installed  -  OK"
