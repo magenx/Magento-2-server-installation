@@ -1128,7 +1128,10 @@ node.attr.rack: r1
 node.max_local_storage_nodes: 1
 
 discovery.type: single-node
+
 cluster.routing.allocation.enable: all
+#cluster.routing.allocation.disk.threshold_enabled: false
+#cluster.routing.allocation.disk.watermark.flood_stage: 100%
 
 path.data: /var/lib/opensearch
 path.logs: /var/log/opensearch
