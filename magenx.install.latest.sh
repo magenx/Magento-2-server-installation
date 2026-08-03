@@ -238,7 +238,7 @@ distro_error() {
   REDTXT "[!] ${OS_NAME} ${OS_VERSION} detected"
   _space 1
   echo " Unfortunately, your operating system distribution and version are not supported by this script"
-  echo " Supported: Ubuntu 22|24; Debian 12|13"
+  echo " Supported: Ubuntu 24|26; Debian 12|13"
   echo " Please email admin@magenx.com and let us know if you run into any issues"
   _space 1
   exit 1
@@ -258,7 +258,7 @@ else
     DISTRO_VERSION="${VERSION_ID}"
 
     ## Check if distribution is supported
-    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ ^(22.04|24.04) ]]; then
+    if [ "${DISTRO_NAME%% *}" == "Ubuntu" ] && [[ "${DISTRO_VERSION}" =~ ^(24.04|26.04) ]]; then
       DISTRO_NAME="Ubuntu"
     elif [ "${DISTRO_NAME%% *}" == "Debian" ] && [[ "${DISTRO_VERSION}" =~ ^(12|13) ]]; then
       DISTRO_NAME="Debian"
@@ -580,7 +580,7 @@ WHITETXT "----------------------------------------------------------------------
   _space 1
  fi
   # Set system_update to full release version
-  [ "${DISTRO_NAME}" == "Debian" ] && FULL_VERSION="$(cat /etc/debian_version )" || FULL_VERSION="$(lsb_release -d | awk '/(22|24)\.04.+/{print $3}')"
+  [ "${DISTRO_NAME}" == "Debian" ] && FULL_VERSION="$(cat /etc/debian_version )" || FULL_VERSION="$(lsb_release -d | awk '/(24|26)\.04.+/{print $3}')"
   ${SQLITE3} "UPDATE system SET system_update = 'installed @ ${FULL_VERSION}';"
   _space 1
 fi
