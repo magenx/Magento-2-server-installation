@@ -1201,10 +1201,11 @@ systemctl restart opensearch.service
 {
     "cluster_permissions": [
       "cluster_composite_ops_monitor",
+	  "cluster:monitor/health",
+	  "cluster:monitor/nodes/info"
       "cluster:monitor/main",
       "cluster:monitor/state",
-      "cluster:monitor/health",
-      "cluster:monitor/nodes/info"
+	  "cluster:monitor/shards"
     ],
     "index_permissions": [
       {
