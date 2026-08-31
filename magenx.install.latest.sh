@@ -51,7 +51,7 @@ logrotate git netcat-openbsd patch strace syslog-ng-core moreutils lsof sysstat 
 
 PERL_MODULES="liblwp-protocol-https-perl libdbi-perl libconfig-inifiles-perl libdbd-mysql-perl libterm-readkey-perl"
 
-PHP_PACKAGES=(cli fpm common mysql zip lz4 gd igbinary mbstring curl xml bcmath intl ldap soap oauth apcu)
+PHP_PACKAGES=(cli fpm common mysql zip lz4 gd igbinary redis mbstring curl xml bcmath intl ldap soap oauth)
 ###################################################################################
 ###                                    COLORS                                   ###
 ###################################################################################
