@@ -1724,6 +1724,10 @@ nginx -t && /usr/bin/systemctl restart nginx.service || echo "[!] Error: check n
 END
 
 _space 1
+YELLOWTXT "[-] Downloading eComscan malware scanner"
+curl -o /usr/local/bin/ecomscan https://ecomscan.com/downloads/linux-amd64/ecomscan
+
+_space 1
 YELLOWTXT "[-] Downloading nginx configuration files"
 mkdir -p /tmp/nginx
 cd /tmp/nginx
