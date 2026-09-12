@@ -1820,6 +1820,7 @@ php_admin_value[date.timezone] = "${TIMEZONE}"
 php_admin_value[error_log] = "/home/\$pool/${CURRENT_SYMLINK}/var/log/php-fpm-error.log"
 php_admin_value[upload_tmp_dir] = "/home/\$pool/${CURRENT_SYMLINK}/var/tmp"
 php_admin_value[sys_temp_dir] = "/home/\$pool/${CURRENT_SYMLINK}/var/tmp"
+php_admin_value[disable_functions] = exec, shell_exec, system, passthru, popen, proc_open, phpinfo, show_source
 ;;
 ;; [opcache] settings
 php_admin_value[opcache.blacklist_filename] = "/home/\$pool/${CURRENT_SYMLINK}/opcache.blacklist"
