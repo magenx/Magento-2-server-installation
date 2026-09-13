@@ -1303,25 +1303,30 @@ _space 1
  ## create magento user
  useradd -d ${ROOT_PATH} -s /bin/bash ${BRAND}
  
- ## create magento php user
+ ## create php user
  useradd -M -s /sbin/nologin -d ${ROOT_PATH} ${PHP_USER}
- usermod -g ${PHP_USER} ${BRAND}
 
  ## magento root folder permissions
  mkdir -p ${ROOT_PATH}/{releases/${INSTALLATION_RELEASE},shared}
  chmod 0711 ${ROOT_PATH}
  
  chown ${BRAND}:${BRAND} ${ROOT_PATH}
- chown -R ${BRAND}:${PHP_USER} ${ROOT_PATH}/{shared,releases}
+ chown -R ${BRAND}:${BRAND} ${ROOT_PATH}/{shared,releases}
  chmod -R 2750 ${ROOT_PATH}/releases
  
  su ${BRAND} -s /bin/bash -c "mkdir -p ${ROOT_PATH}/shared/{var/tmp,pub/media}"
  chmod -R 2770 ${ROOT_PATH}/shared
+
+ ## ACL php user reads everything
+ setfacl -R -m u:${PHP_USER}:r-X,d:u:${PHP_USER}:r-X ${ROOT_PATH}/{shared,releases}
+
+ ## ACL php user write to var media
+ setfacl -R -m u:${PHP_USER}:rwX,d:u:${PHP_USER}:rwX ${ROOT_PATH}/shared/pub/media ${ROOT_PATH}/shared/var
  
  ## ACL nginx reads everything
  setfacl -R -m u:nginx:r-X,d:u:nginx:r-X ${ROOT_PATH}/{shared,releases}
 
-  ## ACL imgproxy reads everything from media
+ ## ACL imgproxy reads everything from media
  setfacl -R -m u:imgproxy:r-X,d:u:imgproxy:r-X ${ROOT_PATH}/shared/pub/media
  
  _space 1
@@ -1501,7 +1506,7 @@ if [ -f "${GET_[root_path]}/${CURRENT_SYMLINK}/bin/magento" ]; then
  _space 1
  TIMEZONE=$(${SQLITE3} "SELECT timezone FROM system;")
  cd ${GET_[root_path]}/${CURRENT_SYMLINK}/
- chown -R ${GET_[brand]}:${GET_[php_user]} *
+ chown -R ${GET_[brand]}:${GET_[brand]} *
  chmod u+x bin/magento
  YELLOWTXT "[-] Administrator settings and store base url:"
  read -e -p "$(echo -e ${YELLOW}"  [?] First name: "${RESET})" -i "Magento"  ADMIN_FIRSTNAME
@@ -1878,8 +1883,8 @@ YELLOWTXT "[-] Logrotate script for Magento logs"
 tee /etc/logrotate.d/${GET_[brand]} <<END
 ${GET_[root_path]}/${CURRENT_SYMLINK}/var/log/*.log
 {
-su ${GET_[brand]} ${GET_[php_user]}
-create 660 ${GET_[brand]} ${GET_[php_user]}
+su ${GET_[brand]} ${GET_[brand]}
+create 660 ${GET_[brand]} ${GET_[brand]}
 weekly
 rotate 2
 notifempty
@@ -2009,7 +2014,7 @@ if [ "${apply_config}" == "y" ]; then
  su ${GET_[brand]} -s /bin/bash -c "bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2"
  su ${GET_[brand]} -s /bin/bash -c "bin/magento setup:config:set --http-cache-hosts=varnish:80"
 
- chown -R ${GET_[brand]}:${GET_[php_user]} ${GET_[root_path]}/${CURRENT_SYMLINK}/
+ chown -R ${GET_[brand]}:${GET_[brand]} ${GET_[root_path]}/${CURRENT_SYMLINK}/
  
  _space 1
  YELLOWTXT "[-] Clean Magento cache add some optimization config"
